@@ -146,7 +146,7 @@ function generateCalendar(year, month) {
       if (!started && realDay === firstDay) started = true;
       if (started && day <= daysInMonth) {
         const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        const match = requestData.find(x => x.date === dateStr);
+        const match = requestData.find(x => x.date.startsWith(dateStr.split("-").reverse().join(".")));
         const marked = match ? "marked" : "";
         const tooltip = match ? `Referenz: ${match.ref}\nAirline: ${match.airline}\n${match.tonnage.toLocaleString('de-DE')} kg` : "";
         const onclick = match ? `onclick="openDetails('${match.ref}')"` : "";
