@@ -69,6 +69,7 @@ function openDetails(ref) {
   document.getElementById("manifestWeight").value = r.manifestWeight || "";
   document.getElementById("rate").value = r.rate || "";
   document.getElementById("otherPrices").value = r.otherPrices || "";
+  document.getElementById("apronSupport").checked = r.apronSupport || false;
   document.getElementById("detailModal").style.display = "block";
 }
 
