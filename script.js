@@ -81,14 +81,26 @@ function saveDetails() {
   const ref = document.getElementById("modalRef").value;
   const r = requestData.find(r => r.ref === ref);
   if (!r) return;
-  r.customerName = document.getElementById("customerName").value;
-  r.customerEmail = document.getElementById("customerEmail").value;
-  r.flightTime = document.getElementById("flightTime").value;
-  r.manifestWeight = parseFloat(document.getElementById("manifestWeight").value) || 0;
-  r.rate = parseFloat(document.getElementById("rate").value) || 0;
-  r.otherPrices = document.getElementById("otherPrices").value;
-  r.apronSupport = document.getElementById("apronSupport").checked;
-  r.tonnage = r.manifestWeight;
+
+  // Lokale Aktualisierung
+  const finalWeight = parseFloat(document.getElementById("manifestWeight").value) || 0;
+  const extraCharges = document.getElementById("otherPrices").value;
+  const rate = parseFloat(document.getElementById("rate").value) || 0;
+  const departureTime = document.getElementById("flightTime").value;
+  const escort = document.getElementById("apronSupport").checked;
+  const comment = document.getElementById("customerName").value; // z. B. für interne Bemerkung
+
+  // Werte lokal übernehmen (für Anzeige)
+  r.manifestWeight = finalWeight;
+  r.otherPrices = extraCharges;
+  r.rate = rate;
+  r.flightTime = departureTime;
+  r.apronSupport = escort;
+  r.customerName = comment; // ggf. anpassen
+
+  // In Google Sheet speichern
+  saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment);
+
   closeModal();
   populateRows();
 }
@@ -192,3 +204,31 @@ document.addEventListener('DOMContentLoaded', function () {
   setInterval(updateClock, 1000);
   updateClock();
 });
+
+function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment) {
+  const url = "https://script.google.com/macros/s/AKfycbw2c2PSZlsKNGnQXFjhtpmezSSB_67D1BD3gt1jgVveY791Bb8inDIg4y0yb1Zhq_rm/exec";
+
+  const formData = new URLSearchParams();
+  formData.append("mode", "updateExtras");
+  formData.append("ref", ref);
+  formData.append("finalWeight", finalWeight);
+  formData.append("extraCharges", extraCharges);
+  formData.append("rate", rate);
+  formData.append("departureTime", departureTime);
+  formData.append("escort", escort ? "Ja" : "Nein");
+  formData.append("comment", comment);
+
+  fetch(url, {
+    method: "POST",
+    body: formData
+  })
+    .then(response => response.text())
+    .then(result => {
+      console.log("Gespeichert:", result);
+      alert("Änderungen gespeichert!");
+    })
+    .catch(error => {
+      console.error("Fehler beim Speichern:", error);
+      alert("Fehler beim Speichern!");
+    });
+}
