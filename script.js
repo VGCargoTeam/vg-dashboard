@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function () {
     .then(data => {
       requestData = data.map(row => ({
         ref: row["Ref"],
-        date: row["Datum"],
+        date: row["Flight Date"],
         airline: row["Airline"],
         billingCompany: row["Billing Company"],
         billingAddress: row["Billing Address"],
