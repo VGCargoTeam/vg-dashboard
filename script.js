@@ -56,7 +56,7 @@ function openDetails(ref) {
   document.getElementById("viewRef").textContent = r.ref;
   document.getElementById("viewAirline").textContent = r.airline;
   document.getElementById("viewDate").textContent = r.date.toLocaleDateString('de-DE');
-  document.getElementById("viewTonnage").textContent = (r.manifestWeight || r.tonnage) + " kg";
+  document.getElementById("viewTonnage").textContent = `${r.tonnage.toLocaleString('de-DE')} kg (urspr.)${r.manifestWeight ? ` → ${r.manifestWeight.toLocaleString('de-DE')} kg (Manifest)` : ''}`;
   document.getElementById("viewBillingCompany").textContent = r.billingCompany || "-";
   document.getElementById("viewBillingAddress").textContent = r.billingAddress || "-";
   document.getElementById("viewTaxNumber").textContent = r.taxNumber || "-";
