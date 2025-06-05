@@ -135,20 +135,22 @@ function generateCalendar(year, month) {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
   const monthName = new Date(year, month).toLocaleString('default', { month: 'long' });
-  let html = `<div class="calendar-table"><h4>${monthName} ${year}</h4><table><thead><tr><th>Mo</th><th>Tu</th><th>We</th><th>Th</th><th>Fr</th><th>Sa</th><th>Su</th></tr></thead><tbody>`;
+  let html = `<div class="calendar-table"><h4>${monthName} ${year}</h4><table><thead><tr><th>Mo</th><th>Di</th><th>Mi</th><th>Do</th><th>Fr</th><th>Sa</th><th>So</th></tr></thead><tbody>`;
   let day = 1;
   let started = false;
+
   for (let i = 0; i < 6; i++) {
     html += "<tr>";
     for (let j = 1; j <= 7; j++) {
-      const realDay = (j + 6) % 7;
+      const realDay = (j + 6) % 7; // Montag = 0
       if (!started && realDay === firstDay) started = true;
       if (started && day <= daysInMonth) {
         const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
         const match = requestData.find(x => x.date === dateStr);
-        const tooltip = match ? `${match.ref}\n${match.airline}\n${match.tonnage} kg` : "";
         const marked = match ? "marked" : "";
-        html += `<td class='${marked}' title="${tooltip}">${day}</td>`;
+        const tooltip = match ? `Referenz: ${match.ref}\nAirline: ${match.airline}\n${match.tonnage.toLocaleString('de-DE')} kg` : "";
+        const onclick = match ? `onclick="openDetails('${match.ref}')"` : "";
+        html += `<td class="${marked}" title="${tooltip}" style="cursor:pointer;" ${onclick}>${day}</td>`;
         day++;
       } else {
         html += "<td></td>";
