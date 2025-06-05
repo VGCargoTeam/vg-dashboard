@@ -42,6 +42,24 @@ window.openDetails = function(ref) {
       document.getElementById("fieldRamp").checked = r.rampSupport === true;
     }
 
+    function populateRows() {
+  const table = document.getElementById("dataTable");
+  table.innerHTML = "";
+  requestData.forEach(r => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><a href="#" onclick="openDetails('${r.ref}')">${r.ref}</a></td>
+      <td>${r.date}</td>
+      <td>${r.airline}</td>
+      <td>${r.tonnage.toLocaleString("de-DE", { minimumFractionDigits: 2 })}</td>
+      <td><button class="delete-btn" onclick="deleteRequest('${r.ref}')">Delete</button></td>
+    `;
+    table.appendChild(row);
+  });
+  filterTable();
+  renderCalendars();
+}
+
     document.getElementById("detailModal").style.display = "block";
   }
 };
