@@ -19,11 +19,11 @@ fetch(url)
     data.forEach(row => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${row["Reference"] || "-"}</td>
-        <td>${row["Planned Flight Date"] || "-"}</td>
+        <td>${row["Ref"] || "-"}</td>
+        <td>${row["Datum"] || "-"}</td>
         <td>${row["Airline"] || "-"}</td>
         <td>${row["Contact Email"] || "-"}</td>
-        <td>${row["Tonnage (kg)"] || "-"}</td>
+        <td>${row["Tonnage"] || "-"}</td>
       `;
       tbody.appendChild(tr);
     });
