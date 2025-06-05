@@ -153,7 +153,7 @@ function generateCalendar(year, month) {
       `• ${m.ref} – ${m.airline} – ${m.tonnage.toLocaleString('de-DE')} kg`
     ).join('\n')
   : "";
-        const onclick = match ? `onclick="openDetails('${match.ref}')"` : "";
+        const onclick = matches.length ? `onclick="openDetails('${matches[0].ref}')"` : "";
         html += `<td class="${marked}" title="${tooltip}" style="cursor:pointer;" ${onclick}>${day}</td>`;
         day++;
       } else {
