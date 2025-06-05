@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function () {
         contactName: row["Contact Name"],
         contactEmail: row["Contact Email"],
         emailRequest: row["Email Request"],
-        tonnage: parseFloat(row["Tonnage"]) || 0
+        tonnage: parseFloat(row["Tonnage"]) || 0,
         apronSupport: row["Vorfeldbegleitung"] === "TRUE" // oder "Ja"
       }));
       populateRows();
