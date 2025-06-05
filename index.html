@@ -73,27 +73,6 @@
     button.delete-btn:hover {
       background-color: #a71d2a;
     }
-    input, textarea {
-      width: 100%;
-      padding: 6px;
-      margin-bottom: 10px;
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      top: 5%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: white;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      z-index: 1000;
-      width: 600px;
-      max-height: 90vh;
-      overflow-y: auto;
-      font-family: Arial, sans-serif;
-    }
   </style>
 </head>
 <body>
@@ -113,8 +92,48 @@
       </thead>
       <tbody id="dataTable"></tbody>
     </table>
+    <div id="detailModal" style="display:none; position:fixed; top:5%; left:50%; transform:translateX(-50%);
+     background:white; border-radius:10px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:1000; width:600px; max-height:90vh; overflow-y:auto; font-family:Arial, sans-serif;">
+      <h2 style="margin-top:0; color:#007bff;">Flugdetails & Bearbeitung</h2>
+      <div style="margin-bottom:20px;">
+        <h4 style="margin-bottom:5px; border-bottom:1px solid #ccc;">Kundendaten (Original)</h4>
+        <p><strong>Ref:</strong> <span id="viewRef"></span></p>
+        <p><strong>Airline:</strong> <span id="viewAirline"></span></p>
+        <p><strong>Datum:</strong> <span id="viewDate"></span></p>
+        <p><strong>Tonnage:</strong> <span id="viewTonnage"></span></p>
+        <p><strong>Billing Company:</strong> <span id="viewBillingCompany"></span></p>
+        <p><strong>Billing Address:</strong> <span id="viewBillingAddress"></span></p>
+        <p><strong>Tax Number:</strong> <span id="viewTaxNumber"></span></p>
+        <p><strong>Contact Name:</strong> <span id="viewContactName"></span></p>
+        <p><strong>Contact Email:</strong> <span id="viewContactEmail"></span></p>
+        <p><strong>Original Mail:</strong><br><pre id="viewEmailRequest" style="background:#f8f8f8; padding:10px; border-radius:5px;"></pre></p>
+        <p><strong>AGB akzeptiert:</strong> ✅</p>
+        <p><strong>Leistungsverzeichnis gelesen:</strong> ✅</p>
+      </div>
+      <div>
+        <h4 style="margin-bottom:5px; border-bottom:1px solid #ccc;">Interne Bearbeitung</h4>
+        <form id="detailForm">
+          <input type="hidden" id="modalRef" />
+          <label>Kunde (Name):</label>
+          <input type="text" id="customerName" style="width:100%;" /><br><br>
+          <label>E-Mail:</label>
+          <input type="email" id="customerEmail" style="width:100%;" /><br><br>
+          <label>Flugzeit:</label>
+          <input type="text" id="flightTime" placeholder="z.B. 14:45" style="width:100%;" /><br><br>
+          <label>Manifestgewicht (kg):</label>
+          <input type="number" id="manifestWeight" style="width:100%;" /><br><br>
+          <label>Rate (€):</label>
+          <input type="number" id="rate" style="width:100%;" /><br><br>
+          <label>Weitere Preise:</label>
+          <textarea id="otherPrices" placeholder="z.B. Handling: 500 €, Trucking: 300 €" style="width:100%;"></textarea><br><br>
+          <div style="text-align:right;">
+            <button type="button" onclick="saveDetails()" style="background:#28a745;color:white;border:none;padding:8px 16px;border-radius:5px;">Speichern</button>
+            <button type="button" onclick="closeModal()" style="background:#6c757d;color:white;border:none;padding:8px 16px;border-radius:5px;">Schließen</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
-
   <div class="calendar">
     <div class="calendar-nav">
       <button onclick="shiftCalendar(-1)">← Back</button>
@@ -122,26 +141,6 @@
     </div>
     <div id="calendarArea"></div>
   </div>
-
-  <div id="detailModal" class="modal">
-    <h2 style="margin-top:0; color:#007bff;">Flugdetails & Bearbeitung</h2>
-    <form id="detailForm">
-      <input type="hidden" id="modalRef" />
-      <label>Airline:</label><input type="text" id="viewAirline" />
-      <label>Datum:</label><input type="text" id="viewDate" />
-      <label>Tonnage (kg):</label><input type="number" id="viewTonnage" />
-      <label>Billing Company:</label><input type="text" id="viewBillingCompany" />
-      <label>Billing Address:</label><input type="text" id="viewBillingAddress" />
-      <label>Tax Number:</label><input type="text" id="viewTaxNumber" />
-      <label>Contact Name:</label><input type="text" id="viewContactName" />
-      <label>Contact Email:</label><input type="email" id="viewContactEmail" />
-      <label>Original Mail:</label><textarea id="viewEmailRequest"></textarea>
-      <label>Vorfeldbegleitung:</label><input type="checkbox" id="fieldRamp" /><br><br>
-      <button type="button" onclick="saveDetails()">Speichern</button>
-      <button type="button" onclick="closeModal()">Schließen</button>
-    </form>
-  </div>
-
   <script src="script.js"></script>
 </body>
 </html>

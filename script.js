@@ -1,7 +1,151 @@
 
+let requestData = [];
+
+function populateRows() {
+  const table = document.getElementById("dataTable");
+  table.innerHTML = "";
+  requestData.forEach(r => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><a href="#" onclick="openDetails('${r.ref}')">${r.ref}</a></td>
+      <td>${r.date}</td>
+      <td>${r.airline}</td>
+      <td>${(r.manifestWeight || r.tonnage).toLocaleString()}</td>
+      <td><button class="delete-btn" onclick="deleteRequest('${r.ref}')">Delete</button></td>`;
+    table.appendChild(row);
+  });
+  filterTable();
+  renderCalendars();
+}
+
+function filterTable() {
+  const refVal = document.getElementById("refSearch").value.toLowerCase();
+  const airlineVal = document.getElementById("airlineSearch").value.toLowerCase();
+  const rows = document.querySelectorAll("#dataTable tr");
+  let totalFlights = 0;
+  let totalTonnage = 0;
+
+  rows.forEach(row => {
+    const cells = row.children;
+    const ref = cells[0].textContent.toLowerCase();
+    const airline = cells[2].textContent.toLowerCase();
+    const tonnage = parseFloat(cells[3].textContent.replace(/,/g, ""));
+    const show = (!refVal || ref.includes(refVal)) && (!airlineVal || airline.includes(airlineVal));
+    row.style.display = show ? "" : "none";
+    if (show) {
+      totalFlights++;
+      totalTonnage += tonnage;
+    }
+  });
+
+  document.getElementById("summaryInfo").textContent =
+    `Total Flights: ${totalFlights} | Total Tonnage: ${totalTonnage.toLocaleString()} kg`;
+}
+
+function deleteRequest(ref) {
+  if (confirm("Are you sure you want to delete this request?")) {
+    const index = requestData.findIndex(r => r.ref === ref);
+    if (index !== -1) requestData.splice(index, 1);
+    populateRows();
+  }
+}
+
+function openDetails(ref) {
+  const r = requestData.find(r => r.ref === ref);
+  if (!r) return;
+  document.getElementById("modalRef").value = r.ref;
+  document.getElementById("viewRef").textContent = r.ref;
+  document.getElementById("viewAirline").textContent = r.airline;
+  document.getElementById("viewDate").textContent = r.date;
+  document.getElementById("viewTonnage").textContent = (r.manifestWeight || r.tonnage) + " kg";
+  document.getElementById("viewBillingCompany").textContent = r.billingCompany || "-";
+  document.getElementById("viewBillingAddress").textContent = r.billingAddress || "-";
+  document.getElementById("viewTaxNumber").textContent = r.taxNumber || "-";
+  document.getElementById("viewContactName").textContent = r.contactName || "-";
+  document.getElementById("viewContactEmail").textContent = r.contactEmail || "-";
+  document.getElementById("viewEmailRequest").textContent = r.emailRequest || "-";
+  document.getElementById("customerName").value = r.customerName || "";
+  document.getElementById("customerEmail").value = r.customerEmail || "";
+  document.getElementById("flightTime").value = r.flightTime || "";
+  document.getElementById("manifestWeight").value = r.manifestWeight || "";
+  document.getElementById("rate").value = r.rate || "";
+  document.getElementById("otherPrices").value = r.otherPrices || "";
+  document.getElementById("detailModal").style.display = "block";
+}
+
+function closeModal() {
+  document.getElementById("detailModal").style.display = "none";
+}
+
+function saveDetails() {
+  const ref = document.getElementById("modalRef").value;
+  const r = requestData.find(r => r.ref === ref);
+  if (!r) return;
+  r.customerName = document.getElementById("customerName").value;
+  r.customerEmail = document.getElementById("customerEmail").value;
+  r.flightTime = document.getElementById("flightTime").value;
+  r.manifestWeight = parseFloat(document.getElementById("manifestWeight").value) || 0;
+  r.rate = parseFloat(document.getElementById("rate").value) || 0;
+  r.otherPrices = document.getElementById("otherPrices").value;
+  r.tonnage = r.manifestWeight;
+  closeModal();
+  populateRows();
+}
+
+function updateClock() {
+  const now = new Date();
+  const local = new Date(now.getTime() + (2 * 60 * 60 * 1000));
+  document.getElementById("clock").textContent = "Time: " + local.toTimeString().substr(0, 8);
+  document.getElementById("currentDate").textContent = "Date: " + local.toISOString().substr(0, 10);
+}
+
+let calendarBase = new Date();
+function shiftCalendar(offset) {
+  calendarBase.setMonth(calendarBase.getMonth() + offset);
+  renderCalendars();
+}
+
+function renderCalendars() {
+  const container = document.getElementById("calendarArea");
+  container.innerHTML = "";
+  for (let i = 0; i < 2; i++) {
+    const current = new Date(calendarBase.getFullYear(), calendarBase.getMonth() + i);
+    container.innerHTML += generateCalendar(current.getFullYear(), current.getMonth());
+  }
+}
+
+function generateCalendar(year, month) {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const monthName = new Date(year, month).toLocaleString('default', { month: 'long' });
+  let html = `<div class="calendar-table"><h4>${monthName} ${year}</h4><table><thead><tr><th>Mo</th><th>Tu</th><th>We</th><th>Th</th><th>Fr</th><th>Sa</th><th>Su</th></tr></thead><tbody>`;
+  let day = 1;
+  let started = false;
+  for (let i = 0; i < 6; i++) {
+    html += "<tr>";
+    for (let j = 1; j <= 7; j++) {
+      const realDay = (j + 6) % 7;
+      if (!started && realDay === firstDay) started = true;
+      if (started && day <= daysInMonth) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        const match = requestData.find(x => x.date === dateStr);
+        const tooltip = match ? `${match.ref}\n${match.airline}\n${match.tonnage} kg` : "";
+        const marked = match ? "marked" : "";
+        html += `<td class='${marked}' title="${tooltip}">${day}</td>`;
+        day++;
+      } else {
+        html += "<td></td>";
+      }
+    }
+    html += "</tr>";
+    if (day > daysInMonth) break;
+  }
+  html += "</tbody></table></div>";
+  return html;
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   const url = 'https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest';
-
   fetch(url)
     .then(response => response.json())
     .then(data => {
@@ -15,51 +159,12 @@ document.addEventListener('DOMContentLoaded', function () {
         contactName: row["Contact Name"],
         contactEmail: row["Contact Email"],
         emailRequest: row["Email Request"],
-        tonnage: parseFloat(row["Tonnage"]) || 0,
-        rampSupport: row["Ramp Support"] === "Ja"
+        tonnage: parseFloat(row["Tonnage"]) || 0
       }));
       populateRows();
     })
     .catch(error => console.error("Fehler beim Laden:", error));
+
+  setInterval(updateClock, 1000);
+  updateClock();
 });
-
-window.openDetails = function(ref) {
-  const r = requestData.find(r => r.ref === ref);
-  if (r) {
-    document.getElementById("modalRef").value = r.ref;
-    document.getElementById("viewRef").textContent = r.ref;
-    document.getElementById("viewAirline").textContent = r.airline;
-    document.getElementById("viewDate").textContent = r.date;
-    document.getElementById("viewTonnage").textContent = r.tonnage + " kg";
-    document.getElementById("viewBillingCompany").textContent = r.billingCompany || "-";
-    document.getElementById("viewBillingAddress").textContent = r.billingAddress || "-";
-    document.getElementById("viewTaxNumber").textContent = r.taxNumber || "-";
-    document.getElementById("viewContactName").textContent = r.contactName || "-";
-    document.getElementById("viewContactEmail").textContent = r.contactEmail || "-";
-    document.getElementById("viewEmailRequest").textContent = r.emailRequest || "-";
-
-    if (document.getElementById("fieldRamp")) {
-      document.getElementById("fieldRamp").checked = r.rampSupport === true;
-    }
-
-    function populateRows() {
-  const table = document.getElementById("dataTable");
-  table.innerHTML = "";
-  requestData.forEach(r => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td><a href="#" onclick="openDetails('${r.ref}')">${r.ref}</a></td>
-      <td>${r.date}</td>
-      <td>${r.airline}</td>
-      <td>${r.tonnage.toLocaleString("de-DE", { minimumFractionDigits: 2 })}</td>
-      <td><button class="delete-btn" onclick="deleteRequest('${r.ref}')">Delete</button></td>
-    `;
-    table.appendChild(row);
-  });
-  filterTable();
-  renderCalendars();
-}
-
-    document.getElementById("detailModal").style.display = "block";
-  }
-};
