@@ -1,4 +1,3 @@
-
 let requestData = [];
 
 function populateRows() {
@@ -8,9 +7,9 @@ function populateRows() {
     const row = document.createElement("tr");
     row.innerHTML = `
       <td><a href="#" onclick="openDetails('${r.ref}')">${r.ref}</a></td>
-      <td>${r.date}</td>
+      <td>${r.date.toLocaleDateString('de-DE')}</td>
       <td>${r.airline}</td>
-      <td>${(r.manifestWeight || r.tonnage).toLocaleString()}</td>
+      <td>${(r.manifestWeight || r.tonnage).toLocaleString('de-DE')}</td>
       <td><button class="delete-btn" onclick="deleteRequest('${r.ref}')">Delete</button></td>`;
     table.appendChild(row);
   });
@@ -29,7 +28,7 @@ function filterTable() {
     const cells = row.children;
     const ref = cells[0].textContent.toLowerCase();
     const airline = cells[2].textContent.toLowerCase();
-    const tonnage = parseFloat(cells[3].textContent.replace(/,/g, ""));
+    const tonnage = parseFloat(cells[3].textContent.replace(/\./g, '').replace(/,/g, '.'));
     const show = (!refVal || ref.includes(refVal)) && (!airlineVal || airline.includes(airlineVal));
     row.style.display = show ? "" : "none";
     if (show) {
@@ -39,7 +38,7 @@ function filterTable() {
   });
 
   document.getElementById("summaryInfo").textContent =
-    `Total Flights: ${totalFlights} | Total Tonnage: ${totalTonnage.toLocaleString()} kg`;
+    `Total Flights: ${totalFlights} | Total Tonnage: ${totalTonnage.toLocaleString('de-DE')} kg`;
 }
 
 function deleteRequest(ref) {
@@ -56,7 +55,7 @@ function openDetails(ref) {
   document.getElementById("modalRef").value = r.ref;
   document.getElementById("viewRef").textContent = r.ref;
   document.getElementById("viewAirline").textContent = r.airline;
-  document.getElementById("viewDate").textContent = r.date;
+  document.getElementById("viewDate").textContent = r.date.toLocaleDateString('de-DE');
   document.getElementById("viewTonnage").textContent = (r.manifestWeight || r.tonnage) + " kg";
   document.getElementById("viewBillingCompany").textContent = r.billingCompany || "-";
   document.getElementById("viewBillingAddress").textContent = r.billingAddress || "-";
@@ -173,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function () {
     .then(data => {
       requestData = data.map(row => ({
         ref: row["Ref"],
-        date: row["Flight Date"],
+        date: new Date(row["Flight Date"]),
         airline: row["Airline"],
         billingCompany: row["Billing Company"],
         billingAddress: row["Billing Address"],
