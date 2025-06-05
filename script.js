@@ -86,6 +86,7 @@ function saveDetails() {
   r.manifestWeight = parseFloat(document.getElementById("manifestWeight").value) || 0;
   r.rate = parseFloat(document.getElementById("rate").value) || 0;
   r.otherPrices = document.getElementById("otherPrices").value;
+  r.apronSupport = document.getElementById("apronSupport").checked;
   r.tonnage = r.manifestWeight;
   closeModal();
   populateRows();
