@@ -94,9 +94,26 @@ function saveDetails() {
 
 function updateClock() {
   const now = new Date();
-  const local = new Date(now.getTime() + (2 * 60 * 60 * 1000));
-  document.getElementById("clock").textContent = "Time: " + local.toTimeString().substr(0, 8);
-  document.getElementById("currentDate").textContent = "Date: " + local.toISOString().substr(0, 10);
+  const options = {
+    timeZone: 'Europe/Berlin',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  };
+  const dateOptions = {
+    timeZone: 'Europe/Berlin',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  };
+
+  const time = new Intl.DateTimeFormat('de-DE', options).format(now);
+  const dateParts = new Intl.DateTimeFormat('de-DE', dateOptions).format(now).split('.');
+  const formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+
+  document.getElementById("clock").textContent = "Time: " + time;
+  document.getElementById("currentDate").textContent = "Date: " + formattedDate;
 }
 
 let calendarBase = new Date();
