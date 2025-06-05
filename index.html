@@ -55,6 +55,14 @@
       background: #ffc107;
       font-weight: bold;
       cursor: help;
+      position: relative;
+    }
+    td.marked.apron::after {
+      content: '✈️';
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      font-size: 14px;
     }
     .info {
       margin: 10px 0;
