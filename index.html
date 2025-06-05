@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>VG Cargo Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -73,6 +74,9 @@
     button.delete-btn:hover {
       background-color: #a71d2a;
     }
+    #calendarArea td {
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -92,11 +96,9 @@
       </thead>
       <tbody id="dataTable"></tbody>
     </table>
-    <div id="detailModal" style="display:none; position:fixed; top:5%; left:50%; transform:translateX(-50%);
-     background:white; border-radius:10px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:1000; width:600px; max-height:90vh; overflow-y:auto; font-family:Arial, sans-serif;">
+    <div id="detailModal" style="display:none; position:fixed; top:5%; left:50%; transform:translateX(-50%); background:white; border-radius:10px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:1000; width:600px; max-height:90vh; overflow-y:auto; font-family:Arial, sans-serif;">
       <h2 style="margin-top:0; color:#007bff;">Flugdetails & Bearbeitung</h2>
       <div style="margin-bottom:20px;">
-        <h4 style="margin-bottom:5px; border-bottom:1px solid #ccc;">Kundendaten (Original)</h4>
         <p><strong>Ref:</strong> <span id="viewRef"></span></p>
         <p><strong>Airline:</strong> <span id="viewAirline"></span></p>
         <p><strong>Datum:</strong> <span id="viewDate"></span></p>
@@ -107,28 +109,22 @@
         <p><strong>Contact Name:</strong> <span id="viewContactName"></span></p>
         <p><strong>Contact Email:</strong> <span id="viewContactEmail"></span></p>
         <p><strong>Original Mail:</strong><br><pre id="viewEmailRequest" style="background:#f8f8f8; padding:10px; border-radius:5px;"></pre></p>
-        <p><strong>AGB akzeptiert:</strong> ✅</p>
-        <p><strong>Leistungsverzeichnis gelesen:</strong> ✅</p>
+        <p><strong>Vorfeldbegleitung:</strong>
+          <input type="checkbox" id="airsideCheck" onchange="toggleAirside()"> Ja
+        </p>
       </div>
       <div>
-        <h4 style="margin-bottom:5px; border-bottom:1px solid #ccc;">Interne Bearbeitung</h4>
         <form id="detailForm">
           <input type="hidden" id="modalRef" />
-          <label>Kunde (Name):</label>
-          <input type="text" id="customerName" style="width:100%;" /><br><br>
-          <label>E-Mail:</label>
-          <input type="email" id="customerEmail" style="width:100%;" /><br><br>
-          <label>Flugzeit:</label>
-          <input type="text" id="flightTime" placeholder="z.B. 14:45" style="width:100%;" /><br><br>
-          <label>Manifestgewicht (kg):</label>
-          <input type="number" id="manifestWeight" style="width:100%;" /><br><br>
-          <label>Rate (€):</label>
-          <input type="number" id="rate" style="width:100%;" /><br><br>
-          <label>Weitere Preise:</label>
-          <textarea id="otherPrices" placeholder="z.B. Handling: 500 €, Trucking: 300 €" style="width:100%;"></textarea><br><br>
+          <label>Kunde (Name):</label><input type="text" id="customerName" style="width:100%;" /><br><br>
+          <label>E-Mail:</label><input type="email" id="customerEmail" style="width:100%;" /><br><br>
+          <label>Flugzeit:</label><input type="text" id="flightTime" placeholder="z.B. 14:45" style="width:100%;" /><br><br>
+          <label>Manifestgewicht (kg):</label><input type="number" id="manifestWeight" style="width:100%;" /><br><br>
+          <label>Rate (€):</label><input type="number" id="rate" style="width:100%;" /><br><br>
+          <label>Weitere Preise:</label><textarea id="otherPrices" style="width:100%;"></textarea><br><br>
           <div style="text-align:right;">
-            <button type="button" onclick="saveDetails()" style="background:#28a745;color:white;border:none;padding:8px 16px;border-radius:5px;">Speichern</button>
-            <button type="button" onclick="closeModal()" style="background:#6c757d;color:white;border:none;padding:8px 16px;border-radius:5px;">Schließen</button>
+            <button type="button" onclick="saveDetails()">Speichern</button>
+            <button type="button" onclick="closeModal()">Schließen</button>
           </div>
         </form>
       </div>
