@@ -92,6 +92,13 @@
       </thead>
       <tbody id="dataTable"></tbody>
     </table>
+    <div style="margin-top: 40px; padding: 20px; background: white; border-radius: 8px;">
+  <div class="calendar-nav" style="margin-bottom: 10px;">
+    <button onclick="shiftCalendar(-1)">← Back</button>
+    <button onclick="shiftCalendar(1)">Forward →</button>
+  </div>
+  <div id="calendarArea" style="padding-top: 10px;"></div>
+</div>
     <div id="detailModal" style="display:none; position:fixed; top:5%; left:50%; transform:translateX(-50%);
      background:white; border-radius:10px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:1000; width:600px; max-height:90vh; overflow-y:auto; font-family:Arial, sans-serif;">
       <h2 style="margin-top:0; color:#007bff;">Flugdetails & Bearbeitung</h2>
