@@ -147,16 +147,17 @@ function generateCalendar(year, month) {
       if (!started && realDay === firstDay) started = true;
 
       if (started && day <= daysInMonth) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        const matches = requestData.filter(x => x.date && x.date.startsWith(dateStr));
-        const marked = matches.length ? "marked" : "";
-        const tooltip = matches.length
-          ? matches.map(m => `• ${m.ref} – ${m.airline} (${m.tonnage.toLocaleString("de-DE")} kg)`).join('\n')
-          : "";
-        const onclick = matches.length ? `onclick="openDetails('${matches[0].ref}')"` : "";
-
-        html += `<td class="${marked}" title="${tooltip}" style="cursor:pointer;" ${onclick}>${day}</td>`;
-        day++;
+  const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const localDate = `${String(day).padStart(2, "0")}.${String(month + 1).padStart(2, "0")}.${year}`;
+  const matches = requestData.filter(x => x.date && x.date.startsWith(localDate));
+  const marked = matches.length ? "marked" : "";
+  const tooltip = matches.length
+    ? matches.map(m => `${m.ref} – ${m.airline} (${m.tonnage.toLocaleString('de-DE')} kg)`).join('\n')
+    : "";
+  const onclick = matches.length ? `onclick="openDetails('${matches[0].ref}')"` : "";
+  html += `<td class="${marked}" title="${tooltip}" style="cursor:pointer;" ${onclick}>${day}</td>`;
+  day++;
+}
       } else {
         html += "<td></td>";
       }
