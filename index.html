@@ -1,128 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>VG Cargo Dashboard</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #eef;
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      gap: 20px;
-    }
-    .main {
-      flex: 2;
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.1);
-    }
-    .calendar {
-      flex: 1;
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.1);
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background: #007BFF;
-      color: white;
-    }
-    .summary {
-      margin-top: 10px;
-      text-align: right;
-      font-weight: bold;
-    }
-    .calendar-nav {
-      margin-bottom: 10px;
-    }
-    .calendar-table {
-      margin-bottom: 20px;
-    }
-    td.marked {
-      background: #ffc107;
-      font-weight: bold;
-      cursor: help;
-    }
-    .info {
-      margin: 10px 0;
-      font-size: 14px;
-      color: #007BFF;
-    }
-    button.delete-btn {
-      padding: 6px 14px;
-      font-size: 14px;
-      background-color: #dc3545;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button.delete-btn:hover {
-      background-color: #a71d2a;
-    }
+    body { font-family: Arial; background: #eef; margin: 0; padding: 20px; display: flex; gap: 20px; }
+    .main, .calendar { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
+    .main { flex: 2; } .calendar { flex: 1; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #007BFF; color: white; }
+    .summary { margin-top: 10px; text-align: right; font-weight: bold; }
+    td.marked { background: #ffc107; font-weight: bold; cursor: help; }
+    button.delete-btn { padding: 6px 14px; font-size: 14px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; }
   </style>
 </head>
 <body>
   <div class="main">
     <h2>Charter Dashboard</h2>
-    <div class="info">
-      <span id="currentDate">Date: --</span> | <span id="clock">Time: --:--:--</span>
-    </div>
+    <div class="info"><span id="currentDate">Date: --</span> | <span id="clock">Time: --:--:--</span></div>
     <div>
-      <label>Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
-      <label>Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
+      <label>Reference:</label> <input type="text" id="refSearch" />
+      <label>Airline:</label> <input type="text" id="airlineSearch" />
     </div>
     <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
     <table>
-      <thead>
-        <tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage (kg)</th><th>Actions</th></tr>
-      </thead>
+      <thead><tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage (kg)</th><th>Actions</th></tr></thead>
       <tbody id="dataTable"></tbody>
     </table>
-<div id="detailModal" style="display:none; position:fixed; top:5%; left:50%; transform:translateX(-50%);
- background:white; border-radius:10px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:1000; width:600px; max-height:90vh; overflow-y:auto; font-family:Arial, sans-serif;">
-  <h2 style="margin-top:0; color:#007bff;">Flugdetails & Bearbeitung</h2>
-  <div style="margin-bottom:20px;">
-    <h4 style="margin-bottom:5px; border-bottom:1px solid #ccc;">Kundendaten (Original)</h4>
-    <p><strong>Ref:</strong> <span id="viewRef"></span></p>
-    <p><strong>Airline:</strong> <span id="viewAirline"></span></p>
-    <p><strong>Datum:</strong> <span id="viewDate"></span></p>
-    <p><strong>Tonnage:</strong> <span id="viewTonnage"></span></p>
-    <p><strong>Billing Company:</strong> <span id="viewBillingCompany"></span></p>
-    <p><strong>Billing Address:</strong> <span id="viewBillingAddress"></span></p>
-    <p><strong>Tax Number:</strong> <span id="viewTaxNumber"></span></p>
-    <p><strong>Contact Name:</strong> <span id="viewContactName"></span></p>
-    <p><strong>Contact Email:</strong> <span id="viewContactEmail"></span></p>
-    <p><strong>Original Mail:</strong><br><pre id="viewEmailRequest" style="background:#f8f8f8; padding:10px; border-radius:5px;"></pre></p>
-    <p><strong>Vorfeldbegleitung:</strong> <input type="checkbox" id="fieldRamp" disabled></p>
-  </div>
-  <div style="text-align:right;">
-    <button type="button" onclick="closeModal()" style="background:#6c757d;color:white;border:none;padding:8px 16px;border-radius:5px;">Schließen</button>
-  </div>
-</div>
-  <div class="calendar">
-    <div class="calendar-nav">
-      <button onclick="shiftCalendar(-1)">← Back</button>
-      <button onclick="shiftCalendar(1)">Forward →</button>
+    <div id="detailModal" style="display:none; position:fixed; top:5%; left:50%; transform:translateX(-50%);
+     background:white; border-radius:10px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:1000; width:600px;">
+      <h3>Flugdetails</h3>
+      <input type="hidden" id="modalRef" />
+      <p><strong>Airline:</strong> <span id="viewAirline"></span></p>
+      <p><strong>Datum:</strong> <span id="viewDate"></span></p>
+      <label>Tonnage: <input id="manifestWeight" /></label><br>
+      <label>Rate: <input id="rate" /></label><br>
+      <label>Weitere Preise: <input id="otherPrices" /></label><br>
+      <label>Kunde: <input id="customerName" /></label><br>
+      <label>Email: <input id="customerEmail" /></label><br>
+      <label>Flugzeit: <input id="flightTime" /></label><br>
+      <label>Vorfeldbegleitung: <input type="checkbox" id="fieldRamp" /></label><br><br>
+      <button onclick="saveDetails()">Speichern</button>
+      <button onclick="closeModal()">Schließen</button>
     </div>
+  </div>
+  <div class="calendar">
     <div id="calendarArea"></div>
   </div>
-  <script>
-    let requestData = [];
-  </script>
   <script src="script.js"></script>
 </body>
 </html>
