@@ -6,7 +6,7 @@ function populateRows() {
   requestData.forEach(r => {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td><a href="#" onclick="openDetails('${r.ref}')">${r.ref}</a></td>
+      <td><button class="ref-link" onclick="openDetails('${r.ref}')">${r.ref}</button></td>
       <td>${r.date.toLocaleDateString('de-DE')}</td>
       <td>${r.airline}</td>
       <td>${r.tonnage.toLocaleString('de-DE')}</td>
