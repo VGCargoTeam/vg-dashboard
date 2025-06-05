@@ -163,18 +163,11 @@ function generateCalendar(year, month) {
       if (started && day <= daysInMonth) {
         const matches = requestData.filter(x => x.date.getDate() === day && x.date.getMonth() === month && x.date.getFullYear() === year);
         const marked = matches.length ? "marked" : "";
-        let tooltip = "";
-        let hasEscort = false;
-
-        if (matches.length) {
-          tooltip = matches.map(m => {
-            if (m.apronSupport) hasEscort = true;
-            if (hasEscort) icon = " ✈️";
-            return `${m.ref} – ${m.airline} (${m.tonnage.toLocaleString('de-DE')} kg)`;
-  }).join('\n');
-}
+        const tooltip = matches.length
+          ? matches.map(m => `${m.ref} – ${m.airline} (${m.tonnage.toLocaleString('de-DE')} kg)`).join('\n')
+          : "";
         const onclick = matches.length ? `onclick=\"openDetails('${matches[0].ref}')\"` : "";
-        html += `<td class="${marked}" title="${tooltip}" style="cursor:pointer;" ${onclick}>${day}${icon}</td>`;
+        html += `<td class="${marked}" title="${tooltip}" style="cursor:pointer;" ${onclick}>${day}</td>`;
         day++;
       } else {
         html += "<td></td>";
@@ -210,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function () {
     .catch(error => console.error("Fehler beim Laden:", error));
 
   setInterval(updateClock, 1000);
-  updateClock();renderCalendars(); // 🟢 Kalender wird jetzt beim Laden angezeigt
+  updateClock();
 });
 
 function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment) {
