@@ -233,3 +233,9 @@ function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departure
       alert("Fehler beim Speichern!");
     });
 }
+// ESC zum Schließen des Detailmodals
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') {
+    closeModal();
+  }
+});
