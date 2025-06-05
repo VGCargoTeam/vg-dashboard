@@ -149,7 +149,11 @@
   </div>
 
   <script>
-  
+    const requestData = [
+      { ref: "CC-20250408-LUF001", date: "2025-04-08", airline: "Lufthansa Cargo", tonnage: 12000 },
+      { ref: "CC-20250512-EMR002", date: "2025-05-12", airline: "Emirates SkyCargo", tonnage: 9700 },
+      { ref: "CC-20250615-QTR003", date: "2025-06-15", airline: "Qatar Airways", tonnage: 8800 }
+    ];
 
     function deleteRequest(ref) {
       if (confirm("Are you sure you want to delete this request?")) {
