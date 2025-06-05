@@ -1,135 +1,126 @@
+document.addEventListener('DOMContentLoaded', function () {
+  const url = 'https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest';
 
-let requestData = [];
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      window.requestData = data.map(row => ({
+        ref: row["Ref"],
+        date: row["Datum"],
+        airline: row["Airline"],
+        billingCompany: row["Billing Company"],
+        billingAddress: row["Billing Address"],
+        taxNumber: row["Tax Number"],
+        contactName: row["Contact Name"],
+        contactEmail: row["Contact Email"],
+        emailRequest: row["Email Request"],
+        tonnage: parseFloat(row["Tonnage"].replace(",", ".")) || 0,
+        apronEscort: row["Apron Escort"] || "Nein"
+      }));
+
+      populateRows();
+      renderCalendars();
+    })
+    .catch(error => console.error("Fehler beim Laden der Daten:", error));
+});
 
 function populateRows() {
   const table = document.getElementById("dataTable");
   table.innerHTML = "";
-  requestData.forEach(r => {
+  let totalTonnage = 0;
+
+  window.requestData.forEach(r => {
+    totalTonnage += r.tonnage;
     const row = document.createElement("tr");
     row.innerHTML = `
       <td><a href="#" onclick="openDetails('${r.ref}')">${r.ref}</a></td>
-      <td>${r.date}</td>
+      <td>${formatDateTime(r.date)}</td>
       <td>${r.airline}</td>
-      <td>${(r.manifestWeight || r.tonnage).toLocaleString()}</td>
-      <td><button class="delete-btn" onclick="deleteRequest('${r.ref}')">Delete</button></td>`;
+      <td>${formatTonnage(r.tonnage)}</td>
+      <td><button class="delete-btn" onclick="deleteRequest('${r.ref}')">Delete</button></td>
+    `;
     table.appendChild(row);
-  });
-  filterTable();
-  renderCalendars();
-}
-
-function filterTable() {
-  const refVal = document.getElementById("refSearch").value.toLowerCase();
-  const airlineVal = document.getElementById("airlineSearch").value.toLowerCase();
-  const rows = document.querySelectorAll("#dataTable tr");
-  let totalFlights = 0;
-  let totalTonnage = 0;
-
-  rows.forEach(row => {
-    const cells = row.children;
-    const ref = cells[0].textContent.toLowerCase();
-    const airline = cells[2].textContent.toLowerCase();
-    const tonnage = parseFloat(cells[3].textContent.replace(/,/g, ""));
-    const show = (!refVal || ref.includes(refVal)) && (!airlineVal || airline.includes(airlineVal));
-    row.style.display = show ? "" : "none";
-    if (show) {
-      totalFlights++;
-      totalTonnage += tonnage;
-    }
   });
 
   document.getElementById("summaryInfo").textContent =
-    `Total Flights: ${totalFlights} | Total Tonnage: ${totalTonnage.toLocaleString()} kg`;
+    `Total Flights: ${window.requestData.length} | Total Tonnage: ${formatTonnage(totalTonnage)}`;
 }
 
-function deleteRequest(ref) {
-  if (confirm("Are you sure you want to delete this request?")) {
-    const index = requestData.findIndex(r => r.ref === ref);
-    if (index !== -1) requestData.splice(index, 1);
-    populateRows();
-  }
+// Format Tonnage: 12001,50
+function formatTonnage(kg) {
+  return kg.toLocaleString("de-DE", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }) + " kg";
 }
 
-function openDetails(ref) {
-  const r = requestData.find(r => r.ref === ref);
-  if (!r) return;
-  document.getElementById("modalRef").value = r.ref;
-  document.getElementById("viewRef").textContent = r.ref;
-  document.getElementById("viewAirline").textContent = r.airline;
-  document.getElementById("viewDate").textContent = r.date;
-  document.getElementById("viewTonnage").textContent = (r.manifestWeight || r.tonnage) + " kg";
-  document.getElementById("viewBillingCompany").textContent = r.billingCompany || "-";
-  document.getElementById("viewBillingAddress").textContent = r.billingAddress || "-";
-  document.getElementById("viewTaxNumber").textContent = r.taxNumber || "-";
-  document.getElementById("viewContactName").textContent = r.contactName || "-";
-  document.getElementById("viewContactEmail").textContent = r.contactEmail || "-";
-  document.getElementById("viewEmailRequest").textContent = r.emailRequest || "-";
-  document.getElementById("customerName").value = r.customerName || "";
-  document.getElementById("customerEmail").value = r.customerEmail || "";
-  document.getElementById("flightTime").value = r.flightTime || "";
-  document.getElementById("manifestWeight").value = r.manifestWeight || "";
-  document.getElementById("rate").value = r.rate || "";
-  document.getElementById("otherPrices").value = r.otherPrices || "";
-  document.getElementById("detailModal").style.display = "block";
+// Format DateTime zu DD.MM.YYYY HH:mm:ss
+function formatDateTime(dateStr) {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("de-DE") + " " + d.toLocaleTimeString("de-DE");
 }
 
-function closeModal() {
-  document.getElementById("detailModal").style.display = "none";
-}
-
-function saveDetails() {
-  const ref = document.getElementById("modalRef").value;
-  const r = requestData.find(r => r.ref === ref);
-  if (!r) return;
-  r.customerName = document.getElementById("customerName").value;
-  r.customerEmail = document.getElementById("customerEmail").value;
-  r.flightTime = document.getElementById("flightTime").value;
-  r.manifestWeight = parseFloat(document.getElementById("manifestWeight").value) || 0;
-  r.rate = parseFloat(document.getElementById("rate").value) || 0;
-  r.otherPrices = document.getElementById("otherPrices").value;
-  r.tonnage = r.manifestWeight;
-  closeModal();
-  populateRows();
-}
-
+// Uhrzeit inkl. deutscher Zeitzone + DST
 function updateClock() {
   const now = new Date();
-  const local = new Date(now.getTime() + (2 * 60 * 60 * 1000));
-  document.getElementById("clock").textContent = "Time: " + local.toTimeString().substr(0, 8);
-  document.getElementById("currentDate").textContent = "Date: " + local.toISOString().substr(0, 10);
-}
+  const formatter = new Intl.DateTimeFormat('de-DE', {
+    timeZone: 'Europe/Berlin',
+    dateStyle: 'short',
+    timeStyle: 'medium'
+  });
+  const parts = formatter.formatToParts(now);
+  const date = parts.find(p => p.type === 'day').value + "." +
+               parts.find(p => p.type === 'month').value + "." +
+               parts.find(p => p.type === 'year').value;
+  const time = parts.find(p => p.type === 'hour').value + ":" +
+               parts.find(p => p.type === 'minute').value + ":" +
+               parts.find(p => p.type === 'second').value;
 
-let calendarBase = new Date();
-function shiftCalendar(offset) {
-  calendarBase.setMonth(calendarBase.getMonth() + offset);
-  renderCalendars();
+  document.getElementById("clock").textContent = "Time: " + time;
+  document.getElementById("currentDate").textContent = "Date: " + date;
 }
+setInterval(updateClock, 1000);
+updateClock();
 
+// Kalender mit Tooltip
 function renderCalendars() {
-  const container = document.getElementById("calendarArea");
-  container.innerHTML = "";
-  for (let i = 0; i < 2; i++) {
-    const current = new Date(calendarBase.getFullYear(), calendarBase.getMonth() + i);
-    container.innerHTML += generateCalendar(current.getFullYear(), current.getMonth());
+  const calendarArea = document.getElementById("calendarArea");
+  calendarArea.innerHTML = "";
+
+  const base = new Date();
+  for (let m = 0; m < 2; m++) {
+    const month = new Date(base.getFullYear(), base.getMonth() + m, 1);
+    calendarArea.appendChild(generateCalendar(month));
   }
 }
 
-function generateCalendar(year, month) {
+function generateCalendar(date) {
+  const year = date.getFullYear();
+  const month = date.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDay = new Date(year, month, 1).getDay();
-  const monthName = new Date(year, month).toLocaleString('default', { month: 'long' });
-  let html = `<div class="calendar-table"><h4>${monthName} ${year}</h4><table><thead><tr><th>Mo</th><th>Tu</th><th>We</th><th>Th</th><th>Fr</th><th>Sa</th><th>Su</th></tr></thead><tbody>`;
+
+  const calendar = document.createElement("div");
+  calendar.className = "calendar-table";
+  const monthName = date.toLocaleString("de-DE", { month: "long" });
+
+  let html = `<h4>${monthName} ${year}</h4><table><thead><tr>
+  <th>Mo</th><th>Di</th><th>Mi</th><th>Do</th><th>Fr</th><th>Sa</th><th>So</th></tr></thead><tbody>`;
+
   let day = 1;
+  const start = new Date(year, month, 1).getDay();
   let started = false;
+
   for (let i = 0; i < 6; i++) {
     html += "<tr>";
     for (let j = 1; j <= 7; j++) {
-      const realDay = (j + 6) % 7;
-      if (!started && realDay === firstDay) started = true;
+      const weekday = (j + 6) % 7;
+      if (!started && weekday === start) started = true;
+
       if (started && day <= daysInMonth) {
         const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        const match = requestData.find(x => x.date === dateStr);
-        const tooltip = match ? `${match.ref}\n${match.airline}\n${match.tonnage} kg` : "";
+        const match = window.requestData.find(x => x.date.startsWith(dateStr));
+        const tooltip = match ? `${match.ref}\n${match.airline}\n${formatTonnage(match.tonnage)}` : "";
         const marked = match ? "marked" : "";
         html += `<td class='${marked}' title="${tooltip}">${day}</td>`;
         day++;
@@ -140,31 +131,20 @@ function generateCalendar(year, month) {
     html += "</tr>";
     if (day > daysInMonth) break;
   }
-  html += "</tbody></table></div>";
-  return html;
+
+  html += "</tbody></table>";
+  calendar.innerHTML = html;
+  return calendar;
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-  const url = 'https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest';
-  fetch(url)
-    .then(response => response.json())
-    .then(data => {
-      requestData = data.map(row => ({
-        ref: row["Ref"],
-        date: row["Datum"],
-        airline: row["Airline"],
-        billingCompany: row["Billing Company"],
-        billingAddress: row["Billing Address"],
-        taxNumber: row["Tax Number"],
-        contactName: row["Contact Name"],
-        contactEmail: row["Contact Email"],
-        emailRequest: row["Email Request"],
-        tonnage: parseFloat(row["Tonnage"]) || 0
-      }));
-      populateRows();
-    })
-    .catch(error => console.error("Fehler beim Laden:", error));
+// Dummy Funktion – hier kann später Google Sheets Delete eingebaut werden
+function deleteRequest(ref) {
+  if (confirm(`Möchtest du ${ref} wirklich löschen?`)) {
+    window.requestData = window.requestData.filter(r => r.ref !== ref);
+    populateRows();
+    renderCalendars();
+    // TODO: Google Sheets Delete per API
+  }
+}
 
-  setInterval(updateClock, 1000);
-  updateClock();
-});
+// TODO: Funktion für Vorfeldbegleitung Checkbox beim openDetails()
