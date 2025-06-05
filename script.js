@@ -82,21 +82,22 @@ function saveDetails() {
   const r = requestData.find(r => r.ref === ref);
   if (!r) return;
 
-  // Lokale Aktualisierung
   const finalWeight = parseFloat(document.getElementById("manifestWeight").value) || 0;
   const extraCharges = document.getElementById("otherPrices").value;
   const rate = parseFloat(document.getElementById("rate").value) || 0;
   const departureTime = document.getElementById("flightTime").value;
   const escort = document.getElementById("apronSupport").checked;
-  const comment = document.getElementById("customerName").value; // z. B. für interne Bemerkung
+  const comment = document.getElementById("customerName").value;
 
-  // Werte lokal übernehmen (für Anzeige)
+  // Lokale Anzeige aktualisieren (optional)
   r.manifestWeight = finalWeight;
   r.otherPrices = extraCharges;
   r.rate = rate;
   r.flightTime = departureTime;
   r.apronSupport = escort;
-  r.customerName = comment; // ggf. anpassen
+  r.customerName = comment;
+
+  // ❌ NICHT mehr: r.tonnage = r.manifestWeight;
 
   // In Google Sheet speichern
   saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment);
