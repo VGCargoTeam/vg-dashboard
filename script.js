@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function () {
     .catch(error => console.error("Fehler beim Laden:", error));
 
   setInterval(updateClock, 1000);
-  updateClock();
+  updateClock();renderCalendars(); // 🟢 Kalender wird jetzt beim Laden angezeigt
 });
 
 function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment) {
