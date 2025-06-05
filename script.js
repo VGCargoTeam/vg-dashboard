@@ -9,7 +9,7 @@ function populateRows() {
       <td><a href="#" onclick="openDetails('${r.ref}')">${r.ref}</a></td>
       <td>${r.date.toLocaleDateString('de-DE')}</td>
       <td>${r.airline}</td>
-      <td>${(r.manifestWeight || r.tonnage).toLocaleString('de-DE')}</td>
+      <td>${r.tonnage.toLocaleString('de-DE')}</td>
       <td><button class="delete-btn" onclick="deleteRequest('${r.ref}')">Delete</button></td>`;
     table.appendChild(row);
   });
