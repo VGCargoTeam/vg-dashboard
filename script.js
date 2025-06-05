@@ -149,7 +149,10 @@ function generateCalendar(year, month) {
       if (started && day <= daysInMonth) {
   const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   const localDate = `${String(day).padStart(2, "0")}.${String(month + 1).padStart(2, "0")}.${year}`;
-  const matches = requestData.filter(x => x.date && x.date.startsWith(localDate));
+  const matches = requestData.filter(x => {
+  const d = new Date(x.date);
+  return d.getDate() === day && d.getMonth() === month && d.getFullYear() === year;
+});
   const marked = matches.length ? "marked" : "";
   const tooltip = matches.length
     ? matches.map(m => `${m.ref} – ${m.airline} (${m.tonnage.toLocaleString('de-DE')} kg)`).join('\n')
