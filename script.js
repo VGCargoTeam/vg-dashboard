@@ -22,8 +22,14 @@ fetch(url)
         <td>${row["Ref"] || "-"}</td>
         <td>${row["Datum"] || "-"}</td>
         <td>${row["Airline"] || "-"}</td>
+        <td>${row["Billing Company"] || "-"}</td>
+        <td>${row["Billing Address"] || "-"}</td>
+        <td>${row["Tax Number"] || "-"}</td>
+        <td>${row["Contact Name"] || "-"}</td>
         <td>${row["Contact Email"] || "-"}</td>
+        <td>${row["Flight Date"] || "-"}</td>
         <td>${row["Tonnage"] || "-"}</td>
+        <td>${row["Email Request"] || "-"}</td>
       `;
       tbody.appendChild(tr);
     });
