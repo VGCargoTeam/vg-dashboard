@@ -69,7 +69,7 @@ function deleteRequest(ref) {
     populateRows();
 
     // 2. Anfrage ans Google Apps Script zum Löschen im Sheet
-    const url = "https://script.google.com/macros/s/AKfycbyRaUcp6c0skDO_AKFbn6z2JVsdid1A-UWDRLYh_ayd3IJOUyz8bPhejpSbx4POwMuL/exec";
+    const url = "https://script.google.com/macros/s/AKfycbzJtLNe3hiKn-_CLYTGS_CWA5UwMznppcmmngy9tEdjOwFFwyib2B-rMuVKsnvTdBvl/exec";
     const formData = new URLSearchParams();
     formData.append("mode", "delete");
     formData.append("ref", ref);
@@ -130,6 +130,7 @@ function saveDetails() {
   const escort = document.getElementById("apronSupport").checked;
   const comment = document.getElementById("customerName").value;
   const flightNumber = document.getElementById("flightNumberInput").value;
+  const operative = document.getElementById("customerName").value;
 
   // Lokale Anzeige aktualisieren (optional)
   r.manifestWeight = finalWeight;
@@ -231,7 +232,7 @@ Tonnage: ${m.tonnage.toLocaleString('de-DE')} kg`
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  const url = 'https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest';
+  const url = 'https://script.google.com/macros/s/AKfycbzJtLNe3hiKn-_CLYTGS_CWA5UwMznppcmmngy9tEdjOwFFwyib2B-rMuVKsnvTdBvl/exec';
   fetch(url)
     .then(response => response.json())
     .then(data => {
@@ -258,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment, flightNumber) {
-  const url = "https://script.google.com/macros/s/AKfycbw2c2PSZlsKNGnQXFjhtpmezSSB_67D1BD3gt1jgVveY791Bb8inDIg4y0yb1Zhq_rm/exec";
+  const url = "https://script.google.com/macros/s/AKfycbzJtLNe3hiKn-_CLYTGS_CWA5UwMznppcmmngy9tEdjOwFFwyib2B-rMuVKsnvTdBvl/exec";
 
   const formData = new URLSearchParams();
   formData.append("mode", "updateExtras");
@@ -268,7 +269,7 @@ function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departure
   formData.append("rate", rate);
   formData.append("departureTime", departureTime);
   formData.append("escort", escort ? "Ja" : "Nein");
-  formData.append("comment", comment);
+  formData.append("operative", operative);
   formData.append("flightnumber", flightNumber);
 
   fetch(url, {
