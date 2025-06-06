@@ -21,7 +21,7 @@ function populateRows() {
 function filterTable() {
   const refVal = document.getElementById("refSearch").value.toLowerCase();
   const airlineVal = document.getElementById("airlineSearch").value.toLowerCase();
-  const flightVal = document.getElementById("flightSearch")?.value?.toLowerCase() || "";
+  const flightVal = document.getElementById("flightNumberSearch")?.value?.toLowerCase() || "";
 
   const startDate = new Date(document.getElementById("startDate").value);
   const endDate = new Date(document.getElementById("endDate").value);
