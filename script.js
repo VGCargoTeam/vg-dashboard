@@ -63,9 +63,30 @@ function filterTable() {
 
 function deleteRequest(ref) {
   if (confirm("Are you sure you want to delete this request?")) {
+    // 1. Lokal entfernen
     const index = requestData.findIndex(r => r.ref === ref);
     if (index !== -1) requestData.splice(index, 1);
     populateRows();
+
+    // 2. Anfrage ans Google Apps Script zum Löschen im Sheet
+    const url = "https://script.google.com/macros/s/AKfycbyRaUcp6c0skDO_AKFbn6z2JVsdid1A-UWDRLYh_ayd3IJOUyz8bPhejpSbx4POwMuL/exec";
+    const formData = new URLSearchParams();
+    formData.append("mode", "delete");
+    formData.append("ref", ref);
+
+    fetch(url, {
+      method: "POST",
+      body: formData
+    })
+    .then(response => response.text())
+    .then(result => {
+      console.log("Löschergebnis:", result);
+      alert("Anfrage wurde erfolgreich gelöscht!");
+    })
+    .catch(error => {
+      console.error("Fehler beim Löschen:", error);
+      alert("Fehler beim Löschen!");
+    });
   }
 }
 
