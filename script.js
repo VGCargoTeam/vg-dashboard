@@ -144,7 +144,7 @@ function saveDetails() {
   // ❌ NICHT mehr: r.tonnage = r.manifestWeight;
 
   // In Google Sheet speichern
-  saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment, flightNumber);
+  saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, operative, flightNumber);
 
   closeModal();
   populateRows();
