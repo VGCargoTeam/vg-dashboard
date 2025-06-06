@@ -69,6 +69,13 @@
       font-size: 14px;
       color: #007BFF;
     }
+    .time-display {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+  text-align: center;
+}
     button.delete-btn {
       padding: 6px 14px;
       font-size: 14px;
@@ -127,13 +134,15 @@ textarea {
 <body>
   <div class="main">
     <h2>Charter Dashboard</h2>
-    <div class="info">
+    <div class="time-display">
       <span id="currentDate">Date: --</span> | <span id="clock">Time: --:--:--</span>
     </div>
-    <div>
-      <label>Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
-      <label>Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
-    </div>
+<div style="margin-bottom: 10px;">
+  <label>Reference:</label>
+  <input type="text" id="refSearch" onkeyup="filterTable()" style="width: 200px;" />
+  <label>Airline:</label>
+  <input type="text" id="airlineSearch" onkeyup="filterTable()" style="width: 200px;" />
+</div>
     <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
     <table>
       <thead>
