@@ -250,7 +250,7 @@ requestData = data.map(row => ({
   otherPrices: row["Weitere Preise"] || "",
   flightTime: row["Abflugzeit"] || "",
   apronSupport: row["Vorfeldbegleitung"] === "TRUE" || row["Vorfeldbegleitung"] === "Ja",
-  customerName: row["Opertative"] || "",
+  operative: row["Opertative"] || "", // ✅ DAS FEHLTE
   customerEmail: row["Customer Email"] || ""  // optional, wenn du es befüllst
 }));
       populateRows();
@@ -272,7 +272,7 @@ function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departure
   formData.append("rate", rate);
   formData.append("departureTime", departureTime);
   formData.append("escort", escort ? "Ja" : "Nein");
-  formData.append("operative", operative);
+  formData.append("operative", operative); // ← hinzufügen
   formData.append("flightnumber", flightNumber);
 
   fetch(url, {
