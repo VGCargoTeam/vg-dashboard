@@ -106,6 +106,7 @@ function openDetails(ref) {
   document.getElementById("viewEmailRequest").textContent = r.emailRequest || "-";
   document.getElementById("customerEmail").value = r.customerEmail || "";
   document.getElementById("flightTime").value = r.flightTime || "";
+  document.getElementById("flightNumberInput").value = r.flightNumber || "";
   document.getElementById("manifestWeight").value = r.manifestWeight || "";
   document.getElementById("rate").value = r.rate || "";
   document.getElementById("otherPrices").value = r.otherPrices || "";
