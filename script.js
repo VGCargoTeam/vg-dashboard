@@ -272,7 +272,8 @@ function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departure
       console.error("Fehler beim Speichern:", error);
       alert("Fehler beim Speichern!");
     });
-      function deleteFromGoogleSheet(ref) {
+}
+ function deleteFromGoogleSheet(ref) {
   fetch(url, {
     method: "POST",
     body: new URLSearchParams({ mode: "delete", ref })
