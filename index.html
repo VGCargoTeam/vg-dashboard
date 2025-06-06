@@ -142,11 +142,12 @@ textarea {
   <input type="text" id="refSearch" onkeyup="filterTable()" style="width: 200px;" />
   <label>Airline:</label>
   <input type="text" id="airlineSearch" onkeyup="filterTable()" style="width: 200px;" />
+  <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" style="width: 200px;" />
 </div>
     <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
     <table>
       <thead>
-        <tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage (kg)</th><th>Actions</th></tr>
+        <tr><th>Reference</th><th>Flight No.</th><th>Date</th><th>Airline</th><th>Tonnage (kg)</th><th>Actions</th></tr>
       </thead>
       <tbody id="dataTable"></tbody>
     </table>
