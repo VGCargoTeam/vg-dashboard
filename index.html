@@ -143,6 +143,9 @@ textarea {
   <label>Airline:</label>
   <input type="text" id="airlineSearch" onkeyup="filterTable()" style="width: 200px;" />
   <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" style="width: 200px;" />
+  <label>Von:</label> <input type="date" id="startDate" onchange="filterTable()" />
+<label>Bis:</label> <input type="date" id="endDate" onchange="filterTable()" />
+<label><input type="checkbox" id="showArchive" onchange="filterTable()" /> Archiv zeigen</label>
 </div>
     <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
     <table>
