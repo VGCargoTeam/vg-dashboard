@@ -128,9 +128,8 @@ function saveDetails() {
   const rate = parseFloat(document.getElementById("rate").value) || 0;
   const departureTime = document.getElementById("flightTime").value;
   const escort = document.getElementById("apronSupport").checked;
-  const comment = document.getElementById("customerName").value;
-  const flightNumber = document.getElementById("flightNumberInput").value;
   const operative = document.getElementById("customerName").value;
+  const flightNumber = document.getElementById("flightNumberInput").value;
 
   // Lokale Anzeige aktualisieren (optional)
   r.manifestWeight = finalWeight;
@@ -258,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function () {
   updateClock();
 });
 
-function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment, flightNumber) {
+function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, operative, flightNumber) {
   const url = "https://script.google.com/macros/s/AKfycbzJtLNe3hiKn-_CLYTGS_CWA5UwMznppcmmngy9tEdjOwFFwyib2B-rMuVKsnvTdBvl/exec";
 
   const formData = new URLSearchParams();
