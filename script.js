@@ -137,7 +137,7 @@ function saveDetails() {
   r.rate = rate;
   r.flightTime = departureTime;
   r.apronSupport = escort;
-  r.customerName = comment;
+  r.customerName = operative;
   r.flightNumber = flightNumber;
 
   // ❌ NICHT mehr: r.tonnage = r.manifestWeight;
