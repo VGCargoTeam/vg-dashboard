@@ -234,6 +234,8 @@ document.addEventListener('DOMContentLoaded', function () {
     .then(response => response.json())
     .then(data => {
 requestData = data.map(row => ({
+  console.log("ROW:", row); // <--- DAS hier einfügen ✅
+  requestData.push({
   ref: row["Ref"],
   flightNumber: row["Flugnummer"],
   date: new Date(row["Flight Date"]),
