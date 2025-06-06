@@ -232,7 +232,7 @@ Tonnage: ${m.tonnage.toLocaleString('de-DE')} kg`
 
 document.addEventListener('DOMContentLoaded', function () {
   const url = 'https://script.google.com/macros/s/AKfycbzJtLNe3hiKn-_CLYTGS_CWA5UwMznppcmmngy9tEdjOwFFwyib2B-rMuVKsnvTdBvl/exec';
-  fetch(url)
+  fetch("https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest")
     .then(response => response.json())
     .then(data => {
 requestData = data.map(row => ({
