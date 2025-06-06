@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function () {
     .then(response => response.json())
   .then(data => {
   requestData = data.map(row => {
-    console.log("ROW:", row); // ✅ Debug-Zeile
+    console.log("ROW:", row); // ✅ korrekt außerhalb des return
     return {
       ref: row["Ref"],
       flightNumber: row["Flugnummer"],
@@ -249,10 +249,10 @@ document.addEventListener('DOMContentLoaded', function () {
       tonnage: parseFloat(row["Tonnage"]) || 0,
       manifestWeight: parseFloat(row["Final Manifest Weight"]) || 0,
       rate: parseFloat(row["Rate"]) || 0,
-      otherPrices: row["Weitere Preise"] || row["Zusatzkosten"] || "",
+      otherPrices: row["Zusatzkosten"] || row["Weitere Preise"] || "",
       flightTime: row["Abflugzeit"] || "",
       apronSupport: row["Vorfeldbegleitung"] === "TRUE" || row["Vorfeldbegleitung"] === "Ja",
-      operative: row["Operative"] || "",  // ← Tippfehler war: "Opertative"
+      operative: row["Operative"] || "",
       customerEmail: row["Customer Email"] || ""
     };
   });
