@@ -108,6 +108,7 @@ function saveDetails() {
   const departureTime = document.getElementById("flightTime").value;
   const escort = document.getElementById("apronSupport").checked;
   const comment = document.getElementById("customerName").value;
+  const flightNumber = document.getElementById("flightNumberInput").value;
 
   // Lokale Anzeige aktualisieren (optional)
   r.manifestWeight = finalWeight;
@@ -120,7 +121,7 @@ function saveDetails() {
   // ❌ NICHT mehr: r.tonnage = r.manifestWeight;
 
   // In Google Sheet speichern
-  saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment);
+  saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment, flightNumber);
 
   closeModal();
   populateRows();
@@ -209,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function () {
     .then(data => {
       requestData = data.map(row => ({
         ref: row["Ref"],
-          flightNumber: row["Flight Number"],
+          flightNumber: row["Flugnummer"],
         date: new Date(row["Flight Date"]),
         airline: row["Airline"],
         billingCompany: row["Billing Company"],
@@ -241,6 +242,7 @@ function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departure
   formData.append("departureTime", departureTime);
   formData.append("escort", escort ? "Ja" : "Nein");
   formData.append("comment", comment);
+  formData.append("flightnumber", flightNumber);
 
   fetch(url, {
     method: "POST",
