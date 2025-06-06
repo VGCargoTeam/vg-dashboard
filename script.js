@@ -232,32 +232,33 @@ document.addEventListener('DOMContentLoaded', function () {
   const url = 'https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec';
   fetch("https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest")
     .then(response => response.json())
-    .then(data => {
-requestData = data.map(row => ({
-  console.log("ROW:", row); // <--- DAS hier einfügen ✅
-  requestData.push({
-  ref: row["Ref"],
-  flightNumber: row["Flugnummer"],
-  date: new Date(row["Flight Date"]),
-  airline: row["Airline"],
-  billingCompany: row["Billing Company"],
-  billingAddress: row["Billing Address"],
-  taxNumber: row["Tax Number"],
-  contactName: row["Contact Name"],
-  contactEmail: row["Contact Email"],
-  emailRequest: row["Email Request"],
-  tonnage: parseFloat(row["Tonnage"]) || 0,
-  manifestWeight: parseFloat(row["Final Manifest Weight"]) || 0,
-  rate: parseFloat(row["Rate"]) || 0,
-  otherPrices: row["Weitere Preise"] || "",
-  flightTime: row["Abflugzeit"] || "",
-  apronSupport: row["Vorfeldbegleitung"] === "TRUE" || row["Vorfeldbegleitung"] === "Ja",
-  operative: row["Opertative"] || "", // ✅ DAS FEHLTE
-  customerEmail: row["Customer Email"] || ""  // optional, wenn du es befüllst
-}));
-      populateRows();
-    })
-    .catch(error => console.error("Fehler beim Laden:", error));
+  .then(data => {
+  requestData = data.map(row => {
+    console.log("ROW:", row); // ✅ Debug-Zeile
+    return {
+      ref: row["Ref"],
+      flightNumber: row["Flugnummer"],
+      date: new Date(row["Flight Date"]),
+      airline: row["Airline"],
+      billingCompany: row["Billing Company"],
+      billingAddress: row["Billing Address"],
+      taxNumber: row["Tax Number"],
+      contactName: row["Contact Name"],
+      contactEmail: row["Contact Email"],
+      emailRequest: row["Email Request"],
+      tonnage: parseFloat(row["Tonnage"]) || 0,
+      manifestWeight: parseFloat(row["Final Manifest Weight"]) || 0,
+      rate: parseFloat(row["Rate"]) || 0,
+      otherPrices: row["Weitere Preise"] || row["Zusatzkosten"] || "",
+      flightTime: row["Abflugzeit"] || "",
+      apronSupport: row["Vorfeldbegleitung"] === "TRUE" || row["Vorfeldbegleitung"] === "Ja",
+      operative: row["Operative"] || "",  // ← Tippfehler war: "Opertative"
+      customerEmail: row["Customer Email"] || ""
+    };
+  });
+
+  populateRows();
+})
 
   setInterval(updateClock, 1000);
   updateClock();
