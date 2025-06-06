@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment, flightNumber) {
-  const url = "https://script.google.com/macros/s/AKfycbw2c2PSZlsKNGnQXFjhtpmezSSB_67D1BD3gt1jgVveY791Bb8inDIg4y0yb1Zhq_rm/exec";
+  const url = 'https://script.google.com/macros/s/AKfycbyo-C-DYmOrsdesgCJ_dxLdfpB4cG3L6opHqc_wcOiepzXZP92YbnMFFzv--_TxJd-b/exec';
 
   const formData = new URLSearchParams();
   formData.append("mode", "updateExtras");
