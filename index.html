@@ -90,8 +90,18 @@
       cursor: pointer;
       font-weight: bold;
     }
+    button.calendar-btn {
+  padding: 6px 14px;
+  font-size: 14px;
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 5px;
+}
     button.ref-link:hover {
-      background-color: #0056b3;
+      background-color: #117a8b;
     }
   </style>
 </head>
@@ -160,8 +170,8 @@
   </div>
   <div class="calendar">
     <div class="calendar-nav">
-      <button onclick="shiftCalendar(-1)">← Back</button>
-      <button onclick="shiftCalendar(1)">Forward →</button>
+      <button class="calendar-btn" onclick="shiftCalendar(-1)">← Back</button>
+      <button class="calendar-btn" onclick="shiftCalendar(1)">Forward →</button>
     </div>
     <div id="calendarArea"></div>
   </div>
