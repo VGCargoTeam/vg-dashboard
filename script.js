@@ -235,20 +235,26 @@ document.addEventListener('DOMContentLoaded', function () {
   fetch(url)
     .then(response => response.json())
     .then(data => {
-      requestData = data.map(row => ({
-        ref: row["Ref"],
-          flightNumber: row["Flugnummer"],
-        date: new Date(row["Flight Date"]),
-        airline: row["Airline"],
-        billingCompany: row["Billing Company"],
-        billingAddress: row["Billing Address"],
-        taxNumber: row["Tax Number"],
-        contactName: row["Contact Name"],
-        contactEmail: row["Contact Email"],
-        emailRequest: row["Email Request"],
-        tonnage: parseFloat(row["Tonnage"]) || 0,
-        apronSupport: row["Vorfeldbegleitung"] === "TRUE" // oder "Ja"
-      }));
+requestData = data.map(row => ({
+  ref: row["Ref"],
+  flightNumber: row["Flugnummer"],
+  date: new Date(row["Flight Date"]),
+  airline: row["Airline"],
+  billingCompany: row["Billing Company"],
+  billingAddress: row["Billing Address"],
+  taxNumber: row["Tax Number"],
+  contactName: row["Contact Name"],
+  contactEmail: row["Contact Email"],
+  emailRequest: row["Email Request"],
+  tonnage: parseFloat(row["Tonnage"]) || 0,
+  manifestWeight: parseFloat(row["Final Manifest Weight"]) || 0,
+  rate: parseFloat(row["Rate"]) || 0,
+  otherPrices: row["Weitere Preise"] || "",
+  flightTime: row["Abflugzeit"] || "",
+  apronSupport: row["Vorfeldbegleitung"] === "TRUE" || row["Vorfeldbegleitung"] === "Ja",
+  customerName: row["Opertative"] || "",
+  customerEmail: row["Customer Email"] || ""  // optional, wenn du es befüllst
+}));
       populateRows();
     })
     .catch(error => console.error("Fehler beim Laden:", error));
