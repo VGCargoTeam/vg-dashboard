@@ -188,8 +188,10 @@ function generateCalendar(year, month) {
 const marked = matches.length ? "marked" : "";
 const apron = hasEscort ? "apron" : "";
         const tooltip = matches.length
-          ? matches.map(m => `${m.ref} – ${m.airline} (${m.tonnage.toLocaleString('de-DE')} kg)`).join('\n')
-          : "";
+  ? matches.map(m =>
+      `${m.ref} – ${m.airline}\nFlugnummer: ${m.flightNumber || '–'}\nTonnage: ${m.tonnage.toLocaleString('de-DE')} kg`
+    ).join('\n')
+  : "";
         const onclick = matches.length ? `onclick=\"openDetails('${matches[0].ref}')\"` : "";
         html += `<td class="${marked} ${apron}" title="${tooltip}" style="cursor:pointer;" ${onclick}>${day}</td>`;
         day++;
