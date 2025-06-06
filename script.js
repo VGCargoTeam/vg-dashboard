@@ -104,7 +104,7 @@ function openDetails(ref) {
   document.getElementById("viewContactName").textContent = r.contactName || "-";
   document.getElementById("viewContactEmail").textContent = r.contactEmail || "-";
   document.getElementById("viewEmailRequest").textContent = r.emailRequest || "-";
-  document.getElementById("customerName").value = r.customerName || "";
+  document.getElementById("customerName").value = r.operative || "";
   document.getElementById("customerEmail").value = r.customerEmail || "";
   document.getElementById("flightTime").value = r.flightTime || "";
   document.getElementById("manifestWeight").value = r.manifestWeight || "";
