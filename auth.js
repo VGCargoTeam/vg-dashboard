@@ -19,12 +19,18 @@ function logout() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  if (location.pathname.includes("index.html")) {
+  // Zugriffsschutz für alle Seiten außer login.html
+  if (!location.pathname.includes("login.html")) {
     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
     if (!currentUser) {
       window.location.href = "login.html";
     } else if (currentUser.role === "viewer") {
       document.querySelectorAll(".sensitive").forEach(el => el.style.display = "none");
     }
+
+    // Optional: zeige eingeloggten Namen an
+    const info = document.getElementById("userInfo");
+    if (info) info.textContent = "Eingeloggt als: " + currentUser.name + " (" + currentUser.role + ")";
   }
 });
+
