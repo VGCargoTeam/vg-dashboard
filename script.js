@@ -213,7 +213,7 @@ Tonnage: ${m.tonnage.toLocaleString('de-DE')} kg`
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  const url = 'https://script.google.com/macros/s/AKfycbyRaUcp6c0skDO_AKFbn6z2JVsdid1A-UWDRLYh_ayd3IJOUyz8bPhejpSbx4POwMuL/exec';
+  const url = 'https://script.google.com/macros/s/AKfycbxJmn2HU9IFrprrSZ8arwYMwVIgUyq39UBSUW-HDma_75fhKWlzSAFjDrob5nhJPJ4N/exec';
   fetch(`${url}?mode=read`)
   .then(response => response.json())
   .then(data => {
@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment, flightNumber) {
-  const url = 'https://script.google.com/macros/s/AKfycbyRaUcp6c0skDO_AKFbn6z2JVsdid1A-UWDRLYh_ayd3IJOUyz8bPhejpSbx4POwMuL/exec';
+  const url = 'https://script.google.com/macros/s/AKfycbxJmn2HU9IFrprrSZ8arwYMwVIgUyq39UBSUW-HDma_75fhKWlzSAFjDrob5nhJPJ4N/exec';
 
   const formData = new URLSearchParams();
   formData.append("mode", "updateExtras");
@@ -274,6 +274,7 @@ function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departure
     });
 }
  function deleteFromGoogleSheet(ref) {
+  const url = 'https://script.google.com/macros/s/AKfycbyRaUcp6c0skDO_AKFbn6z2JVsdid1A-UWDRLYh_ayd3IJOUyz8bPhejpSbx4POwMuL/exec';
   fetch(url, {
     method: "POST",
     body: new URLSearchParams({ mode: "delete", ref })
