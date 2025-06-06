@@ -21,6 +21,12 @@ function populateRows() {
 function filterTable() {
   const refVal = document.getElementById("refSearch").value.toLowerCase();
   const airlineVal = document.getElementById("airlineSearch").value.toLowerCase();
+  const flightVal = document.getElementById("flightSearch")?.value?.toLowerCase() || "";
+
+  const startDate = new Date(document.getElementById("startDate").value);
+  const endDate = new Date(document.getElementById("endDate").value);
+  const showArchive = document.getElementById("showArchive").checked;
+
   const rows = document.querySelectorAll("#dataTable tr");
   let totalFlights = 0;
   let totalTonnage = 0;
@@ -28,9 +34,22 @@ function filterTable() {
   rows.forEach(row => {
     const cells = row.children;
     const ref = cells[0].textContent.toLowerCase();
-    const airline = cells[2].textContent.toLowerCase();
-    const tonnage = parseFloat(cells[3].textContent.replace(/\./g, '').replace(/,/g, '.'));
-    const show = (!refVal || ref.includes(refVal)) && (!airlineVal || airline.includes(airlineVal));
+    const flight = cells[1].textContent.toLowerCase();
+    const date = new Date(cells[2].textContent.split('.').reverse().join('-'));
+    const airline = cells[3].textContent.toLowerCase();
+    const tonnage = parseFloat(cells[4].textContent.replace(/\./g, '').replace(/,/g, '.'));
+
+    let show = true;
+
+    if (refVal && !ref.includes(refVal)) show = false;
+    if (airlineVal && !airline.includes(airlineVal)) show = false;
+    if (flightVal && !flight.includes(flightVal)) show = false;
+
+    if (!isNaN(startDate.getTime()) && date < startDate) show = false;
+    if (!isNaN(endDate.getTime()) && date > endDate) show = false;
+
+    if (!showArchive && date < new Date().setHours(0,0,0,0)) show = false;
+
     row.style.display = show ? "" : "none";
     if (show) {
       totalFlights++;
