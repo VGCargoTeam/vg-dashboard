@@ -69,7 +69,7 @@ function deleteRequest(ref) {
     populateRows();
 
     // 2. Anfrage ans Google Apps Script zum Löschen im Sheet
-    const url = "https://script.google.com/macros/s/AKfycbzJtLNe3hiKn-_CLYTGS_CWA5UwMznppcmmngy9tEdjOwFFwyib2B-rMuVKsnvTdBvl/exec";
+    const url = "https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec";
     const formData = new URLSearchParams();
     formData.append("mode", "delete");
     formData.append("ref", ref);
@@ -231,7 +231,7 @@ Tonnage: ${m.tonnage.toLocaleString('de-DE')} kg`
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  const url = 'https://script.google.com/macros/s/AKfycbzJtLNe3hiKn-_CLYTGS_CWA5UwMznppcmmngy9tEdjOwFFwyib2B-rMuVKsnvTdBvl/exec';
+  const url = 'https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec';
   fetch("https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest")
     .then(response => response.json())
     .then(data => {
@@ -264,7 +264,7 @@ requestData = data.map(row => ({
 });
 
 function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, operative, flightNumber) {
-  const url = "https://script.google.com/macros/s/AKfycbzJtLNe3hiKn-_CLYTGS_CWA5UwMznppcmmngy9tEdjOwFFwyib2B-rMuVKsnvTdBvl/exec";
+  const url = "https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec";
 
   const formData = new URLSearchParams();
   formData.append("mode", "updateExtras");
