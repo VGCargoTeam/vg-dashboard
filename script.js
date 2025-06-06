@@ -213,7 +213,7 @@ Tonnage: ${m.tonnage.toLocaleString('de-DE')} kg`
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  const url = 'https://script.google.com/macros/s/AKfycbyo-C-DYmOrsdesgCJ_dxLdfpB4cG3L6opHqc_wcOiepzXZP92YbnMFFzv--_TxJd-b/exec';
+  const url = 'https://script.google.com/macros/s/AKfycbyRaUcp6c0skDO_AKFbn6z2JVsdid1A-UWDRLYh_ayd3IJOUyz8bPhejpSbx4POwMuL/exec';
   fetch(`${url}?mode=read`)
   .then(response => response.json())
   .then(data => {
@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment, flightNumber) {
-  const url = 'https://script.google.com/macros/s/AKfycbyo-C-DYmOrsdesgCJ_dxLdfpB4cG3L6opHqc_wcOiepzXZP92YbnMFFzv--_TxJd-b/exec';
+  const url = 'https://script.google.com/macros/s/AKfycbyRaUcp6c0skDO_AKFbn6z2JVsdid1A-UWDRLYh_ayd3IJOUyz8bPhejpSbx4POwMuL/exec';
 
   const formData = new URLSearchParams();
   formData.append("mode", "updateExtras");
