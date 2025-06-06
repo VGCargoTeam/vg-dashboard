@@ -7,10 +7,11 @@ function populateRows() {
     const row = document.createElement("tr");
     row.innerHTML = `
       <td><button class="ref-link" onclick="openDetails('${r.ref}')">${r.ref}</button></td>
-      <td>${r.date.toLocaleDateString('de-DE')}</td>
-      <td>${r.airline}</td>
-      <td>${r.tonnage.toLocaleString('de-DE')}</td>
-      <td><button class="delete-btn" onclick="deleteRequest('${r.ref}')">Delete</button></td>`;
+  <td>${r.flightNumber || "-"}</td>
+  <td>${r.date.toLocaleDateString('de-DE')}</td>
+  <td>${r.airline}</td>
+  <td>${r.tonnage.toLocaleString('de-DE')}</td>
+  <td><button class="delete-btn" onclick="deleteRequest('${r.ref}')">Delete</button></td>`;
     table.appendChild(row);
   });
   filterTable();
@@ -189,6 +190,7 @@ document.addEventListener('DOMContentLoaded', function () {
     .then(data => {
       requestData = data.map(row => ({
         ref: row["Ref"],
+          flightNumber: row["Flight Number"],
         date: new Date(row["Flight Date"]),
         airline: row["Airline"],
         billingCompany: row["Billing Company"],
