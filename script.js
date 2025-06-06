@@ -21,7 +21,7 @@ function populateRows() {
 function filterTable() {
   const refVal = document.getElementById("refSearch").value.toLowerCase();
   const airlineVal = document.getElementById("airlineSearch").value.toLowerCase();
-  const flightVal = document.getElementById("flightNumberSearch")?.value?.toLowerCase() || "";
+  const flightVal = document.getElementById("flightSearch")?.value?.toLowerCase() || "";
 
   const startDate = new Date(document.getElementById("startDate").value);
   const endDate = new Date(document.getElementById("endDate").value);
@@ -66,9 +66,6 @@ function deleteRequest(ref) {
     const index = requestData.findIndex(r => r.ref === ref);
     if (index !== -1) requestData.splice(index, 1);
     populateRows();
-      // 📤 Jetzt auch im Google Sheet löschen:
-      deleteFromGoogleSheet(ref);
-    }
   }
 }
 
@@ -213,40 +210,34 @@ Tonnage: ${m.tonnage.toLocaleString('de-DE')} kg`
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  const url = 'https://script.google.com/macros/s/AKfycbxJmn2HU9IFrprrSZ8arwYMwVIgUyq39UBSUW-HDma_75fhKWlzSAFjDrob5nhJPJ4N/exec';
-  fetch(`${url}?mode=read`)
-  .then(response => response.json())
-  .then(data => {
-    requestData = data.map(row => ({
-      ref: row.ref,
-      date: new Date(row.flightDate),
-      airline: row.airline,
-      flightNumber: row.flightNumber || "",
-      billingCompany: row.billingCompany,
-      billingAddress: row.billingAddress,
-      taxNumber: row.taxNumber,
-      contactName: row.contactName,
-      contactEmail: row.contactEmail,
-      emailRequest: row.emailRequest,
-      tonnage: parseFloat(row.tonnage) || 0,
-      apronSupport: row.apronSupport === "Ja",
-      flightTime: row.flightTime || "",
-      manifestWeight: parseFloat(row.manifestWeight) || 0,
-      rate: parseFloat(row.rate) || 0,
-      otherPrices: row.otherPrices || "",
-      customerName: row.customerName || "",
-      customerEmail: row.customerEmail || "",
-    }));
-    populateRows();
-  })
-  .catch(error => console.error("Fehler beim Laden:", error));
+  const url = 'https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest';
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      requestData = data.map(row => ({
+        ref: row["Ref"],
+          flightNumber: row["Flugnummer"],
+        date: new Date(row["Flight Date"]),
+        airline: row["Airline"],
+        billingCompany: row["Billing Company"],
+        billingAddress: row["Billing Address"],
+        taxNumber: row["Tax Number"],
+        contactName: row["Contact Name"],
+        contactEmail: row["Contact Email"],
+        emailRequest: row["Email Request"],
+        tonnage: parseFloat(row["Tonnage"]) || 0,
+        apronSupport: row["Vorfeldbegleitung"] === "TRUE" // oder "Ja"
+      }));
+      populateRows();
+    })
+    .catch(error => console.error("Fehler beim Laden:", error));
 
   setInterval(updateClock, 1000);
   updateClock();
 });
 
 function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment, flightNumber) {
-  const url = 'https://script.google.com/macros/s/AKfycbxJmn2HU9IFrprrSZ8arwYMwVIgUyq39UBSUW-HDma_75fhKWlzSAFjDrob5nhJPJ4N/exec';
+  const url = "https://script.google.com/macros/s/AKfycbw2c2PSZlsKNGnQXFjhtpmezSSB_67D1BD3gt1jgVveY791Bb8inDIg4y0yb1Zhq_rm/exec";
 
   const formData = new URLSearchParams();
   formData.append("mode", "updateExtras");
@@ -271,22 +262,6 @@ function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departure
     .catch(error => {
       console.error("Fehler beim Speichern:", error);
       alert("Fehler beim Speichern!");
-    });
-}
- function deleteFromGoogleSheet(ref) {
-  const url = 'https://script.google.com/macros/s/AKfycbyRaUcp6c0skDO_AKFbn6z2JVsdid1A-UWDRLYh_ayd3IJOUyz8bPhejpSbx4POwMuL/exec';
-  fetch(url, {
-    method: "POST",
-    body: new URLSearchParams({ mode: "delete", ref })
-  })
-    .then(response => response.text())
-    .then(result => {
-      console.log("Gelöscht:", result);
-      alert("Flug gelöscht!");
-    })
-    .catch(error => {
-      console.error("Fehler beim Löschen:", error);
-      alert("Fehler beim Löschen!");
     });
 }
 // ESC zum Schließen des Detailmodals
