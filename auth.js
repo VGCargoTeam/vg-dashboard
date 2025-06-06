@@ -6,7 +6,7 @@ function login(event) {
   const user = users[username];
   if (user && user.password === password) {
     localStorage.setItem("currentUser", JSON.stringify({ name: user.name, role: user.role }));
-    window.location.href = "index.html";
+    window.location.href = "Dashboard.html";
   } else {
     document.getElementById("loginMessage").textContent = "Login fehlgeschlagen!";
   }
