@@ -128,7 +128,7 @@ function saveDetails() {
   const rate = parseFloat(document.getElementById("rate").value) || 0;
   const departureTime = document.getElementById("flightTime").value;
   const escort = document.getElementById("apronSupport").checked;
-  const operative = document.getElementById("operative").value;
+  saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, operative, flightNumber);
   const flightNumber = document.getElementById("flightNumberInput").value;
 
   // Lokale Anzeige aktualisieren (optional)
