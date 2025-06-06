@@ -129,6 +129,23 @@ textarea {
   font-family: Arial, sans-serif;
   line-height: 1.4;
 }
+    .filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.filter-row label {
+  font-weight: bold;
+  margin-right: 5px;
+}
+.filter-row input[type="text"],
+.filter-row input[type="date"] {
+  padding: 4px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
   </style>
 </head>
 <body>
@@ -137,15 +154,13 @@ textarea {
     <div class="time-display">
       <span id="currentDate">Date: --</span> | <span id="clock">Time: --:--:--</span>
     </div>
-<div style="margin-bottom: 10px;">
-  <label>Reference:</label>
-  <input type="text" id="refSearch" onkeyup="filterTable()" style="width: 200px;" />
-  <label>Airline:</label>
-  <input type="text" id="airlineSearch" onkeyup="filterTable()" style="width: 200px;" />
-  <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" style="width: 200px;" />
+<div class="filter-row">
+  <label>Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
+  <label>Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
+  <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" />
   <label>Von:</label> <input type="date" id="startDate" onchange="filterTable()" />
-<label>Bis:</label> <input type="date" id="endDate" onchange="filterTable()" />
-<label><input type="checkbox" id="showArchive" onchange="filterTable()" /> Archiv zeigen</label>
+  <label>Bis:</label> <input type="date" id="endDate" onchange="filterTable()" />
+  <label><input type="checkbox" id="showArchive" onchange="filterTable()" /> Archiv zeigen</label>
 </div>
     <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
     <table>
