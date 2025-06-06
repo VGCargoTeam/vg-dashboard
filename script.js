@@ -263,14 +263,14 @@ requestData = data.map(row => ({
   updateClock();
 });
 
-function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, operative, flightNumber) {
+function saveExtrasToGoogleSheet(ref, finalWeight, otherPrices, rate, departureTime, escort, operative, flightNumber) {
   const url = "https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec";
 
   const formData = new URLSearchParams();
   formData.append("mode", "updateExtras");
   formData.append("ref", ref);
   formData.append("finalWeight", finalWeight);
-  formData.append("extraCharges", extraCharges);
+  formData.append("extraCharges", otherPrices);
   formData.append("rate", rate);
   formData.append("departureTime", departureTime);
   formData.append("escort", escort ? "Ja" : "Nein");
