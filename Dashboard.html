@@ -207,10 +207,15 @@ textarea {
           <input type="text" id="flightTime" placeholder="z.B. 14:45" />
           <label>Manifestgewicht (kg):</label>
           <input type="number" id="manifestWeight" step="0.001" />
-          <label>Rate (€):</label>
-          <input type="number" id="rate" step="0.001" />
-          <label>Weitere Preise:</label>
-          <textarea id="otherPrices" placeholder="z.B. Handling: 500 €&#10;Screening: 300 €"></textarea>
+          <div class="admin-only">
+  <label>Rate (€):</label>
+  <input type="number" id="rate" step="0.001" />
+</div>
+
+<div class="admin-only">
+  <label>Weitere Preise:</label>
+  <textarea id="otherPrices" placeholder="..."></textarea>
+</div>
           <label><input type="checkbox" id="apronSupport" /> Vorfeldbegleitung gewünscht</label><br><br>
           <div style="text-align:right;">
             <button type="button" onclick="saveDetails()" style="background:#28a745;color:white;border:none;padding:8px 16px;border-radius:5px;">Speichern</button>
