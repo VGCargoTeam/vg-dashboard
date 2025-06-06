@@ -66,6 +66,9 @@ function deleteRequest(ref) {
     const index = requestData.findIndex(r => r.ref === ref);
     if (index !== -1) requestData.splice(index, 1);
     populateRows();
+      // 📤 Jetzt auch im Google Sheet löschen:
+      deleteFromGoogleSheet(ref);
+    }
   }
 }
 
@@ -210,27 +213,33 @@ Tonnage: ${m.tonnage.toLocaleString('de-DE')} kg`
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  const url = 'https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest';
-  fetch(url)
-    .then(response => response.json())
-    .then(data => {
-      requestData = data.map(row => ({
-        ref: row["Ref"],
-          flightNumber: row["Flugnummer"],
-        date: new Date(row["Flight Date"]),
-        airline: row["Airline"],
-        billingCompany: row["Billing Company"],
-        billingAddress: row["Billing Address"],
-        taxNumber: row["Tax Number"],
-        contactName: row["Contact Name"],
-        contactEmail: row["Contact Email"],
-        emailRequest: row["Email Request"],
-        tonnage: parseFloat(row["Tonnage"]) || 0,
-        apronSupport: row["Vorfeldbegleitung"] === "TRUE" // oder "Ja"
-      }));
-      populateRows();
-    })
-    .catch(error => console.error("Fehler beim Laden:", error));
+  const url = 'https://script.google.com/macros/s/AKfycbyo-C-DYmOrsdesgCJ_dxLdfpB4cG3L6opHqc_wcOiepzXZP92YbnMFFzv--_TxJd-b/exec';
+  fetch(`${url}?mode=read`)
+  .then(response => response.json())
+  .then(data => {
+    requestData = data.map(row => ({
+      ref: row.ref,
+      date: new Date(row.flightDate),
+      airline: row.airline,
+      flightNumber: row.flightNumber || "",
+      billingCompany: row.billingCompany,
+      billingAddress: row.billingAddress,
+      taxNumber: row.taxNumber,
+      contactName: row.contactName,
+      contactEmail: row.contactEmail,
+      emailRequest: row.emailRequest,
+      tonnage: parseFloat(row.tonnage) || 0,
+      apronSupport: row.apronSupport === "Ja",
+      flightTime: row.flightTime || "",
+      manifestWeight: parseFloat(row.manifestWeight) || 0,
+      rate: parseFloat(row.rate) || 0,
+      otherPrices: row.otherPrices || "",
+      customerName: row.customerName || "",
+      customerEmail: row.customerEmail || "",
+    }));
+    populateRows();
+  })
+  .catch(error => console.error("Fehler beim Laden:", error));
 
   setInterval(updateClock, 1000);
   updateClock();
@@ -262,6 +271,20 @@ function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departure
     .catch(error => {
       console.error("Fehler beim Speichern:", error);
       alert("Fehler beim Speichern!");
+    });
+      function deleteFromGoogleSheet(ref) {
+  fetch(url, {
+    method: "POST",
+    body: new URLSearchParams({ mode: "delete", ref })
+  })
+    .then(response => response.text())
+    .then(result => {
+      console.log("Gelöscht:", result);
+      alert("Flug gelöscht!");
+    })
+    .catch(error => {
+      console.error("Fehler beim Löschen:", error);
+      alert("Fehler beim Löschen!");
     });
 }
 // ESC zum Schließen des Detailmodals
