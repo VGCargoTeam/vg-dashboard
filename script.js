@@ -211,7 +211,7 @@ const apron = hasEscort ? "apron" : "";
   ? matches.map(m =>
       `✈️ ${m.ref} – ${m.airline}
 Flugnummer: ${m.flightNumber || '–'}
-Abflugzeit: ${m.flightTime || '–'}
+Geplante Zeit: ${m.flightTime || '–'}
 Tonnage: ${m.tonnage.toLocaleString('de-DE')} kg`
     ).join('\n')
   : "";
