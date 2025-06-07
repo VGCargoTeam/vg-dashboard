@@ -138,10 +138,9 @@ function saveDetails() {
   r.flightTime = departureTime;
   r.apronSupport = escort;
   r.flightNumber = flightNumberNew;
-  r.flightNumber = flightNumberNew;
 
   // In Google Sheet speichern
-  saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, operative, flightNumber);
+  saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, flightNumberNew);
 
   closeModal();
   populateRows();
