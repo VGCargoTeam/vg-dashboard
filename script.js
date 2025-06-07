@@ -104,14 +104,13 @@ function openDetails(ref) {
   document.getElementById("viewContactName").textContent = r.contactName || "-";
   document.getElementById("viewContactEmail").textContent = r.contactEmail || "-";
   document.getElementById("viewEmailRequest").textContent = r.emailRequest || "-";
-  document.getElementById("customerEmail").value = r.customerEmail || "";
-  document.getElementById("flightTime").value = r.flightTime || "";
+    document.getElementById("flightTime").value = r.flightTime || "";
   document.getElementById("flightNumberInput").value = r.flightNumber || "";
   document.getElementById("manifestWeight").value = r.manifestWeight || "";
   document.getElementById("rate").value = r.rate || "";
   document.getElementById("otherPrices").value = r.otherPrices || "";
   document.getElementById("apronSupport").checked = r.apronSupport || false;
-  document.getElementById("customerName").value = r.operative || "";
+  document.getElementById("customerName").value = r.flightNumber || "";
   document.getElementById("detailModal").style.display = "block";
 }
 
@@ -129,7 +128,7 @@ function saveDetails() {
   const rate = parseFloat(document.getElementById("rate").value) || 0;
   const departureTime = document.getElementById("flightTime").value;
   const escort = document.getElementById("apronSupport").checked;
-  const operative = document.getElementById("customerName").value; // ← richtig platziert
+  const flightNumber = document.getElementById("customerName").value; // ← richtig platziert
   const flightNumber = document.getElementById("flightNumberInput").value;
 
   // Lokale Anzeige aktualisieren
@@ -138,7 +137,7 @@ function saveDetails() {
   r.rate = rate;
   r.flightTime = departureTime;
   r.apronSupport = escort;
-  r.customerName = operative;
+  r.flightNumber = flightNumber;
   r.flightNumber = flightNumber;
 
   // In Google Sheet speichern
