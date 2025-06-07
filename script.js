@@ -128,7 +128,7 @@ function saveDetails() {
   const rate = parseFloat(document.getElementById("rate").value) || 0;
   const departureTime = document.getElementById("flightTime").value;
   const escort = document.getElementById("apronSupport").checked;
-  const flightNumber = document.getElementById("customerName").value; // ← richtig platziert
+  const flightNumberNew = document.getElementById("customerName").value; // ← richtig platziert
   const flightNumber = document.getElementById("flightNumberInput").value;
 
   // Lokale Anzeige aktualisieren
@@ -137,8 +137,8 @@ function saveDetails() {
   r.rate = rate;
   r.flightTime = departureTime;
   r.apronSupport = escort;
-  r.flightNumber = flightNumber;
-  r.flightNumber = flightNumber;
+  r.flightNumber = flightNumberNew;
+  r.flightNumber = flightNumberNew;
 
   // In Google Sheet speichern
   saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, operative, flightNumber);
@@ -276,7 +276,7 @@ function saveExtrasToGoogleSheet(ref, finalWeight, otherPrices, rate, departureT
   formData.append("departureTime", departureTime);
   formData.append("escort", escort ? "Ja" : "Nein");
   formData.append("operative", operative); // ← hinzufügen
-  formData.append("flightnumber", flightNumber);
+  formData.append("flightnumber", flightNumberNew);
 
   fetch(url, {
     method: "POST",
