@@ -126,7 +126,6 @@ function saveDetails() {
   const rate = parseFloat(document.getElementById("rate").value) || 0;
   const departureTime = document.getElementById("flightTime").value;
   const escort = document.getElementById("apronSupport").checked;
-  const comment = document.getElementById("customerName").value;
   const flightNumber = document.getElementById("flightNumberInput").value;
 
   // Lokale Anzeige aktualisieren (optional)
