@@ -104,7 +104,6 @@ function openDetails(ref) {
   document.getElementById("viewContactName").textContent = r.contactName || "-";
   document.getElementById("viewContactEmail").textContent = r.contactEmail || "-";
   document.getElementById("viewEmailRequest").textContent = r.emailRequest || "-";
-  document.getElementById("customerName").value = r.customerName || "";
   document.getElementById("flightTime").value = r.flightTime || "";
   document.getElementById("manifestWeight").value = r.manifestWeight || "";
   document.getElementById("rate").value = r.rate || "";
@@ -136,13 +135,12 @@ function saveDetails() {
   r.rate = rate;
   r.flightTime = departureTime;
   r.apronSupport = escort;
-  r.customerName = comment;
   r.flightNumber = flightNumber;
 
   // ❌ NICHT mehr: r.tonnage = r.manifestWeight;
 
   // In Google Sheet speichern
-  saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment, flightNumber);
+  saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, flightNumber);
 
   closeModal();
   populateRows();
@@ -256,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function () {
   updateClock();
 });
 
-function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment, flightNumber) {
+function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, flightNumber) {
   const url = "https://script.google.com/macros/s/AKfycbw2c2PSZlsKNGnQXFjhtpmezSSB_67D1BD3gt1jgVveY791Bb8inDIg4y0yb1Zhq_rm/exec";
 
   const formData = new URLSearchParams();
@@ -267,7 +265,6 @@ function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departure
   formData.append("rate", rate);
   formData.append("departureTime", departureTime);
   formData.append("escort", escort ? "Ja" : "Nein");
-  formData.append("comment", comment);
   formData.append("flightnumber", flightNumber);
 
   fetch(url, {
