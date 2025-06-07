@@ -69,7 +69,7 @@ function deleteRequest(ref) {
     populateRows();
 
     // 2. Anfrage ans Google Apps Script zum Löschen im Sheet
-    const url = "https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec";
+    const url = "https://script.google.com/macros/s/AKfycbyRaUcp6c0skDO_AKFbn6z2JVsdid1A-UWDRLYh_ayd3IJOUyz8bPhejpSbx4POwMuL/exec";
     const formData = new URLSearchParams();
     formData.append("mode", "delete");
     formData.append("ref", ref);
@@ -104,13 +104,12 @@ function openDetails(ref) {
   document.getElementById("viewContactName").textContent = r.contactName || "-";
   document.getElementById("viewContactEmail").textContent = r.contactEmail || "-";
   document.getElementById("viewEmailRequest").textContent = r.emailRequest || "-";
-    document.getElementById("flightTime").value = r.flightTime || "";
-  document.getElementById("flightNumberInput").value = r.flightNumber || "";
+  document.getElementById("customerName").value = r.customerName || "";
+  document.getElementById("flightTime").value = r.flightTime || "";
   document.getElementById("manifestWeight").value = r.manifestWeight || "";
   document.getElementById("rate").value = r.rate || "";
   document.getElementById("otherPrices").value = r.otherPrices || "";
   document.getElementById("apronSupport").checked = r.apronSupport || false;
-  document.getElementById("customerName").value = r.flightNumber || "";
   document.getElementById("detailModal").style.display = "block";
 }
 
@@ -128,19 +127,22 @@ function saveDetails() {
   const rate = parseFloat(document.getElementById("rate").value) || 0;
   const departureTime = document.getElementById("flightTime").value;
   const escort = document.getElementById("apronSupport").checked;
-  const flightNumberNew = document.getElementById("customerName").value; // ← richtig platziert
+  const comment = document.getElementById("customerName").value;
   const flightNumber = document.getElementById("flightNumberInput").value;
 
-  // Lokale Anzeige aktualisieren
+  // Lokale Anzeige aktualisieren (optional)
   r.manifestWeight = finalWeight;
   r.otherPrices = extraCharges;
   r.rate = rate;
   r.flightTime = departureTime;
   r.apronSupport = escort;
-  r.flightNumber = flightNumberNew;
+  r.customerName = comment;
+  r.flightNumber = flightNumber;
+
+  // ❌ NICHT mehr: r.tonnage = r.manifestWeight;
 
   // In Google Sheet speichern
-  saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, flightNumberNew);
+  saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment, flightNumber);
 
   closeModal();
   populateRows();
@@ -228,54 +230,45 @@ Tonnage: ${m.tonnage.toLocaleString('de-DE')} kg`
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  const url = 'https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec';
-  fetch("https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest")
+  const url = 'https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest';
+  fetch(url)
     .then(response => response.json())
-  .then(data => {
-  requestData = data.map(row => {
-    console.log("ROW:", row); // ✅ korrekt außerhalb des return
-    return {
-      ref: row["Ref"],
-      flightNumber: row["Flugnummer"],
-      date: new Date(row["Flight Date"]),
-      airline: row["Airline"],
-      billingCompany: row["Billing Company"],
-      billingAddress: row["Billing Address"],
-      taxNumber: row["Tax Number"],
-      contactName: row["Contact Name"],
-      contactEmail: row["Contact Email"],
-      emailRequest: row["Email Request"],
-      tonnage: parseFloat(row["Tonnage"]) || 0,
-      manifestWeight: parseFloat(row["Final Manifest Weight"]) || 0,
-      rate: parseFloat(row["Rate"]) || 0,
-      otherPrices: row["Zusatzkosten"] || row["Weitere Preise"] || "",
-      flightTime: row["Abflugzeit"] || "",
-      apronSupport: row["Vorfeldbegleitung"] === "TRUE" || row["Vorfeldbegleitung"] === "Ja",
-      operative: row["Operative"] || "",
-      customerEmail: row["Customer Email"] || ""
-    };
-  });
-
-  populateRows();
-})
+    .then(data => {
+      requestData = data.map(row => ({
+        ref: row["Ref"],
+          flightNumber: row["Flugnummer"],
+        date: new Date(row["Flight Date"]),
+        airline: row["Airline"],
+        billingCompany: row["Billing Company"],
+        billingAddress: row["Billing Address"],
+        taxNumber: row["Tax Number"],
+        contactName: row["Contact Name"],
+        contactEmail: row["Contact Email"],
+        emailRequest: row["Email Request"],
+        tonnage: parseFloat(row["Tonnage"]) || 0,
+        apronSupport: row["Vorfeldbegleitung"] === "TRUE" // oder "Ja"
+      }));
+      populateRows();
+    })
+    .catch(error => console.error("Fehler beim Laden:", error));
 
   setInterval(updateClock, 1000);
   updateClock();
 });
 
-function saveExtrasToGoogleSheet(ref, finalWeight, otherPrices, rate, departureTime, escort, operative, flightNumber) {
-  const url = "https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec";
+function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment, flightNumber) {
+  const url = "https://script.google.com/macros/s/AKfycbw2c2PSZlsKNGnQXFjhtpmezSSB_67D1BD3gt1jgVveY791Bb8inDIg4y0yb1Zhq_rm/exec";
 
   const formData = new URLSearchParams();
   formData.append("mode", "updateExtras");
   formData.append("ref", ref);
   formData.append("finalWeight", finalWeight);
-  formData.append("extraCharges", otherPrices);
+  formData.append("extraCharges", extraCharges);
   formData.append("rate", rate);
   formData.append("departureTime", departureTime);
   formData.append("escort", escort ? "Ja" : "Nein");
-  formData.append("operative", operative); // ← hinzufügen
-  formData.append("flightnumber", flightNumberNew);
+  formData.append("comment", comment);
+  formData.append("flightnumber", flightNumber);
 
   fetch(url, {
     method: "POST",
