@@ -1,6 +1,12 @@
 let requestData = [];
 
 function populateRows() {
+  let calendarBase = new Date();
+
+function shiftCalendar(offset) {
+  calendarBase.setMonth(calendarBase.getMonth() + offset);
+  renderCalendars();
+}
   const table = document.getElementById("dataTable");
   table.innerHTML = "";
   requestData.forEach(r => {
