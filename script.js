@@ -1,7 +1,7 @@
 let requestData = [];
+let calendarBase = new Date(); // ✅ jetzt global!
 
 function populateRows() {
-  let calendarBase = new Date();
 
 function shiftCalendar(offset) {
   calendarBase.setMonth(calendarBase.getMonth() + offset);
