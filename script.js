@@ -58,7 +58,58 @@ function filterTable() {
 }
 
 function renderCalendars() {
-  // (Inhalt der Kalender-Render-Funktion bleibt unverändert)
+  const container = document.getElementById("calendarArea");
+  if (!container) return;
+  container.innerHTML = "";
+  for (let i = 0; i < 2; i++) {
+    const current = new Date(calendarBase.getFullYear(), calendarBase.getMonth() + i);
+    container.innerHTML += generateCalendar(current.getFullYear(), current.getMonth());
+  }
+}
+
+function generateCalendar(year, month) {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay() || 7;
+  const monthName = new Date(year, month).toLocaleString('default', { month: 'long' });
+
+  let html = '<div class="calendar-table">';
+  html += `<h4>${monthName} ${year}</h4><table><thead><tr><th>Mo</th><th>Di</th><th>Mi</th><th>Do</th><th>Fr</th><th>Sa</th><th>So</th></tr></thead><tbody>`;
+  let day = 1;
+  let started = false;
+
+  for (let i = 0; i < 6; i++) {
+    html += "<tr>";
+    for (let j = 1; j <= 7; j++) {
+      const realDay = j;
+      if (!started && realDay === firstDay) started = true;
+
+      if (started && day <= daysInMonth) {
+        const matches = requestData.filter(x =>
+          x.date.getDate() === day &&
+          x.date.getMonth() === month &&
+          x.date.getFullYear() === year
+        );
+
+        const tooltip = matches.map(m =>
+          `✈ ${m.ref} – ${m.airline}
+Flugnummer: ${m.flightNumber || "-"}
+Abflugzeit: ${m.flightTime || "-"}
+Tonnage: ${m.tonnage?.toLocaleString('de-DE')} kg`
+        ).join('\\n');
+
+        const marked = matches.length ? "marked" : "";
+        const onclick = matches.length ? `onclick="openDetails('${matches[0].ref}')"` : "";
+        html += `<td class="${marked}" title="${tooltip}" style="cursor:pointer;" ${onclick}>${day}</td>`;
+        day++;
+      } else {
+        html += "<td></td>";
+      }
+    }
+    html += "</tr>";
+    if (day > daysInMonth) break;
+  }
+  html += "</tbody></table></div>";
+  return html;
 }
 
 function deleteRequest(ref) {
