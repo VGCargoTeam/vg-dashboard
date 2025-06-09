@@ -138,11 +138,12 @@ function deleteRequest(ref) {
 function openDetails(ref) {
   const r = requestData.find(r => r.ref === ref);
   if (!r) return;
-    alert("Details: " + r.ref); // Oder dein Modal öffnen
-}
+
   document.getElementById("modalRef").value = r.ref;
   document.getElementById("viewRef").textContent = r.ref;
   document.getElementById("airlineInput").value = r.airline || "";
+  document.getElementById("flightNumberInput").value = r.flightNumber || "";
+  
   const dateInput = document.getElementById("dateInput");
   if (r.date) {
     const year = r.date.getFullYear();
@@ -152,6 +153,7 @@ function openDetails(ref) {
   } else {
     dateInput.value = "";
   }
+  
   document.getElementById("tonnageInput").value = r.tonnage || 0;
   document.getElementById("billingCompanyInput").value = r.billingCompany || "";
   document.getElementById("billingAddressInput").value = r.billingAddress || "";
