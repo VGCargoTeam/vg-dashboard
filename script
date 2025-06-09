@@ -91,32 +91,25 @@ function deleteRequest(ref) {
 }
 
 function openDetails(ref) {
-  const r = requestData.find(x => x.ref === ref);
+  const r = requestData.find(r => r.ref === ref);
   if (!r) return;
-
   document.getElementById("modalRef").value = r.ref;
-
-  document.getElementById("airlineInput").value = r.airline || "";
-
-  if (r.date instanceof Date) {
-    document.getElementById("dateInput").value = r.date.toISOString().split('T')[0];
-  } else {
-    const parsed = new Date(r.date);
-    document.getElementById("dateInput").value = !isNaN(parsed) ? parsed.toISOString().split('T')[0] : "";
-  }
-
-  document.getElementById("tonnageInput").value = r.tonnage || "";
-  document.getElementById("billingCompanyInput").value = r.billingCompany || "";
-  document.getElementById("billingAddressInput").value = r.billingAddress || "";
-  document.getElementById("taxNumberInput").value = r.taxNumber || "";
-  document.getElementById("contactNameInput").value = r.contactName || "";
-  document.getElementById("contactEmailInput").value = r.contactEmail || "";
-  document.getElementById("flightNumberInput").value = r.flightNumber || "";
-  document.getElementById("flightTimeInput").value = r.flightTime || "";
-  document.getElementById("rateInput").value = r.rate || "";
-  document.getElementById("otherPricesInput").value = r.otherPrices || "";
-  document.getElementById("apronSupportInput").checked = r.apronSupport === "Ja";
-
+  document.getElementById("viewRef").textContent = r.ref;
+  document.getElementById("viewAirline").textContent = r.airline;
+  document.getElementById("viewDate").textContent = r.date.toLocaleDateString('de-DE');
+  document.getElementById("viewTonnage").textContent = `${r.tonnage.toLocaleString('de-DE')} kg (urspr.)${r.manifestWeight ? ` → ${r.manifestWeight.toLocaleString('de-DE')} kg (Manifest)` : ''}`;
+  document.getElementById("viewBillingCompany").textContent = r.billingCompany || "-";
+  document.getElementById("viewBillingAddress").textContent = r.billingAddress || "-";
+  document.getElementById("viewTaxNumber").textContent = r.taxNumber || "-";
+  document.getElementById("viewContactName").textContent = r.contactName || "-";
+  document.getElementById("viewContactEmail").textContent = r.contactEmail || "-";
+  document.getElementById("viewEmailRequest").textContent = r.emailRequest || "-";
+  document.getElementById("customerName").value = r.customerName || "";
+  document.getElementById("flightTime").value = r.flightTime || "";
+  document.getElementById("manifestWeight").value = r.manifestWeight || "";
+  document.getElementById("rate").value = r.rate || "";
+  document.getElementById("otherPrices").value = r.otherPrices || "";
+  document.getElementById("apronSupport").checked = r.apronSupport || false;
   document.getElementById("detailModal").style.display = "block";
 }
 
@@ -134,6 +127,7 @@ function saveDetails() {
   const rate = parseFloat(document.getElementById("rate").value) || 0;
   const departureTime = document.getElementById("flightTime").value;
   const escort = document.getElementById("apronSupport").checked;
+  const comment = document.getElementById("customerName").value;
   const flightNumber = document.getElementById("flightNumberInput").value;
 
   // Lokale Anzeige aktualisieren (optional)
@@ -142,12 +136,13 @@ function saveDetails() {
   r.rate = rate;
   r.flightTime = departureTime;
   r.apronSupport = escort;
+  r.customerName = comment;
   r.flightNumber = flightNumber;
 
   // ❌ NICHT mehr: r.tonnage = r.manifestWeight;
 
   // In Google Sheet speichern
-  saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, flightNumber);
+  saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment, flightNumber);
 
   closeModal();
   populateRows();
@@ -261,7 +256,7 @@ document.addEventListener('DOMContentLoaded', function () {
   updateClock();
 });
 
-function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, flightNumber) {
+function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment, flightNumber) {
   const url = "https://script.google.com/macros/s/AKfycbw2c2PSZlsKNGnQXFjhtpmezSSB_67D1BD3gt1jgVveY791Bb8inDIg4y0yb1Zhq_rm/exec";
 
   const formData = new URLSearchParams();
@@ -272,6 +267,7 @@ function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departure
   formData.append("rate", rate);
   formData.append("departureTime", departureTime);
   formData.append("escort", escort ? "Ja" : "Nein");
+  formData.append("comment", comment);
   formData.append("flightnumber", flightNumber);
 
   fetch(url, {
