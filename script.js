@@ -138,6 +138,8 @@ function deleteRequest(ref) {
 function openDetails(ref) {
   const r = requestData.find(r => r.ref === ref);
   if (!r) return;
+    alert("Details: " + r.ref); // Oder dein Modal öffnen
+}
   document.getElementById("modalRef").value = r.ref;
   document.getElementById("viewRef").textContent = r.ref;
   document.getElementById("airlineInput").value = r.airline || "";
