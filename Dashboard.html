@@ -180,5 +180,28 @@
       setInterval(updateClock, 1000);
     });
   </script>
+<!-- Modal Detailansicht -->
+<div id="detailModal" style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%);
+     background:white; padding:20px; box-shadow:0 0 20px rgba(0,0,0,0.3); border-radius:8px; z-index:1000; width:90%; max-width:600px;">
+  <h3>Flugdetails & Bearbeitung</h3>
+  <label>Ref: <input id="modalRef" disabled /></label><br />
+  <label>Airline: <input id="airlineInput" /></label><br />
+  <label>Flugnummer: <input id="flightNumberInput" /></label><br />
+  <label>Datum: <input id="dateInput" type="date" /></label><br />
+  <label>Tonnage (kg): <input id="tonnageInput" type="number" step="0.001" /></label><br />
+  <label>Billing Company: <input id="billingCompanyInput" /></label><br />
+  <label>Billing Address: <input id="billingAddressInput" /></label><br />
+  <label>Tax Number: <input id="taxNumberInput" /></label><br />
+  <label>Contact Name: <input id="contactNameInput" /></label><br />
+  <label>Contact Email: <input id="contactEmailInput" /></label><br />
+  <label>Kundenkommentar: <input id="customerName" /></label><br />
+  <label>Abflugzeit: <input id="flightTime" type="time" /></label><br />
+  <label>Manifestgewicht: <input id="manifestWeight" type="number" step="0.001" /></label><br />
+  <label>Rate: <input id="rate" type="number" step="0.001" /></label><br />
+  <label>Zusatzkosten: <input id="otherPrices" /></label><br />
+  <label><input type="checkbox" id="apronSupport" /> Vorfeldbegleitung</label><br /><br />
+  <button onclick="saveDetails()">Speichern</button>
+  <button onclick="closeModal()">Schließen</button>
+</div>
 </body>
 </html>
