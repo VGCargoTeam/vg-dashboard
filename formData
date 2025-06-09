@@ -91,24 +91,32 @@ function deleteRequest(ref) {
 }
 
 function openDetails(ref) {
-  const r = requestData.find(r => r.ref === ref);
+  const r = requestData.find(x => x.ref === ref);
   if (!r) return;
+
   document.getElementById("modalRef").value = r.ref;
-  document.getElementById("viewRef").textContent = r.ref;
-  document.getElementById("viewAirline").textContent = r.airline;
-  document.getElementById("viewDate").textContent = r.date.toLocaleDateString('de-DE');
-  document.getElementById("viewTonnage").textContent = `${r.tonnage.toLocaleString('de-DE')} kg (urspr.)${r.manifestWeight ? ` → ${r.manifestWeight.toLocaleString('de-DE')} kg (Manifest)` : ''}`;
-  document.getElementById("viewBillingCompany").textContent = r.billingCompany || "-";
-  document.getElementById("viewBillingAddress").textContent = r.billingAddress || "-";
-  document.getElementById("viewTaxNumber").textContent = r.taxNumber || "-";
-  document.getElementById("viewContactName").textContent = r.contactName || "-";
-  document.getElementById("viewContactEmail").textContent = r.contactEmail || "-";
-  document.getElementById("viewEmailRequest").textContent = r.emailRequest || "-";
-  document.getElementById("flightTime").value = r.flightTime || "";
-  document.getElementById("manifestWeight").value = r.manifestWeight || "";
-  document.getElementById("rate").value = r.rate || "";
-  document.getElementById("otherPrices").value = r.otherPrices || "";
-  document.getElementById("apronSupport").checked = r.apronSupport || false;
+
+  document.getElementById("airlineInput").value = r.airline || "";
+
+  if (r.date instanceof Date) {
+    document.getElementById("dateInput").value = r.date.toISOString().split('T')[0];
+  } else {
+    const parsed = new Date(r.date);
+    document.getElementById("dateInput").value = !isNaN(parsed) ? parsed.toISOString().split('T')[0] : "";
+  }
+
+  document.getElementById("tonnageInput").value = r.tonnage || "";
+  document.getElementById("billingCompanyInput").value = r.billingCompany || "";
+  document.getElementById("billingAddressInput").value = r.billingAddress || "";
+  document.getElementById("taxNumberInput").value = r.taxNumber || "";
+  document.getElementById("contactNameInput").value = r.contactName || "";
+  document.getElementById("contactEmailInput").value = r.contactEmail || "";
+  document.getElementById("flightNumberInput").value = r.flightNumber || "";
+  document.getElementById("flightTimeInput").value = r.flightTime || "";
+  document.getElementById("rateInput").value = r.rate || "";
+  document.getElementById("otherPricesInput").value = r.otherPrices || "";
+  document.getElementById("apronSupportInput").checked = r.apronSupport === "Ja";
+
   document.getElementById("detailModal").style.display = "block";
 }
 
