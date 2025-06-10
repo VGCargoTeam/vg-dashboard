@@ -69,7 +69,7 @@ function deleteRequest(ref) {
     populateRows();
 
     // 2. Anfrage ans Google Apps Script zum Löschen im Sheet
-    const url = "https://script.google.com/macros/s/AKfycbyRaUcp6c0skDO_AKFbn6z2JVsdid1A-UWDRLYh_ayd3IJOUyz8bPhejpSbx4POwMuL/exec";
+    const url = "https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec";
     const formData = new URLSearchParams();
     formData.append("mode", "delete");
     formData.append("ref", ref);
@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment, flightNumber) {
-  const url = "https://script.google.com/macros/s/AKfycbw2c2PSZlsKNGnQXFjhtpmezSSB_67D1BD3gt1jgVveY791Bb8inDIg4y0yb1Zhq_rm/exec";
+  const url = "https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec";
 
   const formData = new URLSearchParams();
   formData.append("mode", "updateExtras");
