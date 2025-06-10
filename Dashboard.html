@@ -1,39 +1,170 @@
-
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>VG Cargo Dashboard</title>
   <style>
-    body { font-family: Arial; background: #eef; margin: 0; padding: 20px; display: flex; gap: 20px; }
-    .main, .calendar { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
-    .calendar-table { margin-bottom: 20px; }
-    .calendar-nav button { margin-right: 10px; padding: 6px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    td.marked { background: #ffc107; font-weight: bold; position: relative; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #007BFF; color: white; }
-    .summary { margin-top: 10px; text-align: right; font-weight: bold; }
-    .time-display { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 10px; text-align: center; }
-    .delete-btn { padding: 6px 14px; font-size: 14px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    .ref-link { background-color: #007bff; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-    .ref-link:hover { background-color: #117a8b; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      gap: 20px;
+    }
+    .main {
+      flex: 2;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+    .calendar {
+      flex: 1;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #007BFF;
+      color: white;
+    }
+    .summary {
+      margin-top: 10px;
+      text-align: right;
+      font-weight: bold;
+    }
+    .calendar-nav {
+      margin-bottom: 10px;
+    }
+    .calendar-table {
+      margin-bottom: 20px;
+    }
+    td.marked {
+      background: #ffc107;
+      font-weight: bold;
+      cursor: help;
+      position: relative;
+    }
+    td.marked.apron::after {
+      content: '✈️';
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      font-size: 14px;
+    }
+    .info {
+      margin: 10px 0;
+      font-size: 14px;
+      color: #007BFF;
+    }
+    .time-display {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+  text-align: center;
+}
+    button.delete-btn {
+      padding: 6px 14px;
+      font-size: 14px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button.delete-btn:hover {
+      background-color: #a71d2a;
+    }
+    button.ref-link {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button.calendar-btn {
+  padding: 6px 14px;
+  font-size: 14px;
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 5px;
+}
+    button.ref-link:hover {
+      background-color: #117a8b;
+    }
+    input[type="text"],
+input[type="email"],
+input[type="number"],
+textarea {
+  padding: 10px;
+  margin-bottom: 12px;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+textarea {
+  min-height: 80px;
+  resize: vertical;
+  font-family: Arial, sans-serif;
+  line-height: 1.4;
+}
+    .filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.filter-row label {
+  font-weight: bold;
+  margin-right: 5px;
+}
+.filter-row input[type="text"],
+.filter-row input[type="date"] {
+  width: 180px;
+  padding: 4px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
   </style>
 </head>
 <body>
-  <div class="main" style="flex:2;">
+  <div class="main">
     <h2>Charter Dashboard</h2>
     <div class="time-display">
       <span id="currentDate">Date: --</span> | <span id="clock">Time: --:--:--</span>
     </div>
-    <div>
-      <label>Reference: <input type="text" id="refSearch" onkeyup="filterTable()"></label>
-      <label>Airline: <input type="text" id="airlineSearch" onkeyup="filterTable()"></label>
-      <label>Flugnummer: <input type="text" id="flightNumberSearch" onkeyup="filterTable()"></label>
-      <label>Von: <input type="date" id="startDate" onchange="filterTable()"></label>
-      <label>Bis: <input type="date" id="endDate" onchange="filterTable()"></label>
-      <label><input type="checkbox" id="showArchive" onchange="filterTable()"> Archiv zeigen</label>
-    </div>
+<div class="filter-row">
+  <label>Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
+  <label>Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
+  <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" />
+  </div>
+<div class="filter-row">
+  <label>Von:</label> <input type="date" id="startDate" onchange="filterTable()" />
+  <label>Bis:</label> <input type="date" id="endDate" onchange="filterTable()" />
+  <label><input type="checkbox" id="showArchive" onchange="filterTable()" /> Archiv zeigen</label>
+</div>
     <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
     <table>
       <thead>
@@ -41,167 +172,59 @@
       </thead>
       <tbody id="dataTable"></tbody>
     </table>
+    <div id="detailModal" style="display:none; position:fixed; top:5%; left:50%; transform:translateX(-50%);
+     background:white; border-radius:10px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:1000; width:600px; max-height:90vh; overflow-y:auto; font-family:Arial, sans-serif;">
+      <h2 style="margin-top:0; color:#007bff;">Flugdetails & Bearbeitung</h2>
+      <div style="margin-bottom:20px;">
+        <h4 style="margin-bottom:5px; border-bottom:1px solid #ccc;">Kundendaten (Original)</h4>
+        <p><strong>Ref:</strong> <span id="viewRef"></span></p>
+        <p><strong>Airline:</strong> <span id="viewAirline"></span></p>
+        <p><strong>Datum:</strong> <span id="viewDate"></span></p>
+        <p><strong>Tonnage:</strong> <span id="viewTonnage"></span></p>
+        <p><strong>Billing Company:</strong> <span id="viewBillingCompany"></span></p>
+        <p><strong>Billing Address:</strong> <span id="viewBillingAddress"></span></p>
+        <p><strong>Tax Number:</strong> <span id="viewTaxNumber"></span></p>
+        <p><strong>Contact Name:</strong> <span id="viewContactName"></span></p>
+        <p><strong>Contact Email:</strong> <span id="viewContactEmail"></span></p>
+        <p><strong>Original Mail:</strong></p>
+<div style="background:#f8f8f8; padding:10px; border-radius:5px; max-height:300px; overflow:auto; white-space:pre-wrap; font-family:monospace;">
+  <pre id="viewEmailRequest" style="background:#f9f9f9;padding:10px;border-radius:5px;white-space:pre-wrap;word-break:break-word;margin:0;"></pre>
+</div>
+        <p><strong>AGB akzeptiert:</strong> ✅</p>
+        <p><strong>Leistungsverzeichnis gelesen:</strong> ✅</p>
+      </div>
+      <div>
+        <h4 style="margin-bottom:5px; border-bottom:1px solid #ccc;">Interne Bearbeitung</h4>
+        <form id="detailForm">
+          <input type="hidden" id="modalRef" />
+          <label>Kunde (Name):</label>
+          <input type="text" id="customerName" />
+          <label>Flugnummer:</label>
+          <input type="text" id="flightNumberInput" style="width:100%" placeholder="z.B. LH123" /><br>
+          <label>Geplante Abflug/Ankunftszeit:</label>
+          <input type="text" id="flightTime" placeholder="z.B. 14:45" />
+          <label>Manifestgewicht (kg):</label>
+          <input type="number" id="manifestWeight" step="0.001" />
+          <label>Rate (€):</label>
+          <input type="number" id="rate" step="0.001" />
+          <label>Weitere Preise:</label>
+          <textarea id="otherPrices" placeholder="z.B. Handling: 500 €&#10;Screening: 300 €"></textarea>
+          <label><input type="checkbox" id="apronSupport" /> Vorfeldbegleitung gewünscht</label><br><br>
+          <div style="text-align:right;">
+            <button type="button" onclick="saveDetails()" style="background:#28a745;color:white;border:none;padding:8px 16px;border-radius:5px;">Speichern</button>
+            <button type="button" onclick="closeModal()" style="background:#6c757d;color:white;border:none;padding:8px 16px;border-radius:5px;">Schließen</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
-  <div class="calendar" style="flex:1;">
+  <div class="calendar">
     <div class="calendar-nav">
-      <button onclick="shiftCalendar(-1)">← Back</button>
-      <button onclick="shiftCalendar(1)">Forward →</button>
+      <button class="calendar-btn" onclick="shiftCalendar(-1)">← Back</button>
+      <button class="calendar-btn" onclick="shiftCalendar(1)">Forward →</button>
     </div>
     <div id="calendarArea"></div>
   </div>
-
-  <script>
-    let requestData = [
-      { ref: "CC-20250605-094U", flightNumber: "LH123", date: new Date("2025-06-07"), airline: "Klassen Air", tonnage: 124, flightTime: "12:15" },
-      { ref: "CC-20250605-DDJX", flightNumber: "TEST42", date: new Date("2025-06-06"), airline: "Test Air", tonnage: 1244, flightTime: "08:45" }
-    ];
-    let calendarBase = new Date();
-
-    function populateRows() {
-      const table = document.getElementById("dataTable");
-      table.innerHTML = "";
-      requestData.forEach(r => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td><button class="ref-link" onclick="alert('Details für ${r.ref}')">${r.ref}</button></td>
-          <td>${r.flightNumber || "-"}</td>
-          <td>${r.date.toLocaleDateString('de-DE')}</td>
-          <td>${r.airline}</td>
-          <td>${r.tonnage.toLocaleString('de-DE')}</td>
-          <td><button class="delete-btn" onclick="alert('Löschen: ${r.ref}')">Delete</button></td>`;
-        table.appendChild(row);
-      });
-      filterTable();
-      renderCalendars();
-    }
-
-    function filterTable() {
-      const refVal = document.getElementById("refSearch").value.toLowerCase();
-      const airlineVal = document.getElementById("airlineSearch").value.toLowerCase();
-      const flightVal = document.getElementById("flightNumberSearch").value.toLowerCase();
-      const startDate = new Date(document.getElementById("startDate").value);
-      const endDate = new Date(document.getElementById("endDate").value);
-      const showArchive = document.getElementById("showArchive").checked;
-
-      const rows = document.querySelectorAll("#dataTable tr");
-      let totalFlights = 0;
-      let totalTonnage = 0;
-
-      rows.forEach(row => {
-        const cells = row.children;
-        const ref = cells[0].textContent.toLowerCase();
-        const flight = cells[1].textContent.toLowerCase();
-        const date = new Date(cells[2].textContent.split('.').reverse().join('-'));
-        const airline = cells[3].textContent.toLowerCase();
-        const tonnage = parseFloat(cells[4].textContent.replace('.', '').replace(',', '.')) || 0;
-
-        const showRow = (!refVal || ref.includes(refVal)) &&
-                        (!airlineVal || airline.includes(airlineVal)) &&
-                        (!flightVal || flight.includes(flightVal)) &&
-                        (!startDate.getTime() || date >= startDate) &&
-                        (!endDate.getTime() || date <= endDate);
-
-        row.style.display = showRow ? "" : "none";
-        if (showRow) {
-          totalFlights++;
-          totalTonnage += tonnage;
-        }
-      });
-
-      document.getElementById("summaryInfo").textContent =
-        `Total Flights: ${totalFlights} | Total Tonnage: ${totalTonnage.toLocaleString('de-DE')} kg`;
-    }
-
-    function shiftCalendar(offset) {
-      calendarBase.setMonth(calendarBase.getMonth() + offset);
-      renderCalendars();
-    }
-
-    function renderCalendars() {
-      const container = document.getElementById("calendarArea");
-      container.innerHTML = "";
-      for (let i = 0; i < 2; i++) {
-        const current = new Date(calendarBase.getFullYear(), calendarBase.getMonth() + i);
-        container.innerHTML += generateCalendar(current.getFullYear(), current.getMonth());
-      }
-    }
-
-    function generateCalendar(year, month) {
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const firstDay = new Date(year, month, 1).getDay() || 7;
-      const monthName = new Date(year, month).toLocaleString('default', { month: 'long' });
-
-      let html = '<div class="calendar-table">';
-      html += `<h4>${monthName} ${year}</h4><table><thead><tr><th>Mo</th><th>Di</th><th>Mi</th><th>Do</th><th>Fr</th><th>Sa</th><th>So</th></tr></thead><tbody>`;
-      let day = 1;
-      let started = false;
-
-      for (let i = 0; i < 6; i++) {
-        html += "<tr>";
-        for (let j = 1; j <= 7; j++) {
-          const realDay = j;
-          if (!started && realDay === firstDay) started = true;
-
-          if (started && day <= daysInMonth) {
-            const matches = requestData.filter(x =>
-              x.date.getDate() === day &&
-              x.date.getMonth() === month &&
-              x.date.getFullYear() === year
-            );
-
-            const tooltip = matches.map(m =>
-              `✈ ${m.ref} – ${m.airline}\nFlugnummer: ${m.flightNumber || "-"}\nAbflugzeit: ${m.flightTime || "-"}\nTonnage: ${m.tonnage?.toLocaleString('de-DE')} kg`
-            ).join('\n');
-
-            const marked = matches.length ? "marked" : "";
-            const onclick = matches.length ? `onclick="alert('Details für ${matches[0].ref}')"` : "";
-            html += `<td class="${marked}" title="${tooltip}" style="cursor:pointer;" ${onclick}>${day}</td>`;
-            day++;
-          } else {
-            html += "<td></td>";
-          }
-        }
-        html += "</tr>";
-        if (day > daysInMonth) break;
-      }
-      html += "</tbody></table></div>";
-      return html;
-    }
-
-    function updateClock() {
-      const now = new Date();
-      document.getElementById("clock").textContent = now.toLocaleTimeString('de-DE');
-      document.getElementById("currentDate").textContent = now.toLocaleDateString('de-DE');
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      populateRows();
-      updateClock();
-      setInterval(updateClock, 1000);
-    });
-  </script>
-<!-- Modal Detailansicht -->
-<div id="detailModal" style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%);
-     background:white; padding:20px; box-shadow:0 0 20px rgba(0,0,0,0.3); border-radius:8px; z-index:1000; width:90%; max-width:600px;">
-  <h3>Flugdetails & Bearbeitung</h3>
-  <label>Ref: <input id="modalRef" disabled /></label><br />
-  <label>Airline: <input id="airlineInput" /></label><br />
-  <label>Flugnummer: <input id="flightNumberInput" /></label><br />
-  <label>Datum: <input id="dateInput" type="date" /></label><br />
-  <label>Tonnage (kg): <input id="tonnageInput" type="number" step="0.001" /></label><br />
-  <label>Billing Company: <input id="billingCompanyInput" /></label><br />
-  <label>Billing Address: <input id="billingAddressInput" /></label><br />
-  <label>Tax Number: <input id="taxNumberInput" /></label><br />
-  <label>Contact Name: <input id="contactNameInput" /></label><br />
-  <label>Contact Email: <input id="contactEmailInput" /></label><br />
-  <label>Kundenkommentar: <input id="customerName" /></label><br />
-  <label>Abflugzeit: <input id="flightTime" type="time" /></label><br />
-  <label>Manifestgewicht: <input id="manifestWeight" type="number" step="0.001" /></label><br />
-  <label>Rate: <input id="rate" type="number" step="0.001" /></label><br />
-  <label>Zusatzkosten: <input id="otherPrices" /></label><br />
-  <label><input type="checkbox" id="apronSupport" /> Vorfeldbegleitung</label><br /><br />
-  <button onclick="saveDetails()">Speichern</button>
-  <button onclick="closeModal()">Schließen</button>
-</div>
+  <script src="script.js"></script>
 </body>
 </html>
