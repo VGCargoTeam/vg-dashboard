@@ -80,7 +80,6 @@ function saveDetails() {
       taxNumber: r.taxNumber,
       contactName: r.contactName,
       contactEmail: r.contactEmail,
-      flightTime: r.flightTime,
     })
   }).then(res => res.text()).then(alert);
 
