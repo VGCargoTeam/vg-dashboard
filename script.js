@@ -1,3 +1,4 @@
+
 let requestData = [];
 
 function populateRows() {
@@ -6,76 +7,14 @@ function populateRows() {
   requestData.forEach(r => {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td><button class="ref-link" onclick="openDetails('${r.ref}')">${r.ref}</button></td>
+      <td><button onclick="openDetails('${r.ref}')">${r.ref}</button></td>
       <td>${r.flightNumber || "-"}</td>
-      <td>${r.date.toLocaleDateString('de-DE')}</td>
+      <td>${new Date(r.date).toLocaleDateString('de-DE')}</td>
       <td>${r.airline}</td>
-      <td>${r.tonnage.toLocaleString('de-DE')}</td>
-      <td><button class="delete-btn" onclick="deleteRequest('${r.ref}')">Delete</button></td>`;
+      <td>${r.tonnage}</td>
+      <td><button onclick="deleteRequest('${r.ref}')">Delete</button></td>`;
     table.appendChild(row);
   });
-  filterTable();
-  renderCalendars();
-}
-
-function filterTable() {
-  const refVal = document.getElementById("refSearch").value.toLowerCase();
-  const airlineVal = document.getElementById("airlineSearch").value.toLowerCase();
-  const flightVal = document.getElementById("flightNumberSearch")?.value?.toLowerCase() || "";
-
-  const startDate = new Date(document.getElementById("startDate").value);
-  const endDate = new Date(document.getElementById("endDate").value);
-  const showArchive = document.getElementById("showArchive").checked;
-
-  const rows = document.querySelectorAll("#dataTable tr");
-  let totalFlights = 0;
-  let totalTonnage = 0;
-
-  rows.forEach(row => {
-    const cells = row.children;
-    const ref = cells[0].textContent.toLowerCase();
-    const flight = cells[1].textContent.toLowerCase();
-    const date = new Date(cells[2].textContent.split('.').reverse().join('-'));
-    const airline = cells[3].textContent.toLowerCase();
-    const tonnage = parseFloat(cells[4].textContent.replace('.', '').replace(',', '.')) || 0;
-
-    const matchesRef = !refVal || ref.includes(refVal);
-    const matchesAirline = !airlineVal || airline.includes(airlineVal);
-    const matchesFlight = !flightVal || flight.includes(flightVal);
-    const matchesDate = (!startDate.getTime() || date >= startDate) && (!endDate.getTime() || date <= endDate);
-    const isArchived = r => r.classList ? r.classList.contains('archived') : false;
-
-    const showRow = matchesRef && matchesAirline && matchesFlight && matchesDate && (showArchive || !isArchived(row));
-    row.style.display = showRow ? "" : "none";
-
-    if (showRow) {
-      totalFlights++;
-      totalTonnage += tonnage;
-    }
-  });
-
-  document.getElementById("summaryInfo").textContent = `Total Flights: ${totalFlights} | Total Tonnage: ${totalTonnage.toLocaleString('de-DE')} kg`;
-}
-
-function renderCalendars() {
-  // (Inhalt der Kalender-Render-Funktion bleibt unverändert)
-}
-
-function deleteRequest(ref) {
-  if (confirm("Möchten Sie diese Anfrage wirklich löschen?")) {
-    fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec" + ref)
-      .then(response => response.text())
-      .then(result => {
-        console.log("Löschergebnis:", result);
-        requestData = requestData.filter(x => x.ref !== ref);
-        populateRows();
-        alert("Anfrage wurde erfolgreich gelöscht!");
-      })
-      .catch(error => {
-        console.error("Fehler beim Löschen:", error);
-        alert("Fehler beim Löschen!");
-      });
-  }
 }
 
 function openDetails(ref) {
@@ -94,35 +33,11 @@ function openDetails(ref) {
   document.getElementById("detailModal").style.display = "block";
 }
 
-function closeModal() {
-  document.getElementById("detailModal").style.display = "none";
-}
-
 function saveDetails() {
   const ref = document.getElementById("modalRef").value;
   const r = requestData.find(x => x.ref === ref);
   if (!r) return;
 
-  const finalWeight = parseFloat(document.getElementById("manifestWeight").value) || 0;
-  const extraCharges = document.getElementById("otherPrices").value;
-  const rate = parseFloat(document.getElementById("rate").value) || 0;
-  const departureTime = document.getElementById("flightTime").value;
-  const escort = document.getElementById("apronSupport").checked;
-  const comment = document.getElementById("customerName").value;
-  const flightNumber = document.getElementById("flightNumberInput").value;
-  const airline = document.getElementById("airlineInput").value;
-  const flightDate = document.getElementById("dateInput").value;
-  const tonnage = parseFloat(document.getElementById("tonnageInput").value) || 0;
-  const billingCompany = document.getElementById("billingCompanyInput").value;
-  const billingAddress = document.getElementById("billingAddressInput").value;
-  const taxNumber = document.getElementById("taxNumberInput").value;
-  const contactName = document.getElementById("contactNameInput").value;
-  const contactEmail = document.getElementById("contactEmailInput").value;
-
-  // Lokale Anzeige aktualisieren (optional)
-  if (flightDate) {
-    r.date = new Date(flightDate);
-  }
   r.airline = document.getElementById("airlineInput").value;
   r.date = document.getElementById("dateInput").value;
   r.tonnage = parseFloat(document.getElementById("tonnageInput").value) || 0;
@@ -132,94 +47,7 @@ function saveDetails() {
   r.contactName = document.getElementById("contactNameInput").value;
   r.contactEmail = document.getElementById("contactEmailInput").value;
 
-  // ❌ NICHT mehr: r.tonnage = r.manifestWeight;
-
-  // In Google Sheet speichern
-  saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, departureTime, escort, comment, flightNumber, 
-    airline, flightDate, tonnage, billingCompany, billingAddress, taxNumber, contactName, contactEmail);
-
-  closeModal();
-  populateRows();
-}
-
-function updateClock() {
-  const now = new Date();
-  const options = {
-    timeZone: 'Europe/Berlin',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  };
-  const dateOptions = {
-    timeZone: 'Europe/Berlin',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  };
-  document.getElementById("clock").textContent = "Time: " + now.toLocaleTimeString('de-DE', options);
-  document.getElementById("currentDate").textContent = "Date: " + now.toLocaleDateString('de-DE', dateOptions);
-}
-
-function renderCalendars() {
-  // (Implementierung der Kalender-Übersicht, unverändert aus dem Originalskript)
-  // ...
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-  const url = 'https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest';
-  fetch(url)
-    .then(response => response.json())
-    .then(data => {
-      requestData = data.map(row => ({
-        ref: row["Ref"],
-        flightNumber: row["Flugnummer"],
-        date: new Date(row["Flight Date"]),
-        airline: row["Airline"],
-        billingCompany: row["Billing Company"],
-        billingAddress: row["Billing Address"],
-        taxNumber: row["Tax Number"],
-        contactName: row["Contact Name"],
-        contactEmail: row["Contact Email"],
-        emailRequest: row["Email Request"],
-        tonnage: parseFloat(row["Tonnage"]) || 0,
-        apronSupport: row["Vorfeldbegleitung"] === "TRUE" || row["Vorfeldbegleitung"] === "Ja",
-        // ManifestWeight, Rate, etc. könnten hier bei Bedarf ebenfalls ausgelesen werden
-      }));
-      populateRows();
-    })
-    .catch(error => console.error("Fehler beim Laden:", error));
-
-  setInterval(updateClock, 1000);
-  updateClock();
-});
-
-function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate, 
-  departureTime, escort, comment, flightNumber,
-  airline, flightDate, tonnage, billingCompany,
-  billingAddress, taxNumber, contactName, contactEmail) {
-  const url = "https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec";
-
-  const formData = new URLSearchParams();
-  formData.append("mode", "updateExtras");
-  formData.append("ref", ref);
-  formData.append("finalWeight", finalWeight);
-  formData.append("extraCharges", extraCharges);
-  formData.append("rate", rate);
-  formData.append("departureTime", departureTime);
-  formData.append("escort", escort ? "Ja" : "Nein");
-  formData.append("comment", comment);
-  formData.append("flightnumber", flightNumber);
-  formData.append("airline", airline);
-  formData.append("flightDate", flightDate);
-  formData.append("tonnage", tonnage);
-  formData.append("billingCompany", billingCompany);
-  formData.append("billingAddress", billingAddress);
-  formData.append("taxNumber", taxNumber);
-  formData.append("contactName", contactName);
-  formData.append("contactEmail", contactEmail);
-
-  fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
+  fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec", {
     method: "POST",
     body: new URLSearchParams({
       mode: "updateCustomerData",
@@ -233,11 +61,6 @@ function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate,
       contactName: r.contactName,
       contactEmail: r.contactEmail
     })
-    .then(response => response.text())
-    .then(result => {
-      console.log("Gespeichert:", result);
-      alert("Änderungen gespeichert!");
-    })
   }).then(res => res.text()).then(alert);
   closeModal();
   populateRows();
@@ -246,9 +69,3 @@ function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate,
 function closeModal() {
   document.getElementById("detailModal").style.display = "none";
 }
-// ESC zum Schließen des Detailmodals per Tastatur
-document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape') {
-    closeModal();
-  }
-});
