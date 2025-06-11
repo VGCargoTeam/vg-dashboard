@@ -31,6 +31,9 @@ function openDetails(ref) {
   document.getElementById("contactNameInput").value = r.contactName || "";
   document.getElementById("contactEmailInput").value = r.contactEmail || "";
   document.getElementById("viewEmailRequest").textContent = r.emailRequest || "-";
+  document.getElementById("rateInput").value = r.rate || "";
+  document.getElementById("otherPricesInput").value = r.otherPrices || "";
+  document.getElementById("apronSupportInput").checked = r.apronSupport === "Ja";
   document.getElementById("detailModal").style.display = "block";
 }
 
@@ -47,6 +50,17 @@ function saveDetails() {
   r.taxNumber = document.getElementById("taxNumberInput").value;
   r.contactName = document.getElementById("contactNameInput").value;
   r.contactEmail = document.getElementById("contactEmailInput").value;
+
+  fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
+    method: "POST",
+    body: new URLSearchParams({
+      mode: "updateExtras",
+      ref,
+      rate: document.getElementById("rateInput").value,
+      extraCharges: document.getElementById("otherPricesInput").value,
+      escort: document.getElementById("apronSupportInput").checked ? "Ja" : "Nein"
+    })
+  }).then(res => res.text()).then(alert);
 
   fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
     method: "POST",
