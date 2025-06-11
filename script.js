@@ -62,7 +62,7 @@ function saveDetails() {
       extraCharges: document.getElementById("otherPricesInput").value,
       escort: document.getElementById("apronSupportInput").checked ? "Ja" : "Nein",
       flightnumber: document.getElementById("flightNumberInput").value,
-      depatureTime: document.getElementById("flightTimeInput").value,
+      flightTime: document.getElementById("flightTimeInput").value,
     })
   }).then(res => res.text()).then(alert);
 
@@ -78,7 +78,8 @@ function saveDetails() {
       billingAddress: r.billingAddress,
       taxNumber: r.taxNumber,
       contactName: r.contactName,
-      contactEmail: r.contactEmail
+      contactEmail: r.contactEmail,
+      departureTime: r.flightTime,
     })
   }).then(res => res.text()).then(alert);
 
