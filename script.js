@@ -31,7 +31,7 @@ function openDetails(ref) {
 function saveExtras() {
   if (!currentRef) return;
 
-  fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec", {
+  fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
     method: "POST",
     body: new URLSearchParams({
       mode: "updateExtras",
@@ -57,7 +57,7 @@ function closeModal() {
 }
 
 function loadData() {
-  fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec?mode=read")
+  fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec?mode=read")
     .then(response => response.json())
     .then(data => {
       requestData = data;
