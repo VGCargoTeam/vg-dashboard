@@ -62,7 +62,7 @@ function saveDetails() {
       extraCharges: document.getElementById("otherPricesInput").value,
       escort: document.getElementById("apronSupportInput").checked ? "Ja" : "Nein",
       flightnumber: document.getElementById("flightNumberInput").value,
-      flightTime: document.getElementById("flightTimeInput").value
+      flightTime: document.getElementById("flightTimeInput").value,
     })
   }).then(res => res.text()).then(alert);
 
