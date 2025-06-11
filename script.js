@@ -52,6 +52,7 @@ function saveDetails() {
   r.taxNumber = document.getElementById("taxNumberInput").value;
   r.contactName = document.getElementById("contactNameInput").value;
   r.contactEmail = document.getElementById("contactEmailInput").value;
+  r.flightTime = document.getElementById("flightTimeInput").value;
 
   fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
     method: "POST",
