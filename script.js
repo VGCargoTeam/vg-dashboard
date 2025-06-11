@@ -52,17 +52,18 @@ function saveDetails() {
   r.contactName = document.getElementById("contactNameInput").value;
   r.contactEmail = document.getElementById("contactEmailInput").value;
 
-  fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
-    method: "POST",
-    body: new URLSearchParams({
-      mode: "updateExtras",
-      ref,
-      rate: document.getElementById("rateInput").value,
-      extraCharges: document.getElementById("otherPricesInput").value,
-      escort: document.getElementById("apronSupportInput").checked ? "Ja" : "Nein",
-      flightnumber: document.getElementById("flightNumberInput").value
-    })
-  }).then(res => res.text()).then(alert);
+fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
+  method: "POST",
+  body: new URLSearchParams({
+    mode: "updateExtras",
+    ref,
+    rate: document.getElementById("rateInput").value,
+    extraCharges: document.getElementById("otherPricesInput").value,
+    escort: document.getElementById("apronSupportInput").checked ? "Ja" : "Nein",
+    flightnumber: document.getElementById("flightNumberInput").value,
+    flightTime: document.getElementById("flightTimeInput").value
+  })
+})
 
   fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
     method: "POST",
