@@ -358,52 +358,30 @@ textarea {
       <tbody id="dataTable"></tbody>
     </table>
     <!-- Detail Modal -->
-    <div id="detailModal" style="display:none; position:fixed; top:5%; left:50%; transform:translateX(-50%); background:white; border-radius:10px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:1000; width:600px; max-height:90vh; overflow-y:auto; font-family:Arial, sans-serif;">
-      <h2 style="margin-top:0; color:#007bff;">Flugdetails & Bearbeitung</h2>
-      <div style="margin-bottom:20px;">
-        <h4 style="margin-bottom:5px; border-bottom:1px solid #ccc;">Original-Anfrage</h4>
-        <p><strong>Ref:</strong> <span id="viewRef"></span></p>
-        <p><strong>Original Mail:</strong></p>
-        <div style="background:#f8f8f8; padding:10px; border-radius:5px; max-height:300px; overflow:auto; white-space:pre-wrap; font-family:monospace;">
-          <pre id="viewEmailRequest" style="background:#f9f9f9; padding:10px; border-radius:5px; white-space:pre-wrap; word-break:break-word; margin:0;"></pre>
-        </div>
-        <p><strong>AGB akzeptiert:</strong> ✅</p>
-        <p><strong>Leistungsverzeichnis gelesen:</strong> ✅</p>
-      </div>
-      <div>
-        <h4 style="margin-bottom:5px; border-bottom:1px solid #ccc;">Bearbeitung</h4>
-        <form id="detailForm">
-          <input type="hidden" id="modalRef" />
-          <label>Airline:</label>
-          <input type="text" id="airlineInput" />
-          <label>Datum:</label>
-          <input type="date" id="dateInput" />
-          <label>Tonnage (kg):</label>
-          <input type="number" id="tonnageInput" step="0.001" />
-          <label>Billing Company:</label>
-          <input type="text" id="billingCompanyInput" />
-          <label>Billing Address:</label>
-          <input type="text" id="billingAddressInput" />
-          <label>Tax Number:</label>
-          <input type="text" id="taxNumberInput" />
-          <label>Contact Name:</label>
-          <input type="text" id="contactNameInput" />
-          <label>Contact Email:</label>
-          <input type="email" id="contactEmailInput" />
-          <label>Flugnummer:</label>
-          <input type="text" id="flightNumberInput" placeholder="z.B. LH123" />
-          <label>Abflugzeit:</label>
-          <input type="time" id="flightTime" placeholder="z.B. 14:45" />
-          <label>Manifestgewicht (kg):</label>
-          <input type="number" id="manifestWeight" step="0.001" />
-          <label>Rate (€):</label>
-          <input type="number" id="rate" step="0.001" />
-          <label>Zusatzkosten:</label>
-          <textarea id="otherPrices" placeholder="z.B. Handling: 500 €&#10;Screening: 300 €"></textarea>
-          <label><input type="checkbox" id="apronSupport" /> Vorfeldbegleitung gewünscht</label><br>
-          <label>Kundenkommentar:</label>
-          <input type="text" id="customerName" /><br><br>
-          <div style="text-align:right;">
+  <div id="detailModal" style="display:none; position:fixed; top:5%; left:50%; transform:translateX(-50%);
+   background:white; border-radius:10px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:1000; width:600px; max-height:90vh; overflow-y:auto;">
+    <h2>Flugdetails & Bearbeitung</h2>
+    <form id="detailForm">
+      <input type="hidden" id="modalRef" />
+      <label>Airline:</label>
+      <input type="text" id="airlineInput" />
+      <label>Datum:</label>
+      <input type="date" id="dateInput" />
+      <label>Tonnage (kg):</label>
+      <input type="number" id="tonnageInput" />
+      <label>Billing Company:</label>
+      <input type="text" id="billingCompanyInput" />
+      <label>Billing Address:</label>
+      <input type="text" id="billingAddressInput" />
+      <label>Tax Number:</label>
+      <input type="text" id="taxNumberInput" />
+      <label>Contact Name:</label>
+      <input type="text" id="contactNameInput" />
+      <label>Contact Email:</label>
+      <input type="email" id="contactEmailInput" />
+      <label>Original Mail:</label>
+      <pre id="viewEmailRequest" style="background:#f9f9f9;padding:10px;border-radius:5px;white-space:pre-wrap;word-break:break-word;"></pre>
+      <div style="text-align:right;">
             <button type="button" onclick="saveDetails()" style="background:#28a745;color:white;border:none;padding:8px 16px;border-radius:5px;">Speichern</button>
             <button type="button" onclick="closeModal()" style="background:#6c757d;color:white;border:none;padding:8px 16px;border-radius:5px;">Schließen</button>
           </div>
