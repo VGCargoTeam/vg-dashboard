@@ -24,7 +24,6 @@ function openDetails(ref) {
   document.getElementById("modalRef").value = r.ref;
   document.getElementById("airlineInput").value = r.airline || "";
   document.getElementById("dateInput").value = r.date.split("T")[0];
-  document.getElementById("flightTimeInput").value = r.flightTime || "";
   document.getElementById("tonnageInput").value = r.tonnage || "";
   document.getElementById("billingCompanyInput").value = r.billingCompany || "";
   document.getElementById("billingAddressInput").value = r.billingAddress || "";
@@ -52,7 +51,6 @@ function saveDetails() {
   r.taxNumber = document.getElementById("taxNumberInput").value;
   r.contactName = document.getElementById("contactNameInput").value;
   r.contactEmail = document.getElementById("contactEmailInput").value;
-  r.flightTime = document.getElementById("flightTimeInput").value;
 
   fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
     method: "POST",
@@ -62,8 +60,7 @@ function saveDetails() {
       rate: document.getElementById("rateInput").value,
       extraCharges: document.getElementById("otherPricesInput").value,
       escort: document.getElementById("apronSupportInput").checked ? "Ja" : "Nein",
-      flightnumber: document.getElementById("flightNumberInput").value,
-      flightTime: document.getElementById("flightTimeInput").value,
+      flightnumber: document.getElementById("flightNumberInput").value
     })
   }).then(res => res.text()).then(alert);
 
@@ -79,17 +76,9 @@ function saveDetails() {
       billingAddress: r.billingAddress,
       taxNumber: r.taxNumber,
       contactName: r.contactName,
-      contactEmail: r.contactEmail,
-      flightTime: r.flightTime,
+      contactEmail: r.contactEmail
     })
-  })
-  .then(res => res.text())
-  .then(res => {
-    alert("Gespeichert: " + res);
-    loadData();
-    closeModal();
-  });
-}
+  }).then(res => res.text()).then(alert);
 
   closeModal();
   populateRows();
@@ -98,15 +87,6 @@ function saveDetails() {
 function closeModal() {
   document.getElementById("detailModal").style.display = "none";
 }
-
-function loadData() {
-  fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec?mode=read")
-    .then(response => response.json())
-    .then(data => {
-      requestData = data;
-      populateTable();
-    });
-  }
 
 function renderCalendar() {
   const container = document.getElementById("calendarArea");
