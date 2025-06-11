@@ -82,7 +82,14 @@ function saveDetails() {
       contactEmail: r.contactEmail,
       flightTime: r.flightTime,
     })
-  }).then(res => res.text()).then(alert);
+  })
+  .then(res => res.text())
+  .then(res => {
+    alert("Gespeichert: " + res);
+    loadData();
+    closeModal();
+  });
+}
 
   closeModal();
   populateRows();
@@ -91,6 +98,15 @@ function saveDetails() {
 function closeModal() {
   document.getElementById("detailModal").style.display = "none";
 }
+
+function loadData() {
+  fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec?mode=read")
+    .then(response => response.json())
+    .then(data => {
+      requestData = data;
+      populateTable();
+    });
+  }
 
 function renderCalendar() {
   const container = document.getElementById("calendarArea");
