@@ -24,6 +24,7 @@ function openDetails(ref) {
   document.getElementById("modalRef").value = r.ref;
   document.getElementById("airlineInput").value = r.airline || "";
   document.getElementById("dateInput").value = r.date.split("T")[0];
+  document.getElementById("flightTimeInput").value = r.flightTime || "";
   document.getElementById("tonnageInput").value = r.tonnage || "";
   document.getElementById("billingCompanyInput").value = r.billingCompany || "";
   document.getElementById("billingAddressInput").value = r.billingAddress || "";
