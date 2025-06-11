@@ -30,6 +30,7 @@ function openDetails(ref) {
   document.getElementById("taxNumberInput").value = r.taxNumber || "";
   document.getElementById("contactNameInput").value = r.contactName || "";
   document.getElementById("contactEmailInput").value = r.contactEmail || "";
+  document.getElementById("flightNumberInput").value = r.flightNumber || "";
   document.getElementById("viewEmailRequest").textContent = r.emailRequest || "-";
   document.getElementById("rateInput").value = r.rate || "";
   document.getElementById("otherPricesInput").value = r.otherPrices || "";
@@ -58,7 +59,8 @@ function saveDetails() {
       ref,
       rate: document.getElementById("rateInput").value,
       extraCharges: document.getElementById("otherPricesInput").value,
-      escort: document.getElementById("apronSupportInput").checked ? "Ja" : "Nein"
+      escort: document.getElementById("apronSupportInput").checked ? "Ja" : "Nein",
+      flightnumber: document.getElementById("flightNumberInput").value
     })
   }).then(res => res.text()).then(alert);
 
@@ -121,12 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
         contactName: row["Contact Name"],
         contactEmail: row["Contact Email"],
         emailRequest: row["Email Request"],
-        tonnage: parseFloat(row["Tonnage"]) || 0,
-        rate: row["Rate"],
-        otherPrices: row["Zusatzkosten"],
-        apronSupport: row["Vorfeldbegleitung"],
-        flightTime: row["Abflugzeit"],
-        manifestWeight: row["Final Manifest Weight"]
+        tonnage: parseFloat(row["Tonnage"]) || 0
       }));
       populateRows();
     });
