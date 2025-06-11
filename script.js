@@ -35,6 +35,7 @@ function openDetails(ref) {
   document.getElementById("rateInput").value = r.rate || "";
   document.getElementById("otherPricesInput").value = r.otherPrices || "";
   document.getElementById("apronSupportInput").checked = r.apronSupport === "Ja";
+  document.getElementById("flightTimeInput").value = r.flightTime || "";
   document.getElementById("detailModal").style.display = "block";
 }
 
@@ -51,17 +52,21 @@ function saveDetails() {
   r.taxNumber = document.getElementById("taxNumberInput").value;
   r.contactName = document.getElementById("contactNameInput").value;
   r.contactEmail = document.getElementById("contactEmailInput").value;
+  r.flightNumber = document.getElementById("flightNumberInput").value;
+  r.rate = document.getElementById("rateInput").value;
+  r.otherPrices = document.getElementById("otherPricesInput").value;
+  r.apronSupport = document.getElementById("apronSupportInput").checked ? "Ja" : "Nein";
+  r.flightTime = document.getElementById("flightTimeInput").value;
 
 fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
   method: "POST",
   body: new URLSearchParams({
-    mode: "updateExtras",
-    ref,
-    rate: document.getElementById("rateInput").value,
-    extraCharges: document.getElementById("otherPricesInput").value,
-    escort: document.getElementById("apronSupportInput").checked ? "Ja" : "Nein",
-    flightnumber: document.getElementById("flightNumberInput").value,
-    flightTime: document.getElementById("flightTimeInput").value
+      ref,
+      rate: r.rate,
+      extraCharges: r.otherPrices,
+      escort: r.apronSupport,
+      flightnumber: r.flightNumber,
+      flightTime: r.flightTime
   })
 })
 
@@ -79,7 +84,7 @@ fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGm
       contactName: r.contactName,
       contactEmail: r.contactEmail
     })
-  }).then(res => res.text()).then(alert);
+  })
 
   closeModal();
   populateRows();
