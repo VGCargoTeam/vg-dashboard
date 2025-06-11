@@ -66,7 +66,7 @@ fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGm
       extraCharges: r.otherPrices,
       escort: r.apronSupport,
       flightnumber: r.flightNumber,
-      flightTime: r.flightTime
+      flightTime: r.flightTime,
   })
 })
 
