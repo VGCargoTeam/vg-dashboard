@@ -63,7 +63,7 @@ function renderCalendars() {
 
 function deleteRequest(ref) {
   if (confirm("Möchten Sie diese Anfrage wirklich löschen?")) {
-    fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec?mode=delete&ref=" + ref)
+    fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec" + ref)
       .then(response => response.text())
       .then(result => {
         console.log("Löschergebnis:", result);
@@ -79,34 +79,18 @@ function deleteRequest(ref) {
 }
 
 function openDetails(ref) {
-  const r = requestData.find(r => r.ref === ref);
+  const r = requestData.find(x => x.ref === ref);
   if (!r) return;
   document.getElementById("modalRef").value = r.ref;
-  document.getElementById("viewRef").textContent = r.ref;
   document.getElementById("airlineInput").value = r.airline || "";
-  const dateInput = document.getElementById("dateInput");
-  if (r.date) {
-    const year = r.date.getFullYear();
-    const month = String(r.date.getMonth() + 1).padStart(2, '0');
-    const day = String(r.date.getDate()).padStart(2, '0');
-    dateInput.value = `${year}-${month}-${day}`;
-  } else {
-    dateInput.value = "";
-  }
-  document.getElementById("tonnageInput").value = r.tonnage || 0;
+  document.getElementById("dateInput").value = r.date.split("T")[0];
+  document.getElementById("tonnageInput").value = r.tonnage || "";
   document.getElementById("billingCompanyInput").value = r.billingCompany || "";
   document.getElementById("billingAddressInput").value = r.billingAddress || "";
   document.getElementById("taxNumberInput").value = r.taxNumber || "";
   document.getElementById("contactNameInput").value = r.contactName || "";
   document.getElementById("contactEmailInput").value = r.contactEmail || "";
-  document.getElementById("flightNumberInput").value = r.flightNumber || "";
   document.getElementById("viewEmailRequest").textContent = r.emailRequest || "-";
-  document.getElementById("customerName").value = r.customerName || "";
-  document.getElementById("flightTime").value = r.flightTime || "";
-  document.getElementById("manifestWeight").value = r.manifestWeight || "";
-  document.getElementById("rate").value = r.rate || "";
-  document.getElementById("otherPrices").value = r.otherPrices || "";
-  document.getElementById("apronSupport").checked = r.apronSupport || false;
   document.getElementById("detailModal").style.display = "block";
 }
 
@@ -116,7 +100,7 @@ function closeModal() {
 
 function saveDetails() {
   const ref = document.getElementById("modalRef").value;
-  const r = requestData.find(r => r.ref === ref);
+  const r = requestData.find(x => x.ref === ref);
   if (!r) return;
 
   const finalWeight = parseFloat(document.getElementById("manifestWeight").value) || 0;
@@ -139,20 +123,14 @@ function saveDetails() {
   if (flightDate) {
     r.date = new Date(flightDate);
   }
-  r.airline = airline;
-  r.tonnage = tonnage;
-  r.billingCompany = billingCompany;
-  r.billingAddress = billingAddress;
-  r.taxNumber = taxNumber;
-  r.contactName = contactName;
-  r.contactEmail = contactEmail;
-  r.manifestWeight = finalWeight;
-  r.otherPrices = extraCharges;
-  r.rate = rate;
-  r.flightTime = departureTime;
-  r.apronSupport = escort;
-  r.customerName = comment;
-  r.flightNumber = flightNumber;
+  r.airline = document.getElementById("airlineInput").value;
+  r.date = document.getElementById("dateInput").value;
+  r.tonnage = parseFloat(document.getElementById("tonnageInput").value) || 0;
+  r.billingCompany = document.getElementById("billingCompanyInput").value;
+  r.billingAddress = document.getElementById("billingAddressInput").value;
+  r.taxNumber = document.getElementById("taxNumberInput").value;
+  r.contactName = document.getElementById("contactNameInput").value;
+  r.contactEmail = document.getElementById("contactEmailInput").value;
 
   // ❌ NICHT mehr: r.tonnage = r.manifestWeight;
 
@@ -220,7 +198,7 @@ function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate,
   departureTime, escort, comment, flightNumber,
   airline, flightDate, tonnage, billingCompany,
   billingAddress, taxNumber, contactName, contactEmail) {
-  const url = "https://script.google.com/macros/s/AKfycbw2c2PSZlsKNGnQXFjhtpmezSSB_67D1BD3gt1jgVveY791Bb8inDIg4y0yb1Zhq_rm/exec";
+  const url = "https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec";
 
   const formData = new URLSearchParams();
   formData.append("mode", "updateExtras");
@@ -241,21 +219,33 @@ function saveExtrasToGoogleSheet(ref, finalWeight, extraCharges, rate,
   formData.append("contactName", contactName);
   formData.append("contactEmail", contactEmail);
 
-  fetch(url, {
+  fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
     method: "POST",
-    body: formData
-  })
+    body: new URLSearchParams({
+      mode: "updateCustomerData",
+      ref,
+      airline: r.airline,
+      date: r.date,
+      tonnage: r.tonnage,
+      billingCompany: r.billingCompany,
+      billingAddress: r.billingAddress,
+      taxNumber: r.taxNumber,
+      contactName: r.contactName,
+      contactEmail: r.contactEmail
+    })
     .then(response => response.text())
     .then(result => {
       console.log("Gespeichert:", result);
       alert("Änderungen gespeichert!");
     })
-    .catch(error => {
-      console.error("Fehler beim Speichern:", error);
-      alert("Fehler beim Speichern!");
-    });
+  }).then(res => res.text()).then(alert);
+  closeModal();
+  populateRows();
 }
 
+function closeModal() {
+  document.getElementById("detailModal").style.display = "none";
+}
 // ESC zum Schließen des Detailmodals per Tastatur
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') {
