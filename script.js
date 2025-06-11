@@ -15,6 +15,7 @@ function populateRows() {
       <td><button onclick="deleteRequest('${r.ref}')">Delete</button></td>`;
     table.appendChild(row);
   });
+  renderCalendar();
 }
 
 function openDetails(ref) {
@@ -47,7 +48,7 @@ function saveDetails() {
   r.contactName = document.getElementById("contactNameInput").value;
   r.contactEmail = document.getElementById("contactEmailInput").value;
 
-  fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec", {
+  fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
     method: "POST",
     body: new URLSearchParams({
       mode: "updateCustomerData",
@@ -62,6 +63,7 @@ function saveDetails() {
       contactEmail: r.contactEmail
     })
   }).then(res => res.text()).then(alert);
+
   closeModal();
   populateRows();
 }
@@ -69,3 +71,44 @@ function saveDetails() {
 function closeModal() {
   document.getElementById("detailModal").style.display = "none";
 }
+
+function renderCalendar() {
+  const container = document.getElementById("calendarArea");
+  container.innerHTML = "";
+  const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  const monthName = today.toLocaleString('default', { month: 'long' });
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  let html = "<table><tr>";
+  for (let i = 1; i <= daysInMonth; i++) {
+    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+    const match = requestData.find(r => r.date.startsWith(dateStr));
+    html += `<td style="padding:4px;border:1px solid #ccc;background:${match ? '#ffc107' : '#fff'}" title="${match ? match.ref : ''}">${i}</td>`;
+    if (i % 7 === 0) html += "</tr><tr>";
+  }
+  html += "</tr></table>";
+  container.innerHTML = `<h3>${monthName} ${currentYear}</h3>` + html;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  fetch("https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest")
+    .then(r => r.json())
+    .then(data => {
+      requestData = data.map(row => ({
+        ref: row["Ref"],
+        date: row["Flight Date"],
+        airline: row["Airline"],
+        flightNumber: row["Flugnummer"],
+        billingCompany: row["Billing Company"],
+        billingAddress: row["Billing Address"],
+        taxNumber: row["Tax Number"],
+        contactName: row["Contact Name"],
+        contactEmail: row["Contact Email"],
+        emailRequest: row["Email Request"],
+        tonnage: parseFloat(row["Tonnage"]) || 0
+      }));
+      populateRows();
+    });
+});
