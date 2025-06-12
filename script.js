@@ -188,7 +188,7 @@ function refreshDashboard() {
         manifestWeight: row["Final Manifest Weight"] || ""
       }));
       populateRows();
-      renderCalendars();
+      renderCalendar();
     });
 }
     // Initialer Aufruf + Auto-Refresh alle 3 Sekunden
