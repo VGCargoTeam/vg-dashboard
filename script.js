@@ -139,7 +139,7 @@ function renderCalendar() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec")
+  fetch("https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest")
     .then(r => r.json())
     .then(data => {
       requestData = data.map(row => ({
@@ -165,6 +165,32 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
+function refreshDashboard() {
+  fetch("https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest")
+    .then(r => r.json())
+    .then(data => {
+      requestData = data.map(row => ({
+        ref: row["Ref"],
+        date: row["Flight Date"],
+        airline: row["Airline"],
+        flightNumber: row["Flugnummer"],
+        billingCompany: row["Billing Company"],
+        billingAddress: row["Billing Address"],
+        taxNumber: row["Tax Number"],
+        contactName: row["Contact Name"],
+        contactEmail: row["Contact Email"],
+        emailRequest: row["Email Request"],
+        tonnage: parseFloat(row["Tonnage"]) || 0,
+        rate: row["Rate"] || "",
+        otherPrices: row["Zusatzkosten"] || "",
+        apronSupport: row["Vorfeldbegleitung"] || "",
+        flightTime: row["Abflugzeit"] || "",
+        manifestWeight: row["Final Manifest Weight"] || ""
+      }));
+      populateRows();
+      renderCalendars();
+    });
+}
     // Initialer Aufruf + Auto-Refresh alle 3 Sekunden
     refreshDashboard();
     setInterval(refreshDashboard, 3000);
