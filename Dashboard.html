@@ -1,72 +1,272 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>VG Cargo Dashboard</title>
+  <meta charset="UTF-8" />
+  <title>Charter Dashboard</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #eef; margin: 0; padding: 20px; display: flex; gap: 20px; }
-    .main { flex: 2; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
-    .calendar { flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #007BFF; color: white; }
-    .summary { margin-top: 10px; text-align: right; font-weight: bold; }
-    input[type="text"], input[type="email"], input[type="number"], input[type="date"], textarea {
-      padding: 10px; margin-bottom: 12px; width: 100%; border: 1px solid #ccc;
-      border-radius: 5px; font-size: 14px; box-sizing: border-box;
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: url('https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg') no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      min-height: 100vh;
+    }
+    .main {
+      flex: 1;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(4px);
+      padding: 30px;
+      margin: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      position: relative;
+    }
+    .calendar {
+      width: 640px;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(4px);
+      padding: 20px;
+      margin: 20px 20px 20px 0;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    }
+    .calendar-wrapper { display: flex; flex-wrap: wrap; gap: 20px; }
+    .calendar-block {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      width: 300px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+      font-size: 13px;
+    }
+    th {
+      background-color: #007BFF;
+      color: white;
+    }
+    td.marked {
+      background-color: #ffc107;
+      font-weight: bold;
+      cursor: help;
+    }
+    .nav button {
+      padding: 6px 12px;
+      margin-right: 10px;
+      background: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .summary {
+      text-align: right;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .modal {
+      display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.6); justify-content:center; align-items:center;
+    }
+    .modal-content {
+      background:white; padding:20px; border-radius:8px; max-width:500px; width:90%;
+    }
+    .btn {
+      padding: 6px 12px;
+      margin: 2px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn-view { background-color: #17a2b8; color: white; }
+    .btn-delete { background-color: #dc3545; color: white; }
+    .logo {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 10;
     }
   </style>
 </head>
 <body>
-<div class="main">
-  <h2>Charter Dashboard</h2>
-  <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
-  <table>
-    <thead>
-      <tr><th>Reference</th><th>Flight No.</th><th>Date</th><th>Airline</th><th>Tonnage (kg)</th><th>Actions</th></tr>
-    </thead>
-    <tbody id="dataTable"></tbody>
-  </table>
-  <div id="detailModal" style="display:none; position:fixed; top:5%; left:50%; transform:translateX(-50%);
-   background:white; border-radius:10px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:1000; width:600px; max-height:90vh; overflow-y:auto;">
-    <h2>Flugdetails & Bearbeitung</h2>
-    <form id="detailForm">
-      <input type="hidden" id="modalRef" />
-      <label>Airline:</label>
-      <input type="text" id="airlineInput" />
-      <label>Flugnummer:</label>
-      <input type="text" id="flightNumberInput" />
-      <label>Datum:</label>
-      <input type="date" id="dateInput" />
-      <label>Geplante Abflug-/Ankunftszeit:</label>
-      <input type="time" id="flightTimeInput" placeholder="z. B. 10:15" />      
-      <label>Tonnage (kg):</label>
-      <input type="number" id="tonnageInput" />
-      <label>Billing Company:</label>
-      <input type="text" id="billingCompanyInput" />
-      <label>Billing Address:</label>
-      <input type="text" id="billingAddressInput" />
-      <label>Tax Number:</label>
-      <input type="text" id="taxNumberInput" />
-      <label>Contact Name:</label>
-      <input type="text" id="contactNameInput" />
-      <label>Contact Email:</label>
-      <input type="email" id="contactEmailInput" />
-      <label>Rate (€):</label>
-  <input type="number" id="rateInput" step="0.01" />
-  <label>Weitere Preise:</label>
-  <textarea id="otherPricesInput" placeholder="z.B. Handling: 500 €&#10;Screening: 300 €"></textarea>
-  <label><input type="checkbox" id="apronSupportInput" /> Vorfeldbegleitung gewünscht</label><br><br>
-  <label>Original Mail:</label>
-      <pre id="viewEmailRequest" style="background:#f9f9f9;padding:10px;border-radius:5px;white-space:pre-wrap;word-break:break-word;"></pre>
-      <div style="text-align:right;">
-        <button type="button" onclick="saveDetails()">Speichern</button>
-        <button type="button" onclick="closeModal()">Schließen</button>
-      </div>
-    </form>
+  <div class="logo">
+    <img src="VG_Cargo_logo_small.png" alt="VG Cargo Logo" style="height:50px;">
   </div>
-</div>
-<div class="calendar"><div id="calendarArea"></div></div>
-<script src="script.js"></script>
+  <div class="main">
+    <h1>Charter Dashboard</h1>
+    <div style="text-align: center; font-size: 14px; color: #007BFF;">
+      <span id="currentDate">Date: --</span> | <span id="clock">Time: --:--:--</span>
+    </div>
+    <div style="margin-top: 10px;">
+      <label>Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
+      <label>Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
+      <label>From:</label> <input type="date" id="fromDate" onchange="filterTable()" />
+      <label>To:</label> <input type="date" id="toDate" onchange="filterTable()" />
+    </div>
+    <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
+    <table>
+      <thead><tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage</th><th>Contact</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><a class="reference-link" href="javascript:void(0);" onclick="openModal('CC-20250408-LUF001')">CC-20250408-LUF001</a></td>
+          <td>2025-04-08</td><td>Lufthansa Cargo</td><td>12000</td><td>invoice@cargo.de</td>
+          <td><button class="btn btn-view" onclick="openModal('CC-20250408-LUF001')">View</button> <button class="btn btn-delete" onclick="deleteRow(this)">Delete</button></td>
+        </tr>
+        <tr>
+          <td><a class="reference-link" href="javascript:void(0);" onclick="openModal('CC-20250512-EMR002')">CC-20250512-EMR002</a></td>
+          <td>2025-05-12</td><td>Emirates SkyCargo</td><td>9700</td><td>billing@emirates.com</td>
+          <td><button class="btn btn-view" onclick="openModal('CC-20250512-EMR002')">View</button> <button class="btn btn-delete" onclick="deleteRow(this)">Delete</button></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="modal" id="detailModal">
+      <div class="modal-content">
+        <span style="float:right; cursor:pointer;" onclick="closeModal()">✖</span>
+        <div id="modalBody"></div>
+      </div>
+    </div>
+  </div>
+  <div class="calendar">
+    <div class="nav">
+      <button onclick="shiftCalendar(-1)">← Back</button>
+      <button onclick="shiftCalendar(1)">Forward →</button>
+    </div>
+    <div id="calendarArea" class="calendar-wrapper"></div>
+  </div>
+  <script>
+    const requestDetails = {
+      "CC-20250408-LUF001": {
+        date: "2025-04-08", airline: "Lufthansa Cargo", tonnage: "12000", contact: "invoice@cargo.de"
+      },
+      "CC-20250512-EMR002": {
+        date: "2025-05-12", airline: "Emirates SkyCargo", tonnage: "9700", contact: "billing@emirates.com"
+      }
+    };
+    let baseMonth = 3;
+    let baseYear = 2025;
+
+    function shiftCalendar(offset) {
+      baseMonth += offset;
+      if (baseMonth < 0) { baseMonth += 12; baseYear -= 1; }
+      if (baseMonth > 11) { baseMonth -= 12; baseYear += 1; }
+      renderCalendars();
+    }
+
+    function renderCalendars() {
+      const container = document.getElementById("calendarArea");
+      container.innerHTML = "";
+      for (let i = 0; i < 2; i++) {
+        const m = baseMonth + i;
+        const y = baseYear + Math.floor(m / 12);
+        const month = (m % 12 + 12) % 12;
+        container.innerHTML += generateCalendarHTML(y, month);
+      }
+    }
+
+    function generateCalendarHTML(year, month) {
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const monthName = new Date(year, month).toLocaleString('default', { month: 'long' });
+      let html = `<div class="calendar-block"><h3>${monthName} ${year}</h3><table><thead><tr><th>Mo</th><th>Tu</th><th>We</th><th>Th</th><th>Fr</th><th>Sa</th><th>Su</th></tr></thead><tbody>`;
+      let day = 1;
+      for (let i = 0; i < 6; i++) {
+        html += "<tr>";
+        for (let j = 1; j <= 7; j++) {
+          const realDay = (j + 6) % 7;
+          if ((i === 0 && realDay < firstDay) || day > daysInMonth) {
+            html += "<td class='empty'></td>";
+          } else {
+            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const marker = requestDetails[Object.keys(requestDetails).find(key => requestDetails[key].date === dateStr)] ? "marked" : "";
+            const title = requestDetails[Object.keys(requestDetails).find(key => requestDetails[key].date === dateStr)]?.date || "";
+            html += `<td class='${marker}' title='${title}'>${day}</td>`;
+            day++;
+          }
+        }
+        html += "</tr>";
+        if (day > daysInMonth) break;
+      }
+      html += "</tbody></table></div>";
+      return html;
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const local = new Date(now.getTime() + (2 * 60 * 60 * 1000));
+      const dateSpan = document.getElementById('currentDate');
+      const timeSpan = document.getElementById('clock');
+      if (dateSpan && timeSpan) {
+        dateSpan.textContent = "Date: " + local.toISOString().substr(0, 10);
+        timeSpan.textContent = "Time: " + local.toISOString().substr(11, 8);
+      }
+    }
+
+    function openModal(ref) {
+      const data = requestDetails[ref];
+      document.getElementById("modalBody").innerHTML = `
+        <h3>${ref}</h3>
+        <p><strong>Date:</strong> ${data.date}</p>
+        <p><strong>Airline:</strong> ${data.airline}</p>
+        <p><strong>Tonnage:</strong> ${data.tonnage} kg</p>
+        <p><strong>Contact:</strong> ${data.contact}</p>`;
+      document.getElementById("detailModal").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("detailModal").style.display = "none";
+    }
+
+    function deleteRow(btn) {
+      if (!confirm('Are you sure you want to delete this request?')) return;
+      const row = btn.closest("tr");
+      row.remove();
+      filterTable();
+    }
+
+    function filterTable() {
+      const rows = document.querySelectorAll("tbody tr");
+      const airlineFilter = document.getElementById("airlineSearch").value.toLowerCase();
+      const refFilter = document.getElementById("refSearch").value.toLowerCase();
+      const fromDate = document.getElementById("fromDate").value;
+      const toDate = document.getElementById("toDate").value;
+
+      let totalFlights = 0;
+      let totalWeight = 0;
+
+      rows.forEach(row => {
+        const [ref, date, airline, tonnage] = Array.from(row.children).map(td => td.innerText);
+        const tonnageNum = parseFloat(tonnage);
+        const show = (!airlineFilter || airline.toLowerCase().includes(airlineFilter)) &&
+                     (!refFilter || ref.toLowerCase().includes(refFilter)) &&
+                     (!fromDate || date >= fromDate) &&
+                     (!toDate || date <= toDate);
+        row.style.display = show ? "" : "none";
+        if (show) {
+          totalFlights += 1;
+          totalWeight += tonnageNum;
+        }
+      });
+
+      document.getElementById("summaryInfo").textContent =
+        "Total Flights: " + totalFlights + " | Total Tonnage: " + totalWeight.toLocaleString() + " kg";
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      updateClock();
+      setInterval(updateClock, 1000);
+      filterTable();
+      renderCalendars();
+    });
+  </script>
 </body>
 </html>
