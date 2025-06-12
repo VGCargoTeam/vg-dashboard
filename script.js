@@ -1,4 +1,3 @@
-
 let requestData = [];
 
 function populateRows() {
@@ -11,7 +10,7 @@ function populateRows() {
       <td>${r.flightNumber || "-"}</td>
       <td>${new Date(r.date).toLocaleDateString('de-DE')}</td>
       <td>${r.airline}</td>
-      <td>${r.tonnage}</td>
+      <td>${r.tonnage.toLocaleString('de-DE')} kg</td>
       <td><button onclick="deleteRequest('${r.ref}')">Delete</button></td>`;
     table.appendChild(row);
   });
@@ -57,19 +56,18 @@ function saveDetails() {
   r.rate = document.getElementById("rateInput").value;
   r.otherPrices = document.getElementById("otherPricesInput").value;
   r.apronSupport = document.getElementById("apronSupportInput").checked ? "Ja" : "Nein";
-  
-fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
-  method: "POST",
-  body: new URLSearchParams({
-    mode: "updateExtras",
+
+  fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
+    method: "POST",
+    body: new URLSearchParams({
+      mode: "updateExtras",
       ref,
       rate: r.rate,
       extraCharges: r.otherPrices,
       escort: r.apronSupport,
-      flightnumber: r.flightNumber,
-      flightTime: r.flightTime
-  }),
-});
+      flightnumber: r.flightNumber
+    })
+  });
 
   fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
     method: "POST",
@@ -87,7 +85,18 @@ fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGm
     })
   });
 
+  // separate Speicherung für FlightTime
+  fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
+    method: "POST",
+    body: new URLSearchParams({
+      mode: "saveFlightTime",
+      ref,
+      flightTime: r.flightTime
+    })
+  });
+
   closeModal();
+  populateRows();
 }
 
 function closeModal() {
@@ -106,13 +115,17 @@ function renderCalendar() {
   let html = "<table><tr>";
   for (let i = 1; i <= daysInMonth; i++) {
     const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-    const match = requestData.find(r => r.date.startsWith(dateStr));
+    const match = requestData.find(r => r.date?.startsWith(dateStr));
     html += `<td style="padding:4px;border:1px solid #ccc;background:${match ? '#ffc107' : '#fff'}" title="${match ? match.ref : ''}">${i}</td>`;
     if (i % 7 === 0) html += "</tr><tr>";
   }
   html += "</tr></table>";
   container.innerHTML = `<h3>${monthName} ${currentYear}</h3>` + html;
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  refreshDashboard();
+});
 
 function refreshDashboard() {
   fetch("https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest")
@@ -141,7 +154,4 @@ function refreshDashboard() {
     });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  refreshDashboard();
-  setInterval(refreshDashboard, 3000); // alle 3 Sekunden aktualisieren
-});
+setInterval(refreshDashboard, 3000);
