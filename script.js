@@ -161,5 +161,13 @@ document.addEventListener("DOMContentLoaded", () => {
         manifestWeight: row["Final Manifest Weight"] || ""
       }));
       populateRows();
+      renderCalendar();
     });
 });
+
+    // Initialer Aufruf + Auto-Refresh alle 3 Sekunden
+    refreshDashboard();
+    setInterval(refreshDashboard, 3000);
+  </script>
+</body>
+</html>
