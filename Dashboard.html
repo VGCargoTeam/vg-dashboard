@@ -6,15 +6,13 @@
   <style>
     body { font-family: Arial, sans-serif; background: #eef; margin: 0; padding: 20px; display: flex; gap: 20px; }
     .main { flex: 2; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
-    .calendar { flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
+    .calendars { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+    .calendar { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
     th { background: #007BFF; color: white; }
     .summary { margin-top: 10px; text-align: right; font-weight: bold; }
-    input[type="text"], input[type="email"], input[type="number"], input[type="date"], textarea {
-      padding: 10px; margin-bottom: 12px; width: 100%; border: 1px solid #ccc;
-      border-radius: 5px; font-size: 14px; box-sizing: border-box;
-    }
+    input, textarea { padding: 10px; margin-bottom: 12px; width: 100%; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; box-sizing: border-box; }
   </style>
 </head>
 <body>
@@ -27,8 +25,7 @@
     </thead>
     <tbody id="dataTable"></tbody>
   </table>
-  <div id="detailModal" style="display:none; position:fixed; top:5%; left:50%; transform:translateX(-50%);
-   background:white; border-radius:10px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:1000; width:600px; max-height:90vh; overflow-y:auto;">
+  <div id="detailModal" style="display:none; position:fixed; top:5%; left:50%; transform:translateX(-50%); background:white; border-radius:10px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:1000; width:600px; max-height:90vh; overflow-y:auto;">
     <h2>Flugdetails & Bearbeitung</h2>
     <form id="detailForm">
       <input type="hidden" id="modalRef" />
@@ -38,12 +35,10 @@
       <input type="text" id="flightNumberInput" />
       <label>Datum:</label>
       <input type="date" id="dateInput" />
-      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
       <label for="flightTimeInput">Geplante Abflug-/Ankunftszeit:</label>
-      <input type="time" id="flightTimeInput" style="font-size: 16px; padding: 6px;" />
+      <input type="time" id="flightTimeInput" />
       <label for="tonnageInput">Tonnage (kg):</label>
-      <input type="number" id="tonnageInput" style="font-size: 16px; padding: 6px;" />
-      </div>
+      <input type="number" id="tonnageInput" />
       <label>Billing Company:</label>
       <input type="text" id="billingCompanyInput" />
       <label>Billing Address:</label>
@@ -55,12 +50,12 @@
       <label>Contact Email:</label>
       <input type="email" id="contactEmailInput" />
       <label>Rate (€):</label>
-  <input type="number" id="rateInput" step="0.01" />
-  <label>Weitere Preise:</label>
-  <textarea id="otherPricesInput" placeholder="z.B. Handling: 500 €&#10;Screening: 300 €"></textarea>
-  <label><input type="checkbox" id="apronSupportInput" /> Vorfeldbegleitung gewünscht</label><br><br>
-  <label>Original Mail:</label>
-      <pre id="viewEmailRequest" style="background:#f9f9f9;padding:10px;border-radius:5px;white-space:pre-wrap;word-break:break-word;"></pre>
+      <input type="number" id="rateInput" step="0.01" />
+      <label>Weitere Preise:</label>
+      <textarea id="otherPricesInput"></textarea>
+      <label><input type="checkbox" id="apronSupportInput" /> Vorfeldbegleitung gewünscht</label><br><br>
+      <label>Original Mail:</label>
+      <pre id="viewEmailRequest" style="background:#f9f9f9;padding:10px;border-radius:5px;"></pre>
       <div style="text-align:right;">
         <button type="button" onclick="saveDetails()">Speichern</button>
         <button type="button" onclick="closeModal()">Schließen</button>
@@ -68,7 +63,10 @@
     </form>
   </div>
 </div>
-<div class="calendar"><div id="calendarArea"></div></div>
+<div class="calendars">
+  <div class="calendar"><div id="calendarArea1"></div></div>
+  <div class="calendar"><div id="calendarArea2"></div></div>
+</div>
 <script src="script.js"></script>
 </body>
 </html>
