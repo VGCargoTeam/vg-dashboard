@@ -117,6 +117,20 @@ function saveDetails() {
       flightTime: r.flightTime
     })
   });
+// Speichere die Abflugzeit zusätzlich per Vercel API
+fetch('/api/saveFlightTime', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    ref: r.ref,
+    flightTime: r.flightTime
+  })
+})
+.then(response => response.json())
+.then(data => console.log("API gespeichert:", data))
+.catch(error => console.error("Fehler bei API-Speicherung:", error));
 
   closeModal();
   refreshDashboard();
