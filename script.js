@@ -139,7 +139,7 @@ function renderCalendar() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  fetch("https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest")
+  fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec")
     .then(r => r.json())
     .then(data => {
       requestData = data.map(row => ({
