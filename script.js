@@ -61,6 +61,7 @@ function saveDetails() {
 fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
   method: "POST",
   body: new URLSearchParams({
+    mode: "updateExtras",
       ref,
       rate: r.rate,
       extraCharges: r.otherPrices,
