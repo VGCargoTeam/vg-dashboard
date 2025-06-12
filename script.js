@@ -133,7 +133,9 @@ requestData = data.map(row => ({
   rate: row["Rate"] || "",
   otherPrices: row["Zusatzkosten"] || "",
   apronSupport: row["Vorfeldbegleitung"] || "",
-  flightTime: row["Abflugzeit"] || "",
+  flightTime: typeof row["Abflugzeit"] === "string" 
+                      ? row["Abflugzeit"].slice(0, 5) 
+                      : "",  // falls als Date gespeichert
   manifestWeight: row["Final Manifest Weight"] || ""
 }));
       populateRows();
