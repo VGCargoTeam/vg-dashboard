@@ -48,24 +48,28 @@ function openModal(i) {
   const modalBody = document.getElementById("modalBody");
   modalBody.innerHTML = "";
 
-  for (const key in r) {
+  const sortedKeys = Object.keys(r).sort((a, b) => {
+    if (a === "Ref") return -1;
+    if (b === "Ref") return 1;
+    return 0;
+  });
+
+  sortedKeys.forEach(key => {
     if (key === "Email Request") {
-      modalBody.innerHTML += `<p><strong>${key}:</strong><br><textarea disabled>${r[key]}</textarea></p>`;
-    } else if (key === "Rate" || key === "Zusatzkosten") {
-      if (!isAdmin) continue;
-      modalBody.innerHTML += `<p><strong>${key}:</strong><br><input name="${key}" value="${r[key] || ""}" /></p>`;
+      modalBody.innerHTML += `<p><label>${key}:</label><textarea name="${key}">${r[key]}</textarea></p>`;
+    } else if ((key === "Rate" || key === "Zusatzkosten") && !isAdmin) {
+      return;
     } else if (key === "1") {
-      modalBody.innerHTML += `<p><strong>Flugzeugtyp:</strong><br><input name="1" value="${r[key] || ""}" /></p>`;
+      modalBody.innerHTML += `<p><label>Flugzeugtyp:</label><input name="1" value="${r[key] || ""}" /></p>`;
     } else if (key === "Final Manifest Weight") {
-      // Feld wird ausgelassen
-      continue;
+      return;
     } else if (key === "Vorfeldbegleitung") {
       const checked = r[key]?.toLowerCase() === "ja" ? "checked" : "";
-      modalBody.innerHTML += `<p><strong>${key}:</strong><br><label><input type="checkbox" name="${key}" ${checked}> Ja</label></p>`;
+      modalBody.innerHTML += `<p><label>${key}:</label><input type="checkbox" name="${key}" ${checked} /> Ja</p>`;
     } else {
-      modalBody.innerHTML += `<p><strong>${key}:</strong><br><input name="${key}" value="${r[key] || ""}" /></p>`;
+      modalBody.innerHTML += `<p><label>${key}:</label><input name="${key}" value="${r[key] || ""}" /></p>`;
     }
-  }
+  });
 
   modal.style.display = "flex";
 }
@@ -74,17 +78,16 @@ function closeModal() {
   document.getElementById("detailModal").style.display = "none";
 }
 
+document.addEventListener('keydown', (e) => {
+  if (e.key === "Escape") closeModal();
+});
+
 function saveDetails() {
-  const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled])");
+  const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled])");
   const data = {};
-  inputs.forEach(i => data[i.name] = i.value);
-    // Sonderbehandlung für Checkbox
-  const escort = document.querySelector('input[name="Vorfeldbegleitung"]');
-  if (escort) {
-    data["Vorfeldbegleitung"] = escort.checked ? "Ja" : "Nein";
-  }
-  
+  inputs.forEach(i => data[i.name] = i.type === "checkbox" ? (i.checked ? "Ja" : "Nein") : i.value);
   data.mode = "updateExtras";
+
   fetch(POST_URL, {
     method: 'POST',
     body: new URLSearchParams(data)
