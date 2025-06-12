@@ -1,5 +1,36 @@
 let requestData = [];
 
+function refreshDashboard() {
+  Promise.all([
+    fetch("https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest").then(r => r.json()),
+    fetch("https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/FlightTime").then(r => r.json())
+  ]).then(([mainData, timeData]) => {
+    requestData = mainData.map(row => {
+      const matchingTime = timeData.find(t => t.Ref === row["Ref"]);
+      return {
+        ref: row["Ref"],
+        date: row["Flight Date"],
+        airline: row["Airline"],
+        flightNumber: row["Flugnummer"],
+        billingCompany: row["Billing Company"],
+        billingAddress: row["Billing Address"],
+        taxNumber: row["Tax Number"],
+        contactName: row["Contact Name"],
+        contactEmail: row["Contact Email"],
+        emailRequest: row["Email Request"],
+        tonnage: parseFloat(row["Tonnage"]) || 0,
+        rate: row["Rate"] || "",
+        otherPrices: row["Zusatzkosten"] || "",
+        apronSupport: row["Vorfeldbegleitung"] || "",
+        flightTime: matchingTime?.FlightTime || "",
+        manifestWeight: row["Final Manifest Weight"] || ""
+      };
+    });
+    populateRows();
+    renderCalendar();
+  });
+}
+
 function populateRows() {
   const table = document.getElementById("dataTable");
   table.innerHTML = "";
@@ -8,13 +39,12 @@ function populateRows() {
     row.innerHTML = `
       <td><button onclick="openDetails('${r.ref}')">${r.ref}</button></td>
       <td>${r.flightNumber || "-"}</td>
-      <td>${new Date(r.date).toLocaleDateString('de-DE')}</td>
+      <td>${new Date(r.date).toLocaleDateString("de-DE")}</td>
       <td>${r.airline}</td>
-      <td>${r.tonnage.toLocaleString('de-DE')} kg</td>
+      <td>${r.tonnage.toLocaleString("de-DE")} kg</td>
       <td><button onclick="deleteRequest('${r.ref}')">Delete</button></td>`;
     table.appendChild(row);
   });
-  renderCalendar();
 }
 
 function openDetails(ref) {
@@ -22,7 +52,8 @@ function openDetails(ref) {
   if (!r) return;
   document.getElementById("modalRef").value = r.ref;
   document.getElementById("airlineInput").value = r.airline || "";
-  document.getElementById("dateInput").value = r.date.split("T")[0];
+  document.getElementById("dateInput").value = r.date?.split("T")[0] || "";
+  document.getElementById("flightTimeInput").value = r.flightTime || "";
   document.getElementById("tonnageInput").value = r.tonnage || "";
   document.getElementById("billingCompanyInput").value = r.billingCompany || "";
   document.getElementById("billingAddressInput").value = r.billingAddress || "";
@@ -30,11 +61,10 @@ function openDetails(ref) {
   document.getElementById("contactNameInput").value = r.contactName || "";
   document.getElementById("contactEmailInput").value = r.contactEmail || "";
   document.getElementById("flightNumberInput").value = r.flightNumber || "";
-  document.getElementById("viewEmailRequest").textContent = r.emailRequest || "-";
   document.getElementById("rateInput").value = r.rate || "";
   document.getElementById("otherPricesInput").value = r.otherPrices || "";
   document.getElementById("apronSupportInput").checked = r.apronSupport === "Ja";
-  document.getElementById("flightTimeInput").value = r.flightTime || "";
+  document.getElementById("viewEmailRequest").textContent = r.emailRequest || "-";
   document.getElementById("detailModal").style.display = "block";
 }
 
@@ -57,19 +87,9 @@ function saveDetails() {
   r.otherPrices = document.getElementById("otherPricesInput").value;
   r.apronSupport = document.getElementById("apronSupportInput").checked ? "Ja" : "Nein";
 
-  fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
-    method: "POST",
-    body: new URLSearchParams({
-      mode: "updateExtras",
-      ref,
-      rate: r.rate,
-      extraCharges: r.otherPrices,
-      escort: r.apronSupport,
-      flightnumber: r.flightNumber
-    })
-  });
+  const postURL = "https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec";
 
-  fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
+  fetch(postURL, {
     method: "POST",
     body: new URLSearchParams({
       mode: "updateCustomerData",
@@ -85,18 +105,21 @@ function saveDetails() {
     })
   });
 
-  // separate Speicherung für FlightTime
-  fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
+  fetch(postURL, {
     method: "POST",
     body: new URLSearchParams({
-      mode: "saveFlightTime",
+      mode: "updateExtras",
       ref,
+      flightnumber: r.flightNumber,
+      rate: r.rate,
+      extraCharges: r.otherPrices,
+      escort: r.apronSupport,
       flightTime: r.flightTime
     })
   });
 
   closeModal();
-  populateRows();
+  refreshDashboard();
 }
 
 function closeModal() {
@@ -109,7 +132,7 @@ function renderCalendar() {
   const today = new Date();
   const currentMonth = today.getMonth();
   const currentYear = today.getFullYear();
-  const monthName = today.toLocaleString('default', { month: 'long' });
+  const monthName = today.toLocaleString("default", { month: "long" });
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
   let html = "<table><tr>";
@@ -123,35 +146,5 @@ function renderCalendar() {
   container.innerHTML = `<h3>${monthName} ${currentYear}</h3>` + html;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  refreshDashboard();
-});
-
-function refreshDashboard() {
-  fetch("https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest")
-    .then(r => r.json())
-    .then(data => {
-      requestData = data.map(row => ({
-        ref: row["Ref"],
-        date: row["Flight Date"],
-        airline: row["Airline"],
-        flightNumber: row["Flugnummer"],
-        billingCompany: row["Billing Company"],
-        billingAddress: row["Billing Address"],
-        taxNumber: row["Tax Number"],
-        contactName: row["Contact Name"],
-        contactEmail: row["Contact Email"],
-        emailRequest: row["Email Request"],
-        tonnage: parseFloat(row["Tonnage"]) || 0,
-        rate: row["Rate"] || "",
-        otherPrices: row["Zusatzkosten"] || "",
-        apronSupport: row["Vorfeldbegleitung"] || "",
-        flightTime: row["Abflugzeit"] || "",
-        manifestWeight: row["Final Manifest Weight"] || ""
-      }));
-      populateRows();
-      renderCalendar();
-    });
-}
-
+document.addEventListener("DOMContentLoaded", refreshDashboard);
 setInterval(refreshDashboard, 3000);
