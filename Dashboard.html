@@ -1,1 +1,152 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Charter Dashboard</title>
+  <script src="script.js" defer></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: url('https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg') no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      min-height: 100vh;
+    }
+    .main {
+      flex: 1;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(6px);
+      padding: 30px;
+      margin: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      position: relative;
+    }
+    .calendar {
+      width: 640px;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(6px);
+      padding: 20px;
+      margin: 20px 20px 20px 0;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    }
+    input[type="text"], input[type="date"] {
+      padding: 6px 10px;
+      margin: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+      font-size: 14px;
+    }
+    th {
+      background-color: #007BFF;
+      color: white;
+    }
+    td.marked {
+      background-color: #ffc107;
+      font-weight: bold;
+      cursor: help;
+    }
+    .nav button, .btn {
+      padding: 6px 12px;
+      margin: 3px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .btn-view { background-color: #17a2b8; color: white; }
+    .btn-delete { background-color: #dc3545; color: white; }
+    .summary {
+      text-align: right;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 700px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .modal-content p {
+      flex: 1 1 45%;
+      margin: 0;
+    }
+    .modal-content input, .modal-content textarea {
+      width: 100%;
+      padding: 6px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .logo {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">
+    <img src="VG_Cargo_logo_small.png" alt="VG Cargo Logo" style="height:50px;">
+  </div>
+  <div class="main">
+    <h1>Charter Dashboard</h1>
+    <div style="text-align: center; font-size: 14px; color: #007BFF;">
+      <span id="currentDate">Date: --</span> | <span id="clock">Time: --:--:--</span>
+    </div>
+    <div style="margin-top: 10px;">
+      <label>Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
+      <label>Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
+      <label>From:</label> <input type="date" id="fromDate" onchange="filterTable()" />
+      <label>To:</label> <input type="date" id="toDate" onchange="filterTable()" />
+    </div>
+    <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
+    <table id="dataTable"><thead><tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage</th><th>Contact</th><th>Action</th></tr></thead><tbody></tbody></table>
+    <div class="modal" id="detailModal">
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeModal()">✖</span>
+        <div id="modalBody" style="width:100%; display:flex; flex-wrap:wrap; gap:20px;"></div>
+        <button onclick="saveDetails()" style="margin-left:auto;">Speichern</button>
+      </div>
+    </div>
+  </div>
+  <div class="calendar">
+    <div class="nav">
+      <button onclick="shiftCalendar(-1)">← Back</button>
+      <button onclick="shiftCalendar(1)">Forward →</button>
+    </div>
+    <div id="calendarArea" class="calendar-wrapper"></div>
+  </div>
+</body>
+</html>
+
