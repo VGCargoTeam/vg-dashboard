@@ -47,15 +47,26 @@ function openModal(i) {
   const modal = document.getElementById("detailModal");
   const modalBody = document.getElementById("modalBody");
   modalBody.innerHTML = "";
+
   for (const key in r) {
     if (key === "Email Request") {
       modalBody.innerHTML += `<p><strong>${key}:</strong><br><textarea disabled>${r[key]}</textarea></p>`;
-    } else if ((key === "Rate" || key === "Zusatzkosten") && !isAdmin) {
+    } else if (key === "Rate" || key === "Zusatzkosten") {
+      if (!isAdmin) continue;
+      modalBody.innerHTML += `<p><strong>${key}:</strong><br><input name="${key}" value="${r[key] || ""}" /></p>`;
+    } else if (key === "1") {
+      modalBody.innerHTML += `<p><strong>Flugzeugtyp:</strong><br><input name="1" value="${r[key] || ""}" /></p>`;
+    } else if (key === "Final Manifest Weight") {
+      // Feld wird ausgelassen
       continue;
+    } else if (key === "Vorfeldbegleitung") {
+      const checked = r[key]?.toLowerCase() === "ja" ? "checked" : "";
+      modalBody.innerHTML += `<p><strong>${key}:</strong><br><label><input type="checkbox" name="${key}" ${checked}> Ja</label></p>`;
     } else {
       modalBody.innerHTML += `<p><strong>${key}:</strong><br><input name="${key}" value="${r[key] || ""}" /></p>`;
     }
   }
+
   modal.style.display = "flex";
 }
 
@@ -67,6 +78,12 @@ function saveDetails() {
   const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled])");
   const data = {};
   inputs.forEach(i => data[i.name] = i.value);
+    // Sonderbehandlung für Checkbox
+  const escort = document.querySelector('input[name="Vorfeldbegleitung"]');
+  if (escort) {
+    data["Vorfeldbegleitung"] = escort.checked ? "Ja" : "Nein";
+  }
+  
   data.mode = "updateExtras";
   fetch(POST_URL, {
     method: 'POST',
