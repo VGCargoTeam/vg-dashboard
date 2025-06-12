@@ -1,34 +1,33 @@
 let requestData = [];
 
 function refreshDashboard() {
-  Promise.all([
-    fetch("https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest").then(r => r.json()),
-    fetch("https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/FlightTime").then(r => r.json())
-  ]).then(([mainData, timeData]) => {
-    requestData = mainData.map(row => {
-      const matchingTime = timeData.find(t => t.Ref === row["Ref"]);
-      return {
-        ref: row["Ref"],
-        date: row["Flight Date"],
-        airline: row["Airline"],
-        flightNumber: row["Flugnummer"],
-        billingCompany: row["Billing Company"],
-        billingAddress: row["Billing Address"],
-        taxNumber: row["Tax Number"],
-        contactName: row["Contact Name"],
-        contactEmail: row["Contact Email"],
-        emailRequest: row["Email Request"],
-        tonnage: parseFloat(row["Tonnage"]) || 0,
-        rate: row["Rate"] || "",
-        otherPrices: row["Zusatzkosten"] || "",
-        apronSupport: row["Vorfeldbegleitung"] || "",
-        flightTime: matchingTime?.FlightTime || "",
-        manifestWeight: row["Final Manifest Weight"] || ""
-      };
+  fetch("https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest")
+    .then(r => r.json())
+    .then(mainData => {
+      requestData = mainData.map(row => {
+        return {
+          ref: row["Ref"],
+          date: row["Flight Date"],
+          airline: row["Airline"],
+          flightNumber: row["Flugnummer"],
+          billingCompany: row["Billing Company"],
+          billingAddress: row["Billing Address"],
+          taxNumber: row["Tax Number"],
+          contactName: row["Contact Name"],
+          contactEmail: row["Contact Email"],
+          emailRequest: row["Email Request"],
+          tonnage: parseFloat(row["Tonnage"]) || 0,
+          rate: row["Rate"] || "",
+          otherPrices: row["Zusatzkosten"] || "",
+          apronSupport: row["Vorfeldbegleitung"] || "",
+          flightTime: row["Abflugzeit"] || "",
+          manifestWeight: row["Final Manifest Weight"] || ""
+        };
+      });
+      populateRows();
+      renderCalendar("calendarArea1", 0);
+      renderCalendar("calendarArea2", 1);
     });
-    populateRows();
-    renderCalendar();
-  });
 }
 
 function populateRows() {
@@ -117,20 +116,6 @@ function saveDetails() {
       flightTime: r.flightTime
     })
   });
-// Speichere die Abflugzeit zusätzlich per Vercel API
-fetch('/api/saveFlightTime', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    ref: r.ref,
-    flightTime: r.flightTime
-  })
-})
-.then(response => response.json())
-.then(data => console.log("API gespeichert:", data))
-.catch(error => console.error("Fehler bei API-Speicherung:", error));
 
   closeModal();
   refreshDashboard();
@@ -140,20 +125,21 @@ function closeModal() {
   document.getElementById("detailModal").style.display = "none";
 }
 
-function renderCalendar() {
-  const container = document.getElementById("calendarArea");
+function renderCalendar(containerId, monthOffset = 0) {
+  const container = document.getElementById(containerId);
   container.innerHTML = "";
   const today = new Date();
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
-  const monthName = today.toLocaleString("default", { month: "long" });
+  const date = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+  const currentMonth = date.getMonth();
+  const currentYear = date.getFullYear();
+  const monthName = date.toLocaleString("default", { month: "long" });
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
   let html = "<table><tr>";
   for (let i = 1; i <= daysInMonth; i++) {
     const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
     const match = requestData.find(r => r.date?.startsWith(dateStr));
-    html += `<td style="padding:4px;border:1px solid #ccc;background:${match ? '#ffc107' : '#fff'}" title="${match ? match.ref : ''}">${i}</td>`;
+    html += `<td style="padding:4px;border:1px solid #ccc;background:${match ? '#ffc107' : '#fff'}" title="${match ? match.ref + ' – ' + match.flightTime : ''}">${i}</td>`;
     if (i % 7 === 0) html += "</tr><tr>";
   }
   html += "</tr></table>";
