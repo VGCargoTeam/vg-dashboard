@@ -8,7 +8,7 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       background: url('https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg') no-repeat center center fixed;
       background-size: cover;
       display: flex;
@@ -17,40 +17,41 @@
     .main {
       flex: 1;
       background: rgba(255,255,255,0.85);
-      backdrop-filter: blur(4px);
+      backdrop-filter: blur(6px);
       padding: 30px;
       margin: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
       position: relative;
     }
     .calendar {
       width: 640px;
       background: rgba(255,255,255,0.85);
-      backdrop-filter: blur(4px);
+      backdrop-filter: blur(6px);
       padding: 20px;
       margin: 20px 20px 20px 0;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
     }
-    .calendar-wrapper { display: flex; flex-wrap: wrap; gap: 20px; }
-    .calendar-block {
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.1);
-      width: 300px;
+    input[type="text"], input[type="date"] {
+      padding: 6px 10px;
+      margin: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
+      margin-top: 20px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
     }
     th, td {
       border: 1px solid #ccc;
-      padding: 6px;
+      padding: 8px;
       text-align: center;
-      font-size: 13px;
+      font-size: 14px;
     }
     th {
       background-color: #007BFF;
@@ -61,42 +62,56 @@
       font-weight: bold;
       cursor: help;
     }
-    .nav button {
+    .nav button, .btn {
       padding: 6px 12px;
-      margin-right: 10px;
-      background: #007BFF;
-      color: white;
+      margin: 3px;
       border: none;
-      border-radius: 4px;
+      border-radius: 6px;
+      font-size: 13px;
       cursor: pointer;
     }
+    .btn-view { background-color: #17a2b8; color: white; }
+    .btn-delete { background-color: #dc3545; color: white; }
     .summary {
       text-align: right;
       font-weight: bold;
       margin-top: 10px;
     }
     .modal {
-      display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-      background:rgba(0,0,0,0.6); justify-content:center; align-items:center;
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
     }
     .modal-content {
-      background:white; padding:20px; border-radius:8px; max-width:500px; width:90%;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 700px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
     }
-    .btn {
-      padding: 6px 12px;
-      margin: 2px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
+    .modal-content p {
+      flex: 1 1 45%;
+      margin: 0;
+    }
+    .modal-content input, .modal-content textarea {
+      width: 100%;
+      padding: 6px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
       font-size: 13px;
     }
-    .btn-view { background-color: #17a2b8; color: white; }
-    .btn-delete { background-color: #dc3545; color: white; }
     .logo {
       position: fixed;
       top: 20px;
       left: 20px;
-      z-index: 10;
     }
   </style>
 </head>
@@ -119,9 +134,9 @@
     <table id="dataTable"><thead><tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage</th><th>Contact</th><th>Action</th></tr></thead><tbody></tbody></table>
     <div class="modal" id="detailModal">
       <div class="modal-content">
-        <span style="float:right; cursor:pointer;" onclick="closeModal()">✖</span>
-        <div id="modalBody"></div>
-        <button onclick="saveDetails()">Speichern</button>
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeModal()">✖</span>
+        <div id="modalBody" style="width:100%; display:flex; flex-wrap:wrap; gap:20px;"></div>
+        <button onclick="saveDetails()" style="margin-left:auto;">Speichern</button>
       </div>
     </div>
   </div>
