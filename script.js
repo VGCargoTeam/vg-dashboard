@@ -23,6 +23,7 @@ function openDetails(ref) {
   if (!r) return;
   document.getElementById("modalRef").value = r.ref;
   document.getElementById("airlineInput").value = r.airline || "";
+  document.getElementById("flightTimeInput").value = r.flightTime || "";
   document.getElementById("dateInput").value = r.date.split("T")[0];
   document.getElementById("tonnageInput").value = r.tonnage || "";
   document.getElementById("billingCompanyInput").value = r.billingCompany || "";
@@ -35,7 +36,6 @@ function openDetails(ref) {
   document.getElementById("rateInput").value = r.rate || "";
   document.getElementById("otherPricesInput").value = r.otherPrices || "";
   document.getElementById("apronSupportInput").checked = r.apronSupport === "Ja";
-  document.getElementById("flightTimeInput").value = r.flightTime || "";
   document.getElementById("detailModal").style.display = "block";
 }
 
@@ -46,6 +46,7 @@ function saveDetails() {
 
   r.airline = document.getElementById("airlineInput").value;
   r.date = document.getElementById("dateInput").value;
+  r.flightTime = document.getElementById("flightTimeInput").value;
   r.tonnage = parseFloat(document.getElementById("tonnageInput").value) || 0;
   r.billingCompany = document.getElementById("billingCompanyInput").value;
   r.billingAddress = document.getElementById("billingAddressInput").value;
@@ -56,7 +57,6 @@ function saveDetails() {
   r.rate = document.getElementById("rateInput").value;
   r.otherPrices = document.getElementById("otherPricesInput").value;
   r.apronSupport = document.getElementById("apronSupportInput").checked ? "Ja" : "Nein";
-  r.flightTime = document.getElementById("flightTimeInput").value;
 
 fetch("https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec", {
   method: "POST",
@@ -134,9 +134,7 @@ requestData = data.map(row => ({
   rate: row["Rate"] || "",
   otherPrices: row["Zusatzkosten"] || "",
   apronSupport: row["Vorfeldbegleitung"] || "",
-  flightTime: typeof row["Abflugzeit"] === "string" 
-                      ? row["Abflugzeit"].slice(0, 5) 
-                      : "",  // falls als Date gespeichert
+  flightTime: row["Abflugzeit"] || "",
   manifestWeight: row["Final Manifest Weight"] || ""
 }));
       populateRows();
