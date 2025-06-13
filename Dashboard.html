@@ -121,18 +121,19 @@
       top: 20px;
       left: 20px;
     }
-
-  .checkbox-label {
+  
+.checkbox-label {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 0px;
   font-weight: bold;
-  margin-top: 8px;
+  margin-top: 5px;
 }
 .checkbox-label input[type="checkbox"] {
   transform: translateY(-1px);
 }
-  </style>
+
+</style>
 
 <style>
 .modal-content {
@@ -165,6 +166,18 @@
   border: 1px solid #ccc;
   border-radius: 4px;
 }
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+.checkbox-label input[type="checkbox"] {
+  transform: translateY(-1px);
+}
+
 </style>
 
 </head>
@@ -174,6 +187,11 @@
   </div>
   <div class="main">
     <h1>Charter Dashboard</h1>
+
+<button onclick="createNewRequest()" style="margin: 10px 0 20px; padding: 10px 16px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+  Charter Anfrage erstellen
+</button>
+
     <div style="text-align: center; font-size: 16px; color: #e63244;">
       <span id="currentDate">Date: --</span> | <span id="clock">Time: --:--:--</span>
     </div>
