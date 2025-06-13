@@ -1,5 +1,4 @@
 
-// Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
 const SHEET_URL = 'https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest';
 const POST_URL = 'https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec';
 const isAdmin = new URLSearchParams(window.location.search).get("admin") === "true";
@@ -105,6 +104,19 @@ function openModal(i) {
   modalBody.appendChild(section("Kundendetails", renderFields(customerFields)));
   modalBody.appendChild(section("Flugdetails", renderFields(flightFields)));
   modalBody.appendChild(section("Preisdetails", renderFields(priceFields) + priceExtra));
+  const saveButton = document.createElement("button");
+  saveButton.textContent = "Speichern";
+  saveButton.onclick = saveDetails;
+  saveButton.style.margin = "10px auto 0";
+  saveButton.style.padding = "10px 20px";
+  saveButton.style.fontWeight = "bold";
+  saveButton.style.backgroundColor = "#28a745";
+  saveButton.style.color = "white";
+  saveButton.style.border = "none";
+  saveButton.style.borderRadius = "6px";
+  saveButton.style.cursor = "pointer";
+  modalBody.appendChild(saveButton);
+
 
   modal.style.display = "flex";
 }
