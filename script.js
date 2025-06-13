@@ -141,10 +141,20 @@ function saveDetails() {
   fetch(POST_URL, {
     method: 'POST',
     body: new URLSearchParams(data)
-  }).then(() => {
-    alert("Gespeichert!");
+  })
+  .then(res => res.text())
+  .then(text => {
+    if (text === "OK" || text === "updated") {
+      showSaveFeedback("Gespeichert!", true);
+    } else {
+      showSaveFeedback("Fehler: " + text, false);
+    }
     closeModal();
     fetchData();
+  })
+  .catch(err => {
+    showSaveFeedback("Fehler beim Speichern!", false);
+    console.error(err);
   });
 }
 
@@ -237,7 +247,7 @@ function createNewRequest() {
     'Contact Name Invoicing': "",
     'Contact E-Mail Invoicing': "",
     Airline: "",
-    '1': "",
+    'Aircraft Type': "",
     'Flugnummer': "",
     'Abflugzeit': "",
     'Tonnage': "",
