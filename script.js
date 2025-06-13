@@ -131,31 +131,24 @@ document.addEventListener('keydown', (e) => {
 });
 
 function saveDetails() {
-  const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled])");
-  const data = {};
-  inputs.forEach(i => data[i.name] = i.type === "checkbox" ? (i.checked ? "Ja" : "Nein") : i.value);
+  const formData = new FormData(document.querySelector("#detailModal form"));
+  const ref = formData.get("Ref");
+  const existing = requestData.find(r => r.Ref === ref);
+  const mode = existing ? "update" : "create";
 
-  data.Ref = document.querySelector("input[name='Ref']").value; // ✅ Ref wird übergeben
-  data.mode = "update";
+  formData.append("mode", mode);
 
   fetch(POST_URL, {
-    method: 'POST',
-    body: new URLSearchParams(data)
+    method: "POST",
+    body: new URLSearchParams(formData)
   })
-  .then(res => res.text())
-  .then(text => {
-    if (text === "OK" || text === "updated") {
-      showSaveFeedback("Gespeichert!", true);
-    } else {
-      showSaveFeedback("Fehler: " + text, false);
-    }
-    closeModal();
-    fetchData();
-  })
-  .catch(err => {
-    showSaveFeedback("Fehler beim Speichern!", false);
-    console.error(err);
-  });
+    .then(res => res.text())
+    .then(msg => {
+      showSaveFeedback(`Gespeichert: ${msg}`, true);
+      closeModal();
+      fetchData();
+    })
+    .catch(() => showSaveFeedback("Fehler beim Speichern!", false));
 }
 
 function deleteRow(btn) {
