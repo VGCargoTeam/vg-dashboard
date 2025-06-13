@@ -262,7 +262,7 @@ function createNewRequest() {
     "10ft consumables": "",
     "20ft consumables": "",
     Zusatzkosten: "",
-    "Email Request": ""
+    "Email Request": "",
     mode: "create" // HINZUGEFÜGT!
   };
 
