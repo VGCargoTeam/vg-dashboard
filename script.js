@@ -110,7 +110,33 @@ function openModal(i) {
   modalBody.appendChild(wrapper);
   modalBody.appendChild(email);
 
-  modal.style.display = "flex";
+  
+// Preisdetails-Block
+const priceBlock = document.createElement("div");
+priceBlock.className = "modal-col";
+priceBlock.innerHTML = `
+  <h3>Preisdetails</h3>
+  <label>Rate:</label>
+  <input name="Rate" value="${r["Rate"] || ""}" />
+  <label>Security charges (X-Ray, ETD, EDD):</label>
+  <input name="Security charges" value="${r["Security charges"] || ""}" />
+  <label>Dangerous Goods:</label>
+  <input name="Dangerous Goods" value="${r["Dangerous Goods"] || ""}" />
+  <label>10ft consumables:</label>
+  <input name="10ft consumables" value="${r["10ft consumables"] || ""}" />
+  <label>20ft consumables:</label>
+  <input name="20ft consumables" value="${r["20ft consumables"] || ""}" />
+  <label>Zusatzkosten:</label>
+  <textarea name="Zusatzkosten" placeholder="Labeln, Fotos" style="height:80px">${r["Zusatzkosten"] || ""}</textarea>
+  <label>E-Mail Request:</label>
+  <textarea name="Email Request" style="height:150px">${r["Email Request"] || ""}</textarea>
+`;
+
+modalBody.appendChild(wrapper);
+modalBody.appendChild(priceBlock);
+modal.style.display = "flex";
+
+modal.style.display = "flex";
 }
 
 function closeModal() {
