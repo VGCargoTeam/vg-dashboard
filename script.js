@@ -134,6 +134,8 @@ function saveDetails() {
   const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled])");
   const data = {};
   inputs.forEach(i => data[i.name] = i.type === "checkbox" ? (i.checked ? "Ja" : "Nein") : i.value);
+
+  data.Ref = document.querySelector("input[name='Ref']").value; // ✅ Ref wird übergeben
   data.mode = "update";
 
   fetch(POST_URL, {
