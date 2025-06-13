@@ -263,6 +263,7 @@ function createNewRequest() {
     "20ft consumables": "",
     Zusatzkosten: "",
     "Email Request": ""
+    mode: "create" // HINZUGEFÜGT!
   };
 
   openCustomModal(blankRequest);
@@ -299,7 +300,7 @@ function openCustomModal(r) {
 
   const customerFields = [
     { label: "Ref", key: "Ref" },
-    { label: "Datum", key: "Datum" },
+    { label: "Flight Date", key: "Flight Date" },
     { label: "Billing Company", key: "Billing Company" },
     { label: "Billing Address", key: "Billing Address" },
     { label: "Tax Number", key: "Tax Number" },
