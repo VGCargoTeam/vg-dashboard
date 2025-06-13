@@ -1,4 +1,5 @@
-// Charter Dashboard Script
+
+// Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
 const SHEET_URL = 'https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest';
 const POST_URL = 'https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec';
 const isAdmin = new URLSearchParams(window.location.search).get("admin") === "true";
@@ -48,7 +49,25 @@ function openModal(i) {
   const modalBody = document.getElementById("modalBody");
   modalBody.innerHTML = "";
 
-  const leftFields = [
+  const section = (title, contentHTML) => {
+    const wrap = document.createElement("div");
+    wrap.className = "modal-section";
+    wrap.innerHTML = `<h3>${title}</h3>` + contentHTML;
+    return wrap;
+  };
+
+  const renderFields = (fields) => {
+    return fields.map(({ label, key, type }) => {
+      const value = r[key] || "";
+      if (type === "checkbox") {
+        const checked = value.toLowerCase() === "ja" ? "checked" : "";
+        return `<label><input type="checkbox" name="${key}" ${checked}/> ${label}</label>`;
+      }
+      return `<label>${label}:</label><input name="${key}" value="${value}" />`;
+    }).join("");
+  };
+
+  const customerFields = [
     { label: "Ref", key: "Ref" },
     { label: "Datum", key: "Flight Date" },
     { label: "Billing Company", key: "Billing Company" },
@@ -58,7 +77,7 @@ function openModal(i) {
     { label: "Contact E-Mail (Invoicing)", key: "Contact E-Mail Invoicing" }
   ];
 
-  const rightFields = [
+  const flightFields = [
     { label: "Airline", key: "Airline" },
     { label: "Flugzeugtyp", key: "1" },
     { label: "Flugnummer", key: "Flugnummer" },
@@ -68,75 +87,26 @@ function openModal(i) {
     { label: "Vorfeldbegleitung", key: "Vorfeldbegleitung", type: "checkbox" }
   ];
 
-  const left = document.createElement("div");
-  left.className = "modal-col";
-  leftFields.forEach(({ label, key }) => {
-    const value = r[key] || "";
-    left.innerHTML += `
-      <label>${label}:</label>
-      <input name="${key}" value="${value}" />
-    `;
-  });
+  const priceFields = [
+    { label: "Rate", key: "Rate" },
+    { label: "Security charges (X-Ray, ETD, EDD)", key: "Security charges" },
+    { label: "Dangerous Goods", key: "Dangerous Goods" },
+    { label: "10ft consumables", key: "10ft consumables" },
+    { label: "20ft consumables", key: "20ft consumables" }
+  ];
 
-  const right = document.createElement("div");
-  right.className = "modal-col";
-  rightFields.forEach(({ label, key, type }) => {
-    const value = r[key] || "";
-    if (type === "checkbox") {
-      const checked = value.toLowerCase() === "ja" ? "checked" : "";
-      right.innerHTML += `
-        <label><input type="checkbox" name="${key}" ${checked} /> ${label}</label>
-      `;
-    } else {
-      right.innerHTML += `
-        <label>${label}:</label>
-        <input name="${key}" value="${value}" />
-      `;
-    }
-  });
-
-  const wrapper = document.createElement("div");
-  wrapper.id = "modalBody";
-  wrapper.appendChild(left);
-  wrapper.appendChild(right);
-
-  const email = document.createElement("div");
-  email.style.width = "100%";
-  email.innerHTML = `
+  const priceExtra = `
+    <label>Zusatzkosten:</label>
+    <textarea name="Zusatzkosten" placeholder="Labeln, Fotos" style="height:80px">${r["Zusatzkosten"] || ""}</textarea>
     <label>E-Mail Request:</label>
     <textarea name="Email Request" style="height:150px">${r["Email Request"] || ""}</textarea>
   `;
 
-  modalBody.appendChild(wrapper);
-  modalBody.appendChild(email);
+  modalBody.appendChild(section("Kundendetails", renderFields(customerFields)));
+  modalBody.appendChild(section("Flugdetails", renderFields(flightFields)));
+  modalBody.appendChild(section("Preisdetails", renderFields(priceFields) + priceExtra));
 
-  
-// Preisdetails-Block
-const priceBlock = document.createElement("div");
-priceBlock.className = "modal-col";
-priceBlock.innerHTML = `
-  <h3>Preisdetails</h3>
-  <label>Rate:</label>
-  <input name="Rate" value="${r["Rate"] || ""}" />
-  <label>Security charges (X-Ray, ETD, EDD):</label>
-  <input name="Security charges" value="${r["Security charges"] || ""}" />
-  <label>Dangerous Goods:</label>
-  <input name="Dangerous Goods" value="${r["Dangerous Goods"] || ""}" />
-  <label>10ft consumables:</label>
-  <input name="10ft consumables" value="${r["10ft consumables"] || ""}" />
-  <label>20ft consumables:</label>
-  <input name="20ft consumables" value="${r["20ft consumables"] || ""}" />
-  <label>Zusatzkosten:</label>
-  <textarea name="Zusatzkosten" placeholder="Labeln, Fotos" style="height:80px">${r["Zusatzkosten"] || ""}</textarea>
-  <label>E-Mail Request:</label>
-  <textarea name="Email Request" style="height:150px">${r["Email Request"] || ""}</textarea>
-`;
-
-modalBody.appendChild(wrapper);
-modalBody.appendChild(priceBlock);
-modal.style.display = "flex";
-
-modal.style.display = "flex";
+  modal.style.display = "flex";
 }
 
 function closeModal() {
