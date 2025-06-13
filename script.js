@@ -244,28 +244,27 @@ function createNewRequest() {
 
   const blankRequest = {
     Ref: newRef,
-    'Flight Date': "",
-    'Billing Company': "",
-    'Billing Address': "",
-    'Tax Number': "",
-    'Contact Name Invoicing': "",
-    'Contact E-Mail Invoicing': "",
+    "Flight Date": "",
+    "Billing Company": "",
+    "Billing Address": "",
+    "Tax Number": "",
+    "Contact Name Invoicing": "",
+    "Contact E-Mail Invoicing": "",
     Airline: "",
-    'Aircraft Type': "",
-    'Flugnummer': "",
-    'Abflugzeit': "",
-    'Tonnage': "",
-    'Vorfeldbegleitung': "Nein",
-    'Rate': "",
-    'Security charges': "",
-    'Dangerous Goods': "",
-    '10ft consumables': "",
-    '20ft consumables': "",
-    'Zusatzkosten': "",
-    'Email Request': ""
+    "Aircraft Type": "",
+    "Flugnummer": "",
+    Abflugzeit: "",
+    Tonnage: "",
+    Vorfeldbegleitung: "Nein",
+    Rate: "",
+    "Security charges": "",
+    "Dangerous Goods": "",
+    "10ft consumables": "",
+    "20ft consumables": "",
+    Zusatzkosten: "",
+    "Email Request": ""
   };
 
-  // Nutze openModal() direkt mit dem leeren Objekt
   openCustomModal(blankRequest);
 }
 
