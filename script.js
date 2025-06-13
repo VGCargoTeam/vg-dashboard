@@ -195,3 +195,39 @@ function updateClock() {
   document.getElementById('currentDate').textContent = "Date: " + local.toISOString().substr(0, 10);
   document.getElementById('clock').textContent = "Time: " + local.toISOString().substr(11, 8);
 }
+
+
+function generateReference() {
+  const now = new Date();
+  const timestamp = now.toISOString().split('T')[0].replace(/-/g, '');
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `CC-${timestamp}-${random}`;
+}
+
+function createNewRequest() {
+  const newRef = generateReference();
+  const newRequest = {
+    Ref: newRef,
+    'Flight Date': "",
+    'Billing Company': "",
+    'Billing Address': "",
+    'Tax Number': "",
+    'Contact Name Invoicing': "",
+    'Contact E-Mail Invoicing': "",
+    Airline: "",
+    '1': "",
+    'Flugnummer': "",
+    'Abflugzeit': "",
+    'Tonnage': "",
+    'Vorfeldbegleitung': "Nein",
+    'Rate': "",
+    'Security charges': "",
+    'Dangerous Goods': "",
+    '10ft consumables': "",
+    '20ft consumables': "",
+    'Zusatzkosten': "",
+    'Email Request': ""
+  };
+  requestData.unshift(newRequest);
+  openModal(0);
+}
