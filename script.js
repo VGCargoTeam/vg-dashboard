@@ -79,7 +79,7 @@ function openModal(i) {
 
   const flightFields = [
     { label: "Airline", key: "Airline" },
-    { label: "Flugzeugtyp", key: "1" },
+    { label: "Flugzeugtyp", key: "Aircraft Type" },
     { label: "Flugnummer", key: "Flugnummer" },
     { label: "Flight Date", key: "Flight Date" },
     { label: "Abflugzeit", key: "Abflugzeit" },
