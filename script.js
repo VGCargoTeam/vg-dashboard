@@ -285,7 +285,7 @@ function openCustomModal(r) {
     return fields.map(({ label, key, type }) => {
       const value = r[key] || "";
 
-      if (key === "Datum" || key === "Flight Date") {
+      if (key === "Flight Date") {
         return `<label>${label}</label><input type="date" name="${key}" value="${value}">`;
       } else if (key === "Abflugzeit") {
         return `<label>${label}</label><input type="time" name="${key}" value="${value}">`;
