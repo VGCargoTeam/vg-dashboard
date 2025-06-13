@@ -58,32 +58,6 @@ function openModal(i) {
     { label: "Contact E-Mail (Invoicing)", key: "Contact E-Mail Invoicing" }
   ];
 
-    const rightFields = [
-    { label: "Airline", key: "Airline" },
-    { label: "Flugzeugtyp", key: "1" },
-    { label: "Flugnummer", key: "Flugnummer" },
-    { label: "Flight Date", key: "Flight Date" },
-    { label: "Abflugzeit", key: "Abflugzeit" },
-    { label: "Tonnage", key: "Tonnage" },
-    { label: "Vorfeldbegleitung", key: "Vorfeldbegleitung", type: "checkbox" }
-  ];
-
-  function openModal(i) {
-  const r = requestData[i];
-  const modal = document.getElementById("detailModal");
-  const modalBody = document.getElementById("modalBody");
-  modalBody.innerHTML = "";
-
-  const leftFields = [
-    { label: "Ref", key: "Ref" },
-    { label: "Datum", key: "Flight Date" },
-    { label: "Billing Company", key: "Billing Company" },
-    { label: "Billing Address", key: "Billing Address" },
-    { label: "Tax Number", key: "Tax Number" },
-    { label: "Contact Name (Invoicing)", key: "Contact Name Invoicing" },
-    { label: "Contact E-Mail (Invoicing)", key: "Contact E-Mail Invoicing" }
-  ];
-
   const rightFields = [
     { label: "Airline", key: "Airline" },
     { label: "Flugzeugtyp", key: "1" },
