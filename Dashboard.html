@@ -120,13 +120,42 @@
       position: fixed;
       top: 20px;
       left: 20px;
-      .modal-section label {
-  display: flex;
-  align-items: center;
-  gap: 6px; /* Abstand zwischen Checkbox und Text */
-}
     }
   </style>
+
+<style>
+.modal-content {
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.modal-section {
+  background: #f7f7f7;
+  padding: 15px;
+  border-radius: 10px;
+  width: 100%;
+}
+.modal-section h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  color: #444;
+}
+.modal-section label {
+  display: block;
+  margin-top: 8px;
+  font-weight: bold;
+}
+.modal-section input, .modal-section textarea {
+  width: 100%;
+  padding: 6px;
+  margin-top: 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+</style>
+
 </head>
 <body>
   <div class="logo">
