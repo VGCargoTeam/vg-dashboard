@@ -161,12 +161,19 @@ function saveDetails() {
 function deleteRow(btn) {
   const row = btn.closest("tr");
   const ref = row.querySelector("a").textContent;
+
+  if (!confirm(`Soll die Anfrage ${ref} wirklich gelöscht werden?`)) return;
+
   fetch(POST_URL, {
     method: 'POST',
     body: new URLSearchParams({ Ref: ref, mode: "delete" })
-  }).then(() => fetchData());
-  return;
-  btn.closest("tr").remove();
+  })
+  .then(res => res.text())
+  .then(() => {
+    showSaveFeedback("Gelöscht!", true);
+    fetchData();
+  })
+  .catch(() => showSaveFeedback("Fehler beim Löschen!", false));
 }
 
 function shiftCalendar(offset) {
