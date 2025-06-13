@@ -1,4 +1,5 @@
 
+// Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
 const SHEET_URL = 'https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest';
 const POST_URL = 'https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec';
 const isAdmin = new URLSearchParams(window.location.search).get("admin") === "true";
@@ -133,7 +134,7 @@ function saveDetails() {
   const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled])");
   const data = {};
   inputs.forEach(i => data[i.name] = i.type === "checkbox" ? (i.checked ? "Ja" : "Nein") : i.value);
-  data.mode = "updateExtras";
+  data.mode = "update";
 
   fetch(POST_URL, {
     method: 'POST',
@@ -146,6 +147,13 @@ function saveDetails() {
 }
 
 function deleteRow(btn) {
+  const row = btn.closest("tr");
+  const ref = row.querySelector("a").textContent;
+  fetch(POST_URL, {
+    method: 'POST',
+    body: new URLSearchParams({ Ref: ref, mode: "delete" })
+  }).then(() => fetchData());
+  return;
   btn.closest("tr").remove();
 }
 
