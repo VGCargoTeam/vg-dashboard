@@ -260,6 +260,23 @@ function createNewRequest() {
     'Zusatzkosten': "",
     'Email Request': ""
   };
-  requestData.unshift(newRequest);
-  openModal(0);
+  requestData.push(newRequest);
+  openModal(requestData.length - 1);
+}
+
+
+function showSaveFeedback(message, success) {
+  const feedback = document.createElement("div");
+  feedback.textContent = message;
+  feedback.style.position = "fixed";
+  feedback.style.top = "20px";
+  feedback.style.right = "20px";
+  feedback.style.backgroundColor = success ? "#4CAF50" : "#f44336";
+  feedback.style.color = "#fff";
+  feedback.style.padding = "10px 16px";
+  feedback.style.borderRadius = "8px";
+  feedback.style.boxShadow = "0 0 10px rgba(0,0,0,0.2)";
+  feedback.style.zIndex = "9999";
+  document.body.appendChild(feedback);
+  setTimeout(() => feedback.remove(), 3000);
 }
