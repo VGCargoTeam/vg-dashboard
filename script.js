@@ -48,28 +48,93 @@ function openModal(i) {
   const modalBody = document.getElementById("modalBody");
   modalBody.innerHTML = "";
 
-  const sortedKeys = Object.keys(r).sort((a, b) => {
-    if (a === "Ref") return -1;
-    if (b === "Ref") return 1;
-    return 0;
+  const leftFields = [
+    { label: "Ref", key: "Ref" },
+    { label: "Datum", key: "Flight Date" },
+    { label: "Billing Company", key: "Billing Company" },
+    { label: "Billing Address", key: "Billing Address" },
+    { label: "Tax Number", key: "Tax Number" },
+    { label: "Contact Name (Invoicing)", key: "Contact Name Invoicing" },
+    { label: "Contact E-Mail (Invoicing)", key: "Contact E-Mail Invoicing" }
+  ];
+
+    const rightFields = [
+    { label: "Airline", key: "Airline" },
+    { label: "Flugzeugtyp", key: "1" },
+    { label: "Flugnummer", key: "Flugnummer" },
+    { label: "Flight Date", key: "Flight Date" },
+    { label: "Abflugzeit", key: "Abflugzeit" },
+    { label: "Tonnage", key: "Tonnage" },
+    { label: "Vorfeldbegleitung", key: "Vorfeldbegleitung", type: "checkbox" }
+  ];
+
+  function openModal(i) {
+  const r = requestData[i];
+  const modal = document.getElementById("detailModal");
+  const modalBody = document.getElementById("modalBody");
+  modalBody.innerHTML = "";
+
+  const leftFields = [
+    { label: "Ref", key: "Ref" },
+    { label: "Datum", key: "Flight Date" },
+    { label: "Billing Company", key: "Billing Company" },
+    { label: "Billing Address", key: "Billing Address" },
+    { label: "Tax Number", key: "Tax Number" },
+    { label: "Contact Name (Invoicing)", key: "Contact Name Invoicing" },
+    { label: "Contact E-Mail (Invoicing)", key: "Contact E-Mail Invoicing" }
+  ];
+
+  const rightFields = [
+    { label: "Airline", key: "Airline" },
+    { label: "Flugzeugtyp", key: "1" },
+    { label: "Flugnummer", key: "Flugnummer" },
+    { label: "Flight Date", key: "Flight Date" },
+    { label: "Abflugzeit", key: "Abflugzeit" },
+    { label: "Tonnage", key: "Tonnage" },
+    { label: "Vorfeldbegleitung", key: "Vorfeldbegleitung", type: "checkbox" }
+  ];
+
+  const left = document.createElement("div");
+  left.className = "modal-col";
+  leftFields.forEach(({ label, key }) => {
+    const value = r[key] || "";
+    left.innerHTML += `
+      <label>${label}:</label>
+      <input name="${key}" value="${value}" />
+    `;
   });
 
-  sortedKeys.forEach(key => {
-    if (key === "Email Request") {
-      modalBody.innerHTML += `<p><label>${key}:</label><textarea name="${key}">${r[key]}</textarea></p>`;
-    } else if ((key === "Rate" || key === "Zusatzkosten") && !isAdmin) {
-      return;
-    } else if (key === "1") {
-      modalBody.innerHTML += `<p><label>Flugzeugtyp:</label><input name="1" value="${r[key] || ""}" /></p>`;
-    } else if (key === "Final Manifest Weight") {
-      return;
-    } else if (key === "Vorfeldbegleitung") {
-      const checked = r[key]?.toLowerCase() === "ja" ? "checked" : "";
-      modalBody.innerHTML += `<p><label>${key}:</label><input type="checkbox" name="${key}" ${checked} /> Ja</p>`;
+  const right = document.createElement("div");
+  right.className = "modal-col";
+  rightFields.forEach(({ label, key, type }) => {
+    const value = r[key] || "";
+    if (type === "checkbox") {
+      const checked = value.toLowerCase() === "ja" ? "checked" : "";
+      right.innerHTML += `
+        <label><input type="checkbox" name="${key}" ${checked} /> ${label}</label>
+      `;
     } else {
-      modalBody.innerHTML += `<p><label>${key}:</label><input name="${key}" value="${r[key] || ""}" /></p>`;
+      right.innerHTML += `
+        <label>${label}:</label>
+        <input name="${key}" value="${value}" />
+      `;
     }
   });
+
+  const wrapper = document.createElement("div");
+  wrapper.id = "modalBody";
+  wrapper.appendChild(left);
+  wrapper.appendChild(right);
+
+  const email = document.createElement("div");
+  email.style.width = "100%";
+  email.innerHTML = `
+    <label>E-Mail Request:</label>
+    <textarea name="Email Request" style="height:150px">${r["Email Request"] || ""}</textarea>
+  `;
+
+  modalBody.appendChild(wrapper);
+  modalBody.appendChild(email);
 
   modal.style.display = "flex";
 }
