@@ -1,7 +1,7 @@
 
 // Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
 const SHEET_URL = 'https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest';
-const POST_URL = 'https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec';
+const POST_URL = 'https://script.google.com/macros/s/AKfycbwFU1sIwznV-xSwjcMUQCJ5PcB8cW1PyG9-Ej-seGMSIpD6_zc0YC-DotA0Z5AO6EtG/exec';
 const isAdmin = new URLSearchParams(window.location.search).get("admin") === "true";
 let requestData = [];
 let baseMonth = new Date().getMonth();
@@ -31,7 +31,6 @@ function renderTable() {
       <td>${r['Flight Date'] || "-"}</td>
       <td>${r.Airline || "-"}</td>
       <td>${ton.toLocaleString()}</td>
-      <td>${r['Contact Email'] || "-"}</td>
       <td><button class="btn btn-view" onclick="openModal(${i})">View</button> <button class="btn btn-delete" onclick="deleteRow(this)">Delete</button></td>
     `;
     tbody.appendChild(row);
@@ -67,27 +66,22 @@ function openModal(i) {
     }).join("");
   };
 
-  const customerFields = [
-    { label: "Request Date", key: "Request Date" },
-    { label: "Request Date", key: "Request Date" },
-    { label: "Ref", key: "Ref" },
-    { label: "Datum", key: "Flight Date" },
-    { label: "Billing Company", key: "Billing Company" },
+  const customerFields = [    { label: "Ref", key: "Ref" },    { label: "Billing Company", key: "Billing Company" },
     { label: "Billing Address", key: "Billing Address" },
     { label: "Tax Number", key: "Tax Number" },
     { label: "Contact Name Invoicing", key: "Contact Name Invoicing" },
     { label: "Contact E-Mail Invoicing", key: "Contact E-Mail Invoicing" }
   ];
 
-  const flightFields = [
-    { label: "Airline", key: "Airline" },
-    { label: "Flugzeugtyp", key: "Aircraft Type" },
-    { label: "Flugnummer", key: "Flugnummer" },
-    { label: "Flight Date", key: "Flight Date" },
-    { label: "Abflugzeit", key: "Abflugzeit" },
-    { label: "Tonnage", key: "Tonnage" },
-    { label: "Vorfeldbegleitung", key: "Vorfeldbegleitung", type: "checkbox" }
-  ];
+const flightFields = [
+  { label: "Airline", key: "Airline" },
+  { label: "Aircraft Type", key: "Aircraft Type" },
+  { label: "Flugnummer", key: "Flugnummer" },
+  { label: "Flight Date", key: "Flight Date" },
+  { label: "Abflugzeit", key: "Abflugzeit" },
+  { label: "Tonnage", key: "Tonnage" },
+  { label: "Vorfeldbegleitung", key: "Vorfeldbegleitung", type: "checkbox" }
+];
 
   const priceFields = [
     { label: "Rate", key: "Rate" },
@@ -135,28 +129,28 @@ document.addEventListener('keydown', (e) => {
 function saveDetails() {
   const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled])");
   const data = {};
-  inputs.forEach(i => data[i.name] = i.type === "checkbox" ? (i.checked ? "Ja" : "Nein") : i.value);
+  inputs.forEach(i => {
+    data[i.name] = i.type === "checkbox" ? (i.checked ? "Ja" : "Nein") : i.value;
+  });
 
   data.Ref = document.querySelector("input[name='Ref']").value; // ✅ Ref wird übergeben
   data.mode = "update";
 
+  console.log("🚀 Daten, die gesendet werden:", data);
+
   fetch(POST_URL, {
     method: 'POST',
-    body: new URLSearchParams(data)
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
   })
-  .then(res => res.text())
-  .then(text => {
-    if (text === "OK" || text === "updated") {
-      showSaveFeedback("Gespeichert!", true);
-    } else {
-      showSaveFeedback("Fehler: " + text, false);
-    }
-    closeModal();
-    fetchData();
+  .then(response => response.text())
+  .then(result => {
+    console.log("✅ Erfolgreich gespeichert:", result);
   })
-  .catch(err => {
-    showSaveFeedback("Fehler beim Speichern!", false);
-    console.error(err);
+  .catch(error => {
+    console.error("❌ Fehler beim Speichern:", error);
   });
 }
 
@@ -244,19 +238,19 @@ function createNewRequest() {
   const modalBody = document.getElementById("modalBody");
   modalBody.innerHTML = "";
 
-  const now = new Date().toISOString().split("T")[0];
+  const now = new Date().toISOString();
   const blankRequest = {
     Ref: newRef,
-    'Request Date': now,
-    'Flight Date': "",
+    'Created At': now,    
     'Billing Company': "",
     'Billing Address': "",
     'Tax Number': "",
     'Contact Name Invoicing': "",
     'Contact E-Mail Invoicing': "",
-    Airline: "",
+    'Airline': "",
     'Aircraft Type': "",
     'Flugnummer': "",
+    'Flight Date': "",
     'Abflugzeit': "",
     'Tonnage': "",
     'Vorfeldbegleitung': "Nein",
@@ -289,7 +283,7 @@ function openCustomModal(r) {
     return fields.map(({ label, key, type }) => {
       const value = r[key] || "";
 
-      if (key === "Datum" || key === "Flight Date") {
+      if (key === "Flight Date") {
         return `<label>${label}</label><input type="date" name="${key}" value="${value}">`;
       } else if (key === "Abflugzeit") {
         return `<label>${label}</label><input type="time" name="${key}" value="${value}">`;
@@ -304,7 +298,7 @@ function openCustomModal(r) {
 
   const customerFields = [
     { label: "Ref", key: "Ref" },
-    { label: "Datum", key: "Datum" },
+    { label: "Created At", key: "Created At",},
     { label: "Billing Company", key: "Billing Company" },
     { label: "Billing Address", key: "Billing Address" },
     { label: "Tax Number", key: "Tax Number" },
@@ -312,15 +306,15 @@ function openCustomModal(r) {
     { label: "Contact E-Mail Invoicing", key: "Contact E-Mail Invoicing" }
   ];
 
-  const flightFields = [
-    { label: "Airline", key: "Airline" },
-    { label: "Flugzeugtyp", key: "Aircraft Type" },
-    { label: "Flugnummer", key: "Flugnummer" },
-    { label: "Flight Date", key: "Flight Date" },
-    { label: "Abflugzeit", key: "Abflugzeit" },
-    { label: "Tonnage", key: "Tonnage" },
-    { label: "Vorfeldbegleitung", key: "Vorfeldbegleitung", type: "checkbox" }
-  ];
+const flightFields = [
+  { label: "Airline", key: "Airline" },
+  { label: "Aircraft Type", key: "Aircraft Type" },
+  { label: "Flugnummer", key: "Flugnummer" },
+  { label: "Flight Date", key: "Flight Date" },
+  { label: "Abflugzeit", key: "Abflugzeit" },
+  { label: "Tonnage", key: "Tonnage" },
+  { label: "Vorfeldbegleitung", key: "Vorfeldbegleitung", type: "checkbox" }
+];
 
   const priceFields = [
     { label: "Rate", key: "Rate" },
