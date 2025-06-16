@@ -1,19 +1,18 @@
 
-// Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
-const SHEET_URL = 'https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest';
-const POST_URL = 'https://script.google.com/macros/s/AKfycbwFU1sIwznV-xSwjcMUQCJ5PcB8cW1PyG9-Ej-seGMSIpD6_zc0YC-DotA0Z5AO6EtG/exec';
-const isAdmin = new URLSearchParams(window.location.search).get("admin") === "true";
-let requestData = [];
-let baseMonth = new Date().getMonth();
-let baseYear = new Date().getFullYear();
-
 function fetchData() {
-  fetch(SHEET_URL)
+  fetch("https://api.airtable.com/v0/app1rwDZULXHzNBXx/CharterRequest", {
+    headers: {
+      Authorization: "Bearer YOUR_ACCESS_TOKEN"
+    }
+  })
     .then(res => res.json())
     .then(data => {
-      requestData = data;
+      requestData = data.records.map(record => record.fields);
       renderTable();
       renderCalendars();
+    })
+    .catch(err => {
+      console.error("Airtable fetch error:", err);
     });
 }
 
