@@ -68,13 +68,15 @@ function openModal(i) {
   };
 
   const customerFields = [
+    { label: "Request Date", key: "Request Date" },
+    { label: "Request Date", key: "Request Date" },
     { label: "Ref", key: "Ref" },
     { label: "Datum", key: "Flight Date" },
     { label: "Billing Company", key: "Billing Company" },
     { label: "Billing Address", key: "Billing Address" },
     { label: "Tax Number", key: "Tax Number" },
-    { label: "Contact Name (Invoicing)", key: "Contact Name Invoicing" },
-    { label: "Contact E-Mail (Invoicing)", key: "Contact E-Mail Invoicing" }
+    { label: "Contact Name Invoicing", key: "Contact Name Invoicing" },
+    { label: "Contact E-Mail Invoicing", key: "Contact E-Mail Invoicing" }
   ];
 
   const flightFields = [
@@ -242,8 +244,10 @@ function createNewRequest() {
   const modalBody = document.getElementById("modalBody");
   modalBody.innerHTML = "";
 
+  const now = new Date().toISOString().split("T")[0];
   const blankRequest = {
     Ref: newRef,
+    'Request Date': now,
     'Flight Date': "",
     'Billing Company': "",
     'Billing Address': "",
@@ -304,8 +308,8 @@ function openCustomModal(r) {
     { label: "Billing Company", key: "Billing Company" },
     { label: "Billing Address", key: "Billing Address" },
     { label: "Tax Number", key: "Tax Number" },
-    { label: "Contact Name (Invoicing)", key: "Contact Name Invoicing" },
-    { label: "Contact E-Mail (Invoicing)", key: "Contact E-Mail Invoicing" }
+    { label: "Contact Name Invoicing", key: "Contact Name Invoicing" },
+    { label: "Contact E-Mail Invoicing", key: "Contact E-Mail Invoicing" }
   ];
 
   const flightFields = [
