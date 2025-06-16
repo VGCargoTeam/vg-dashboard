@@ -1,7 +1,7 @@
 
 // Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
 const SHEET_URL = 'https://opensheet.elk.sh/1kCifgCFSK0lnmkqKelekldGwnMqFDFuYAFy2pepQvlo/CharterRequest';
-const POST_URL = 'https://script.google.com/macros/s/AKfycbw4kB0t6-K2oLpC8oOMhMsLvFa-bziRGmt589yC9rMjSO15vpgHzDZwgOQpHkxfykOw/exec';
+const POST_URL = 'https://script.google.com/macros/s/AKfycbwFU1sIwznV-xSwjcMUQCJ5PcB8cW1PyG9-Ej-seGMSIpD6_zc0YC-DotA0Z5AO6EtG/exec';
 const isAdmin = new URLSearchParams(window.location.search).get("admin") === "true";
 let requestData = [];
 let baseMonth = new Date().getMonth();
@@ -129,16 +129,21 @@ document.addEventListener('keydown', (e) => {
 function saveDetails() {
   const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled])");
   const data = {};
-  inputs.forEach(i => data[i.name] = i.type === "checkbox" ? (i.checked ? "Ja" : "Nein") : i.value);
+  inputs.forEach(i => {
+    data[i.name] = i.type === "checkbox" ? (i.checked ? "Ja" : "Nein") : i.value;
+  });
 
-  data.Ref = document.querySelector("input[name='Ref']").value; // ✅ Ref wird übergeben
+  data.Ref = document.querySelector("input[name='Ref']").value;
   data.mode = "update";
 
   console.log("🚀 Daten, die gesendet werden:", data);
-  
+
   fetch(POST_URL, {
     method: 'POST',
-    body: new URLSearchParams(data)
+    headers: {
+      'Content-Type': 'application/json'  // Wichtig für JSON!
+    },
+    body: JSON.stringify(data)
   })
   .then(res => res.text())
   .then(text => {
