@@ -1,20 +1,9 @@
 
-function fetchData() {
-  fetch("https://api.airtable.com/v0/app1rwDZULXHzNBXx/CharterRequest", {
-    headers: {
-      Authorization: "Bearer YOUR_ACCESS_TOKEN"
-    }
-  })
-    .then(res => res.json())
-    .then(data => {
-      requestData = data.records.map(record => record.fields);
-      renderTable();
-      renderCalendars();
-    })
-    .catch(err => {
-      console.error("Airtable fetch error:", err);
-    });
-}
+// Airtable Dashboard Script mit Live-Anbindung
+const AIRTABLE_BASE_ID = 'app1rwDZULXHzNBXx';
+const AIRTABLE_TABLE_NAME = 'CharterRequest';
+const AIRTABLE_TOKEN = 'patOefIFGgyRrrvPz.41c147a8e31f1b3d9b69438d830370dd785b7622fc585829b0b2516a6c2c86e6';
+const AIRTABLE_API_URL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`;
 
 function renderTable() {
   const tbody = document.querySelector("#dataTable tbody");
@@ -132,43 +121,40 @@ function saveDetails() {
     data[i.name] = i.type === "checkbox" ? (i.checked ? "Ja" : "Nein") : i.value;
   });
 
-  data.Ref = document.querySelector("input[name='Ref']").value;
-  data.mode = "update";
+  const ref = document.querySelector("input[name='Ref']").value;
+  const record = requestData.find(r => r.Ref === ref);
+  const airtableId = record?.airtableId;
 
-  console.log("🚀 Daten, die gesendet werden:", data);
-
-  fetch(POST_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'  // Wichtig für JSON!
-    },
-    body: JSON.stringify(data)
-  })
-  .then(res => res.text())
-  .then(text => {
-    if (text === "OK" || text === "updated") {
-      showSaveFeedback("Gespeichert!", true);
-    } else {
-      showSaveFeedback("Fehler: " + text, false);
-    }
-    closeModal();
-    fetchData();
-  })
-  .catch(err => {
-    showSaveFeedback("Fehler beim Speichern!", false);
-    console.error(err);
-  });
+  if (airtableId) {
+    updateAirtableRecord(airtableId, data); // PATCH
+  } else {
+    saveToAirtable(data); // POST
+  }
 }
 
 function deleteRow(btn) {
   const row = btn.closest("tr");
   const ref = row.querySelector("a").textContent;
-  fetch(POST_URL, {
-    method: 'POST',
-    body: new URLSearchParams({ Ref: ref, mode: "delete" })
-  }).then(() => fetchData());
-  return;
-  btn.closest("tr").remove();
+  const record = requestData.find(r => r.Ref === ref);
+
+  if (!record?.airtableId) {
+    alert("Kein Airtable-Eintrag gefunden.");
+    return;
+  }
+
+  fetch(`${AIRTABLE_API_URL}/${record.airtableId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${AIRTABLE_TOKEN}`
+    }
+  })
+  .then(res => {
+    if (res.ok) {
+      fetchData();
+    } else {
+      alert("❌ Fehler beim Löschen");
+    }
+  });
 }
 
 function shiftCalendar(offset) {
@@ -270,7 +256,7 @@ function createNewRequest() {
   };
 
   // Nutze openModal() direkt mit dem leeren Objekt
-  openCustomModal(blankRequest);
+  openModalWithData(blankRequest);
 }
 
 function openCustomModal(r) {
