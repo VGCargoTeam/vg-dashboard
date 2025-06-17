@@ -15,11 +15,11 @@ function renderTable() {
     const row = document.createElement("tr");
     const ton = parseFloat(r.Tonnage || "0") || 0;
     row.innerHTML = `
-      <td><a href="javascript:void(0);" onclick="openModal(${i})">${r.Ref}</a></td>
+      <td><a href="..." onclick="openModalWithData(requestData[${i}])">${r.Ref}</a></td>
       <td>${r['Flight Date'] || "-"}</td>
       <td>${r.Airline || "-"}</td>
       <td>${ton.toLocaleString()}</td>
-      <td><button class="btn btn-view" onclick="openModal(${i})">View</button> <button class="btn btn-delete" onclick="deleteRow(this)">Delete</button></td>
+      <td><button onclick="openModalWithData(requestData[${i}])">View</button>
     `;
     tbody.appendChild(row);
     totalFlights++;
@@ -206,8 +206,25 @@ function generateCalendarHTML(year, month) {
 document.addEventListener("DOMContentLoaded", () => {
   updateClock();
   setInterval(updateClock, 1000);
-  fetchData();
-});
+ function fetchData() {
+  fetch(AIRTABLE_API_URL, {
+    headers: {
+      Authorization: `Bearer ${AIRTABLE_TOKEN}`
+    }
+  })
+    .then(res => res.json())
+    .then(data => {
+      requestData = data.records.map(record => ({
+        ...record.fields,
+        airtableId: record.id
+      }));
+      renderTable();
+      renderCalendars();
+    })
+    .catch(err => {
+      console.error("Airtable fetch error:", err);
+    });
+}
 
 function updateClock() {
   const now = new Date();
@@ -259,7 +276,7 @@ function createNewRequest() {
   openModalWithData(blankRequest);
 }
 
-function openCustomModal(r) {
+function openModalWithData(r) {
   const modal = document.getElementById("detailModal");
   const modalBody = document.getElementById("modalBody");
   modalBody.innerHTML = "";
