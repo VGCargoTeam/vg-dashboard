@@ -146,7 +146,7 @@
 
         /* Modal Styles */
         .modal {
-            display: none; /* Hidden by default */
+            display: none; /* HIDDEN BY DEFAULT: WICHTIGE ÄNDERUNG HIER */
             position: fixed; /* Stay in place */
             z-index: 1000; /* Sit on top */
             left: 0;
@@ -155,9 +155,8 @@
             height: 100%; /* Full height */
             overflow: auto; /* Enable scroll if needed */
             background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            align-items: center; /* Only apply flex properties when display is flex in JS */
+            justify-content: center; /* Only apply flex properties when display is flex in JS */
         }
 
         .modal-content {
@@ -250,7 +249,7 @@
             </div>
 
             <div class="additional-costs-container">
-                <h3>Additional Flight Details (optional):</h3> <!-- '& Costs' entfernt -->
+                <h3>Additional Flight Details (optional):</h3>
                 
                 <div class="form-group">
                     <label for="Airline">Airline (optional):</label>
@@ -270,7 +269,7 @@
                     <input type="time" id="Abflugzeit" name="Abflugzeit">
                 </div>
                 
-                <div class="form-group">
+                 <div class="form-group">
                     <label for="AircraftType">Aircraft Type (optional):</label>
                     <input type="text" id="AircraftType" name="Aircraft Type">
                 </div>
@@ -282,8 +281,6 @@
             </div>
             
             <hr style="margin: 30px 0; border: 0; border-top: 1px solid #eee;">
-
-            <!-- Das Eingabefeld "Name (for Acceptance)" wird im Modal behandelt und hier entfernt -->
 
             <div class="checkbox-group">
                 <input type="checkbox" id="termsAccepted" required>
@@ -387,7 +384,7 @@
                 confirmNameInput.value = '';
             }
 
-            // Modal anzeigen
+            // Modal anzeigen (jetzt wird es per JS von 'none' auf 'flex' gesetzt)
             nameConfirmModal.style.display = 'flex';
             confirmNameInput.focus(); // Fokus auf das Eingabefeld setzen
             errorMessage.style.display = 'none'; // Fehlermeldung ausblenden
@@ -397,13 +394,14 @@
         modalConfirmBtn.addEventListener('click', async () => {
             const acceptedName = confirmNameInput.value.trim();
             if (acceptedName === '') {
-                alert('Bitte geben Sie Ihren Namen ein, um die Bedingungen zu bestätigen.'); // Simple alert, could be better UX
+                // Eine bessere UX wäre ein Inline-Fehler oder eine schönere Warnung statt alert()
+                alert('Bitte geben Sie Ihren Namen ein, um die Bedingungen zu bestätigen.'); 
                 return;
             }
 
             pendingPayload.acceptedByName = acceptedName; // Name zum Payload hinzufügen
             nameConfirmModal.style.display = 'none'; // Modal schließen
-            submitButton.disabled = true; // Submit Button deaktivieren
+            submitButton.disabled = true; // Submit Button deaktivieren, bis Anfrage fertig ist
             submitButton.textContent = 'Submitting...'; // Text ändern
 
             const urlEncodedData = new URLSearchParams(pendingPayload).toString();
@@ -423,19 +421,24 @@
                     form.reset();
                     termsAccepted.checked = false;
                     serviceAccepted.checked = false;
-                    // acceptedByNameField.value = ''; // Dieses Feld wurde entfernt, daher nicht zurücksetzen
-
+                    confirmNameInput.value = ''; // Modal-Eingabefeld zurücksetzen
+                    
+                    successMessage.textContent = 'Your request has been submitted successfully!'; // Sicherstellen, dass der Text da ist
                     successMessage.style.display = 'block'; // Erfolgsmeldung anzeigen
+                    errorMessage.style.display = 'none'; // Fehlermeldung ausblenden
+                    
                     submitButton.disabled = false;
                     submitButton.textContent = 'Submit Request';
                     toggleSubmitButton();
                     setTimeout(() => {
                         successMessage.style.display = 'none';
-                    }, 5000);
+                    }, 5000); // Meldung nach 5 Sekunden ausblenden
                 } else {
                     const message = result.message || 'Unknown error occurred.';
-                    errorMessage.textContent = 'Error submitting request: ' + message;
+                    errorMessage.textContent = 'Error submitting request: ' + message; // Fehlermeldung verwenden
                     errorMessage.style.display = 'block';
+                    successMessage.style.display = 'none'; // Erfolgsmeldung ausblenden
+                    
                     submitButton.disabled = false;
                     submitButton.textContent = 'Submit Request';
                 }
@@ -443,6 +446,8 @@
                 console.error('Error:', error);
                 errorMessage.textContent = 'An error occurred while submitting your request: ' + error.message + '. Please try again later.';
                 errorMessage.style.display = 'block';
+                successMessage.style.display = 'none'; // Erfolgsmeldung ausblenden
+                
                 submitButton.disabled = false;
                 submitButton.textContent = 'Submit Request';
             } finally {
@@ -453,12 +458,14 @@
         // Event Listener für den Abbrechen-Button und den Schließen-Button im Modal
         modalCancelBtn.addEventListener('click', () => {
             nameConfirmModal.style.display = 'none';
+            confirmNameInput.value = ''; // Eingabefeld zurücksetzen
             submitButton.disabled = false; // Submit Button wieder aktivieren
             submitButton.textContent = 'Submit Request'; // Text zurücksetzen
         });
 
         closeNameModal.addEventListener('click', () => {
             nameConfirmModal.style.display = 'none';
+            confirmNameInput.value = ''; // Eingabefeld zurücksetzen
             submitButton.disabled = false; // Submit Button wieder aktivieren
             submitButton.textContent = 'Submit Request'; // Text zurücksetzen
         });
@@ -467,6 +474,7 @@
         window.addEventListener('click', (event) => {
             if (event.target === nameConfirmModal) {
                 nameConfirmModal.style.display = 'none';
+                confirmNameInput.value = ''; // Eingabefeld zurücksetzen
                 submitButton.disabled = false; // Submit Button wieder aktivieren
                 submitButton.textContent = 'Submit Request'; // Text zurücksetzen
             }
@@ -476,6 +484,7 @@
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && nameConfirmModal.style.display === 'flex') {
                 nameConfirmModal.style.display = 'none';
+                confirmNameInput.value = ''; // Eingabefeld zurücksetzen
                 submitButton.disabled = false;
                 submitButton.textContent = 'Submit Request';
             }
