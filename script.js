@@ -1,6 +1,6 @@
 // Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
 // Aktualisierte API_URL aus deinen letzten Uploads
-const API_URL = 'https://script.google.com/macros/s/AKfycbwhdpzT6_yDZF_KUcJy7ttXnEM8jYI98ZpOuNksCZOQqrIEhsYb6ofcRXeo26wnlDRp/exec'; // <-- Überprüfen Sie, ob dies die aktuelle URL Ihrer bereitgestellten Web-App ist!
+const API_URL = 'https://script.google.com/macros/s/AKfycbwU_KgwXtZR6gNq-u8Zy2q9buC3irR5n20N1ke2lVNbHmcjmVEcejM3g-UQmK0f4TUL/exec'; // <-- Überprüfen Sie, ob dies die aktuelle URL Ihrer bereitgestellten Web-App ist!
 
 let isAdmin = false; // Initialisiere isAdmin als false
 let requestData = []; // Speichert alle abgerufenen Charterdaten
