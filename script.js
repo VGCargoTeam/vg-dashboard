@@ -54,7 +54,9 @@ function fetchData() {
       return r.json();
     })
     .then(d => {
-      requestData = d; // Speichert die rohen Daten
+      // KORREKTUR HIER: Greife auf den 'data'-Schlüssel des Objekts zu
+      // Da dein Google Apps Script jetzt ein Objekt der Form {status: "success", data: [...]} zurückgibt
+      requestData = d.data; // Speichert das Array der Daten
       filterTable(); // Ruft filterTable auf, um sowohl Tabelle als auch Kalender zu aktualisieren
     })
     .catch((error) => {
@@ -75,6 +77,7 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
     const ton = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0; 
     
     // Finde den ursprünglichen Index im requestData Array
+    // WICHTIG: originalIndex muss auf das ungefilterte requestData zugreifen
     const originalIndex = requestData.findIndex(item => item.Ref === r.Ref); 
 
     // Datum für die Anzeige in der Tabelle formatieren (Stellt sicher, dass es YYYY-MM-DD ist)
@@ -183,8 +186,12 @@ function openModal(originalIndex) {
     'Vorfeldbegleitung': "Nein",
     'Rate': "", 'Security charges': "", 'Dangerous Goods': "",
     '10ft consumables': "", '20ft consumables': "",
-    'Zusatzkosten': "", 'Email Request': ""
-  } : requestData[originalIndex];
+    'Zusatzkosten': "", 'Email Request': "",
+    'AGB Accepted': "Nein", // NEU
+    'Service Description Accepted': "Nein", // NEU
+    'Accepted By Name': "", // NEU
+    'Acceptance Timestamp': "" // NEU
+  } : requestData[originalIndex]; // Hier requestData direkt verwenden
 
   const modal = document.getElementById("detailModal");
   const modalBody = document.getElementById("modalBody");
@@ -211,7 +218,7 @@ function openModal(originalIndex) {
       let readOnlyAttr = '';
       if (key === "Ref" && originalIndex !== -1) { // Ref bleibt readonly, wenn es ein bestehender Eintrag ist
           readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
-      } else if (key === "Created At") { // Created At bleibt immer readonly
+      } else if (key === "Created At" || key === "Acceptance Timestamp") { // Created At und Acceptance Timestamp bleiben immer readonly
            readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
       } else if (isPriceRelatedField && !isAdmin) { // Admin-Felder sind readonly, wenn kein Admin
           readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
@@ -245,10 +252,11 @@ function openModal(originalIndex) {
             value = ""; // Wenn nicht HH:MM, leeren
         }
         return `<label>${label}</label><input type="time" name="${key}" value="${value}" ${readOnlyAttr}>`;
-      } else if (type === "checkbox") {
-        const readOnlyCheckbox = (isPriceRelatedField && !isAdmin) ? 'onclick="return false;" onkeydown="return false;"' : ''; // Macht die Checkbox quasi readonly
+      } else if (type === "checkbox") { // Hier wird der 'type' für die Checkboxen genutzt
+        // Checkboxen AGB Accepted und Service Description Accepted sind editierbar
+        // Vorfeldbegleitung wird auch als Checkbox behandelt
         const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
-        return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyCheckbox}> ${label}</label>`;
+        return `<label><input type="checkbox" name="${key}" ${checked}> ${label}</label>`;
       } else if (key === "Tonnage" || key === "Rate" || key === "Security charges" || key === "Dangerous Goods" || key === "10ft consumables" || key === "20ft consumables") {
           // Für numerische Felder: Formatiere Punkt zu Komma für die Anzeige im Modal
           const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
@@ -265,7 +273,12 @@ function openModal(originalIndex) {
     { label: "Billing Address", key: "Billing Address" },
     { label: "Tax Number", key: "Tax Number" },
     { label: "Contact Name Invoicing", key: "Contact Name Invoicing" },
-    { label: "Contact E-Mail Invoicing", key: "Contact E-Mail Invoicing" }
+    { label: "Contact E-Mail Invoicing", key: "Contact E-Mail Invoicing" },
+    // NEU HINZUGEFÜGT:
+    { label: "AGB Accepted", key: "AGB Accepted", type: "checkbox" },
+    { label: "Service Description Accepted", key: "Service Description Accepted", type: "checkbox" },
+    { label: "Accepted By Name", key: "Accepted By Name" },
+    { label: "Acceptance Timestamp", key: "Acceptance Timestamp" }
   ];
 
   const flightFields = [
@@ -358,7 +371,7 @@ function openModal(originalIndex) {
 }
 
 // Neue Funktion, die vom Modal aus den Löschvorgang startet und dann das Modal schließt
-function deleteRowFromModal(ref) {
+async function deleteRowFromModal(ref) {
   if (!confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
     return;
   }
@@ -369,26 +382,30 @@ function deleteRowFromModal(ref) {
     user: currentLoggedInUser // Aktuellen Benutzer senden
   };
 
-  fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-    body: new URLSearchParams(data)
-  })
-  .then(res => res.json()) 
-  .then((response) => { 
-    if (response && response.status === "success") { 
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, // Behalten für Dashboard-Anfragen
+      body: new URLSearchParams(data)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
+    }
+    const responseData = await response.json(); // Muss response.json() sein
+
+    if (responseData && responseData.status === "success") { 
       showSaveFeedback("Eintrag gelöscht!", true);
     } else {
-      showSaveFeedback(`Fehler beim Löschen des Eintrags! ${response.message || ''}`, false);
-      console.error("Löschen fehlgeschlagen:", response);
+      showSaveFeedback(`Fehler beim Löschen des Eintrags! ${responseData.message || ''}`, false);
+      console.error("Löschen fehlgeschlagen:", responseData);
     }
     closeModal(); // Modal schließen nach dem Löschen
     fetchData(); // Daten neu laden
-  })
-  .catch((err) => {
+  } catch (err) {
     showSaveFeedback("Fehler beim Löschen!", false);
     console.error(err);
-  });
+  }
 }
 
 function closeModal() {
@@ -402,7 +419,12 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-function saveDetails() {
+async function saveDetails() {
+  const confirmSave = confirm('Sind Sie sicher, dass Sie diese Änderungen speichern möchten?');
+  if (!confirmSave) {
+    return;
+  }
+
   const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled])");
   const data = {};
   inputs.forEach(i => {
@@ -423,34 +445,33 @@ function saveDetails() {
   data.mode = "write"; // Muss "write" sein, damit doPost den create/update-Pfad nimmt
   data.user = currentLoggedInUser; // Aktuellen Benutzer senden
 
-  fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-    body: new URLSearchParams(data)
-  })
-  .then(res => {
-    if (!res.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${res.status}`);
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, // Behalten für Dashboard-Anfragen
+      body: new URLSearchParams(data)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
-    return res.json();
-  })
-  .then((response) => {
-    if (response && response.status === "success") {
+    const responseData = await response.json();
+
+    if (responseData && responseData.status === "success") {
       showSaveFeedback("Gespeichert!", true);
     } else {
-      showSaveFeedback(`Fehler beim Speichern! ${response.message || ''}`, false);
-      console.error("Speichern fehlgeschlagen:", response);
+      showSaveFeedback(`Fehler beim Speichern! ${responseData.message || ''}`, false);
+      console.error("Speichern fehlgeschlagen:", responseData);
     }
     closeModal();
     fetchData(); // Daten neu laden, um Änderungen anzuzeigen
-  })
-  .catch((err) => {
+  } catch (err) {
     showSaveFeedback("Fehler beim Speichern!", false);
     console.error(err);
-  });
+  }
 }
 
-function deleteRow(btn) {
+async function deleteRow(btn) {
   const ref = btn.closest("tr").querySelector("a").textContent;
 
   if (!confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
@@ -463,30 +484,29 @@ function deleteRow(btn) {
     user: currentLoggedInUser // Aktuellen Benutzer senden
   };
 
-  fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-    body: new URLSearchParams(data)
-  })
-  .then(res => {
-    if (!res.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${res.status}`);
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, // Behalten für Dashboard-Anfragen
+      body: new URLSearchParams(data)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
-    return res.json();
-  }) 
-  .then((response) => { 
-    if (response && response.status === "success") { 
+    const responseData = await response.json();
+
+    if (responseData && responseData.status === "success") { 
       showSaveFeedback("Eintrag gelöscht!", true);
     } else {
-      showSaveFeedback(`Fehler beim Löschen des Eintrags! ${response.message || ''}`, false);
-      console.error("Löschen fehlgeschlagen:", response);
+      showSaveFeedback(`Fehler beim Löschen des Eintrags! ${responseData.message || ''}`, false);
+      console.error("Löschen fehlgeschlagen:", responseData);
     }
     fetchData(); // Daten neu laden, um die gelöschte Zeile zu entfernen
-  })
-  .catch((err) => {
+  } catch (err) {
     showSaveFeedback("Fehler beim Löschen!", false);
     console.error(err);
-  });
+  }
 }
 
 // === KALENDER FUNKTIONEN ===
@@ -523,6 +543,10 @@ function openCalendarDayFlights(year, month, day) {
       openModal(originalIndex);
     } else {
       console.warn("Konnte den Originalindex des Fluges nicht finden:", firstFlight);
+      // Fallback: Wenn der Originalindex nicht gefunden wird, versuche das Modal mit den Daten des ersten Fluges zu öffnen.
+      // Dies könnte passieren, wenn requestData gefiltert oder neu geordnet wurde.
+      // Um ein direktes Problem zu vermeiden, könnte man hier -1 oder einen Klon des Objekts übergeben,
+      // aber da die filterTable() jetzt requestData auf d.data setzt, sollte indexOf wieder zuverlässig sein.
       openModal(requestData.indexOf(firstFlight)); 
     }
   }
@@ -661,9 +685,10 @@ async function showHistory(ref) {
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
-    const auditLogs = await response.json();
+    const auditResult = await response.json(); // Muss response.json() sein
 
-    const filteredLogs = auditLogs.filter(log => log.Reference === ref);
+    // KORREKTUR HIER: Greife auf den 'data'-Schlüssel des Audit-Objekts zu
+    const filteredLogs = auditResult.data.filter(log => log.Reference === ref);
 
     if (filteredLogs.length === 0) {
       historyBody.innerHTML = '<p style="text-align: center;">No history found for this reference.</p>';
