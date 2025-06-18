@@ -59,15 +59,25 @@ function updateUIBasedOnUserRole() {
 
 function openProfileModal() {
   const profileModal = document.getElementById('profileModal');
-  profileModal.style.display = 'flex'; // Modal anzeigen
-  // Initialwerte setzen
-  document.getElementById('newPasswordInput').value = '';
-  document.getElementById('confirmPasswordInput').value = '';
-  document.getElementById('passwordChangeMessage').textContent = '';
+  if (profileModal) { // Sicherstellen, dass das Modal existiert
+    profileModal.style.display = 'flex'; // Modal anzeigen
+    // Initialwerte setzen
+    const newPassInput = document.getElementById('newPasswordInput');
+    const confirmPassInput = document.getElementById('confirmPasswordInput');
+    const passwordChangeMessage = document.getElementById('passwordChangeMessage');
+    if (newPassInput) newPassInput.value = '';
+    if (confirmPassInput) confirmPassInput.value = '';
+    if (passwordChangeMessage) passwordChangeMessage.textContent = '';
+  } else {
+    console.warn("Profile Modal (id='profileModal') not found.");
+  }
 }
 
 function closeProfileModal() {
-  document.getElementById('profileModal').style.display = 'none'; // Modal schließen
+  const profileModal = document.getElementById('profileModal');
+  if (profileModal) {
+    profileModal.style.display = 'none'; // Modal schließen
+  }
 }
 
 function changePassword() {
@@ -184,9 +194,11 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
 function filterTable() {
   const refSearch = document.getElementById("refSearch").value.toLowerCase();
   const airlineSearch = document.getElementById("airlineSearch").value.toLowerCase();
-  const flightNumberSearch = document.getElementById("flightNumberSearch").value.toLowerCase(); 
+  const flightNumberSearchInput = document.getElementById("flightNumberSearch");
+  const flightNumberSearch = flightNumberSearchInput ? flightNumberSearchInput.value.toLowerCase() : '';
   const fromDateInput = document.getElementById("fromDate").value; 
   const toDateInput = document.getElementById("toDate").value;     
+  const showArchive = document.getElementById("archiveCheckbox").checked; // Archiv-Checkbox
 
   const filtered = requestData.filter(r => {
     const matchesRef = (r.Ref || '').toLowerCase().includes(refSearch);
@@ -199,6 +211,8 @@ function filterTable() {
     let flightDateFromData = r['Flight Date'] || '';
     if (typeof flightDateFromData === 'string' && flightDateFromData.includes('T')) {
         flightDateFromData = flightDateFromData.split('T')[0]; 
+    } else if (flightDateFromData instanceof Date) { 
+        flightDateFromData = flightDateFromData.toISOString().split('T')[0];
     }
 
     if (flightDateFromData) {
@@ -230,11 +244,9 @@ function filterTable() {
 
     const isExplicitlyFiltered = refSearch || airlineSearch || flightNumberSearch || fromDateInput || toDateInput;
 
-    if (!isExplicitlyFiltered) {
-        return matchesRef && matchesAirline && matchesFlightNumber && !isPastOrTodayAndGoneFlight;
-    } else {
-        return matchesRef && matchesAirline && matchesFlightNumber && matchesDateRange;
-    }
+    const passesPastFlightFilter = showArchive || !isPastOrTodayAndGoneFlight;
+
+    return matchesRef && matchesAirline && matchesFlightNumber && matchesDateRange && passesPastFlightFilter;
   });
   renderTable(filtered); 
   renderCalendars(); 
@@ -716,13 +728,11 @@ document.addEventListener("DOMContentLoaded", () => {
   updateClock();
   setInterval(updateClock, 1000);
   
-  if (currentUser) {
-      setInterval(fetchData, 10000); 
-  }
-
-  const flightNumberSearchInput = document.getElementById("flightNumberSearch");
-  if (flightNumberSearchInput) {
-      flightNumberSearchInput.addEventListener('keyup', filterTable);
+  // Die fetchData-Polling wird erst gestartet, nachdem der Benutzer authentifiziert wurde (in checkAuthStatus)
+  // Das Event-Listener für archiveCheckbox muss hier bleiben, da es keine globale Funktion ist.
+  const archiveCheckbox = document.getElementById("archiveCheckbox");
+  if (archiveCheckbox) {
+      archiveCheckbox.addEventListener('change', filterTable);
   }
 });
 
@@ -798,18 +808,19 @@ async function showHistory(ref) {
         let filteredDetails = detailsContent;
         sensitiveFields.forEach(field => {
           const regex = new RegExp(`(${field}[^;]*)`, 'g'); 
-          filteredDetails = filteredDetails.replace(regex, `${field} [REDACTED]`);
+          filteredDetails = filteredDetails.replace(regex, `${field} [REDACTED]`); // Redact sensitive info for viewers
         });
         detailsContent = filteredDetails;
-      } else {
-        try {
-            const parsedDetails = JSON.parse(detailsContent);
-            if (typeof parsedDetails === 'object' && parsedDetails !== null) {
-                detailsContent = 'Deleted data: <pre>' + JSON.stringify(parsedDetails, null, 2) + '</pre>';
-            }
-        } catch (e) {
-        }
       }
+      
+      try {
+          const parsedDetails = JSON.parse(detailsContent);
+          if (typeof parsedDetails === 'object' && parsedDetails !== null) {
+              detailsContent = 'Deleted data: <pre>' + JSON.stringify(parsedDetails, null, 2) + '</pre>';
+          }
+      } catch (e) {
+      }
+
 
       historyHTML += `
         <li style="background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; padding: 15px;">
@@ -832,3 +843,34 @@ async function showHistory(ref) {
 function closeHistoryModal() {
   document.getElementById("historyModal").style.display = "none";
 }
+
+
+// --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
+// Wenn script.js als type="module" geladen wird, sind Funktionen
+// standardmäßig nicht im globalen "window"-Scope verfügbar,
+// es sei denn, sie werden explizit exportiert oder zugewiesen.
+// Für HTML-onclick-Attribute ist die Zuweisung an "window" erforderlich.
+window.openProfileModal = openProfileModal;
+window.closeProfileModal = closeProfileModal;
+window.changePassword = changePassword;
+window.logoutUser = logoutUser;
+window.fetchData = fetchData;
+window.renderTable = renderTable;
+window.filterTable = filterTable;
+window.openModal = openModal;
+window.deleteRowFromModal = deleteRowFromModal; // Diese Funktion wird von saveDetails aufgerufen, also sollte sie nicht direkt im HTML sein, aber sie ist hier zur Vollständigkeit
+window.closeModal = closeModal;
+window.saveDetails = saveDetails;
+window.deleteRow = deleteRow;
+window.shiftCalendar = shiftCalendar;
+window.renderCalendars = renderCalendars;
+window.openCalendarDayFlights = openCalendarDayFlights;
+window.generateCalendarHTML = generateCalendarHTML; // Auch diese, falls indirekt benötigt
+window.createNewRequest = createNewRequest;
+window.showSaveFeedback = showSaveFeedback;
+window.showHistory = showHistory;
+window.closeHistoryModal = closeHistoryModal;
+
+// Initialisiere Auth-Status, sobald das DOM geladen ist.
+// Dies wird nach dem window.onload Event, aber vor dem Polling ausgeführt.
+checkAuthStatus(); 
