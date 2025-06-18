@@ -1,12 +1,8 @@
 // Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
 // Aktualisierte API_URL aus deinen letzten Uploads
-const API_URL = 'https://script.google.com/macros/s/AKfycbze83ir9HARMC2Vcaf1vUJ6nv5vY1eoCULHEY-U5pWhkQtYA_VHOoY6_UNs0UV8AyoM/exec'; 
-
-// !!! WICHTIG: Diese Zeile wird JETZT entfernt oder auskommentiert, da der Admin-Status aus localStorage gelesen wird !!!
-// const isAdmin = new URLSearchParams(window.location.search).get("admin") === "true";
+const API_URL = 'https://script.google.com/macros/s/AKfycbwhdpzT6_yDZF_KUcJy7ttXnEM8jYI98ZpOuNksCZOQqrIEhsYb6ofcRXeo26wnlDRp/exec'; // <-- Überprüfen Sie, ob dies die aktuelle URL Ihrer bereitgestellten Web-App ist!
 
 let isAdmin = false; // Initialisiere isAdmin als false
-
 let requestData = []; // Speichert alle abgerufenen Charterdaten
 let baseMonth = new Date().getMonth(); // Aktueller Monat (0-indexed)
 let baseYear = new Date().getFullYear(); // Aktuelles Jahr
@@ -15,15 +11,25 @@ let baseYear = new Date().getFullYear(); // Aktuelles Jahr
 const today = new Date();
 today.setHours(0, 0, 0, 0); // Setzt die Zeit auf Mitternacht für den Vergleich
 
+// NEU: Globaler Variable für den eingeloggten Benutzer
+let currentLoggedInUser = "Unbekannt"; 
+
 // NEUE FUNKTION: Admin-Status aus localStorage lesen
 function getAdminStatusFromLocalStorage() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  if (currentUser && currentUser.role === "admin") {
-    isAdmin = true;
+  if (currentUser) {
+    currentLoggedInUser = currentUser.name; // Benutzername für Audit-Log speichern
+    if (currentUser.role === "admin") {
+      isAdmin = true;
+    } else {
+      isAdmin = false;
+    }
   } else {
     isAdmin = false;
+    currentLoggedInUser = "Gast"; // Falls kein Benutzer angemeldet ist
   }
   console.log("Admin Status aus localStorage geladen:", isAdmin); // Zum Debuggen
+  console.log("Aktueller Benutzer:", currentLoggedInUser); // Zum Debuggen
   
   // Elemente basierend auf Admin-Status sichtbar/unsichtbar machen
   updateUIBasedOnAdminStatus();
@@ -37,7 +43,6 @@ function updateUIBasedOnAdminStatus() {
     adminElements.forEach(el => el.style.display = "none");
   }
 }
-
 
 // === DATENABRUF UND TABELLEN-RENDERUNG ===
 function fetchData() {
@@ -70,27 +75,19 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
     const ton = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0; 
     
     // Finde den ursprünglichen Index im requestData Array
-    // Dies ist wichtig, da openModal den Index im requestData Array erwartet
     const originalIndex = requestData.findIndex(item => item.Ref === r.Ref); 
-    // Fallback, falls Ref nicht einzigartig ist, oder r nicht direkt aus requestData kommt (was hier nicht der Fall sein sollte)
-    if (originalIndex === -1 && requestData.includes(r)) {
-      originalIndex = requestData.indexOf(r);
-    }
-    // Wenn immer noch -1, verwenden wir einen negativen Wert oder werfen einen Fehler,
-    // aber für vorhandene Daten sollte findIndex funktionieren.
 
     // Datum für die Anzeige in der Tabelle formatieren (Stellt sicher, dass es YYYY-MM-DD ist)
     let displayFlightDate = r['Flight Date'] || "-";
     if (displayFlightDate !== "-") {
-        // Wenn es ein ISO-String ist (z.B. 2025-06-22T00:00:00.000Z), nimm nur den Datumsteil
         if (String(displayFlightDate).includes('T')) {
             displayFlightDate = String(displayFlightDate).split('T')[0];
         }
-        // Wenn es bereits YYYY-MM-DD ist, bleibt es so
     }
 
-    // Zeigen/Verstecken des Delete-Buttons basierend auf isAdmin
-    const deleteButtonHTML = isAdmin ? `<button class="btn btn-delete" onclick="deleteRow(this)">Delete</button>` : '';
+    // Zeigen/Verstecken des Delete-Buttons basierend auf isAdmin (Klasse 'admin-only' verwenden)
+    // Der Delete-Button ist jetzt Teil des HTML und wird per CSS/JS gesteuert
+    const deleteButtonHTML = `<button class="btn btn-delete admin-only" onclick="deleteRow(this)">Delete</button>`;
 
     row.innerHTML = `
       <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})">${r.Ref}</a></td>
@@ -108,6 +105,9 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
 
   document.getElementById("summaryInfo").textContent =
     `Total Flights: ${totalFlights} | Total Tonnage: ${totalWeight.toLocaleString('de-DE')} kg`; // 'de-DE' für Anzeige
+  
+  // UI nach dem Rendern der Tabelle basierend auf Admin-Status aktualisieren
+  updateUIBasedOnAdminStatus();
 }
 
 // Filterfunktion (unverändert)
@@ -171,12 +171,11 @@ function filterTable() {
   renderCalendars(); // Rendert die Kalender immer neu, auch wenn nur gefiltert wurde (oder keine Filter aktiv)
 }
 
-
 // === MODAL FUNKTIONEN ===
 function openModal(originalIndex) {
   const r = originalIndex === -1 ? {
     Ref: generateReference(),
-    'Created At': new Date().toISOString(),
+    'Created At': new Date().toISOString(), // Speichert ISO-Format für Konsistenz
     'Billing Company': "", 'Billing Address': "", 'Tax Number': "",
     'Contact Name Invoicing': "", 'Contact E-Mail Invoicing': "",
     'Airline': "", 'Aircraft Type': "", 'Flugnummer': "",
@@ -189,7 +188,7 @@ function openModal(originalIndex) {
 
   const modal = document.getElementById("detailModal");
   const modalBody = document.getElementById("modalBody");
-  modalBody.innerHTML = "";
+  modalBody.innerHTML = ""; // Inhalt leeren
 
   const section = (title, contentHTML) => {
     const wrap = document.createElement("div");
@@ -220,11 +219,11 @@ function openModal(originalIndex) {
 
 
       if (key === "Flight Date") {
+        // Stellt sicher, dass das Datum im YYYY-MM-DD Format ist
         if (String(value).includes('T')) {
             value = String(value).split('T')[0];
-        } else if (String(value).match(/^\d{4}-\d{2}-\d{2}$/)) {
-            // Bereits im korrekten Format
-        } else {
+        } else if (!String(value).match(/^\d{4}-\d{2}-\d{2}$/)) {
+            // Wenn es kein ISO- oder YYYY-MM-DD-Format ist, versuchen Sie zu parsen
             try {
                 const parsedDate = new Date(value);
                 if (!isNaN(parsedDate.getTime())) {
@@ -238,13 +237,12 @@ function openModal(originalIndex) {
         }
         return `<label>${label}</label><input type="date" name="${key}" value="${value}" ${readOnlyAttr}>`;
       } else if (key === "Abflugzeit") {
+        // Stellt sicher, dass die Abflugzeit im HH:MM Format ist
         if (String(value).includes('T')) {
             const dateObj = new Date(value);
             value = dateObj.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-        } else if (String(value).length === 5 && String(value).includes(':')) {
-            // Bereits im korrekten Format (HH:MM)
-        } else {
-            value = "";
+        } else if (!(String(value).length === 5 && String(value).includes(':'))) {
+            value = ""; // Wenn nicht HH:MM, leeren
         }
         return `<label>${label}</label><input type="time" name="${key}" value="${value}" ${readOnlyAttr}>`;
       } else if (type === "checkbox") {
@@ -253,7 +251,6 @@ function openModal(originalIndex) {
         return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyCheckbox}> ${label}</label>`;
       } else if (key === "Tonnage" || key === "Rate" || key === "Security charges" || key === "Dangerous Goods" || key === "10ft consumables" || key === "20ft consumables") {
           // Für numerische Felder: Formatiere Punkt zu Komma für die Anzeige im Modal
-          // Behandle leere Strings, null oder undefined für parseFloat
           const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
           return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" ${readOnlyAttr} />`;
       }
@@ -307,10 +304,16 @@ function openModal(originalIndex) {
     // modalBody.appendChild(section("Preisdetails", "<p>Keine Berechtigung zur Ansicht dieser Details.</p>"));
   }
 
+  const buttonContainer = document.createElement("div");
+  buttonContainer.style.width = "100%";
+  buttonContainer.style.display = "flex";
+  buttonContainer.style.justifyContent = "center"; // Buttons zentrieren
+  buttonContainer.style.gap = "10px"; // Abstand zwischen den Buttons
+  buttonContainer.style.marginTop = "20px";
+
   const saveButton = document.createElement("button");
   saveButton.textContent = "Speichern";
   saveButton.onclick = saveDetails;
-  saveButton.style.margin = "10px auto 0";
   saveButton.style.padding = "10px 20px";
   saveButton.style.fontWeight = "bold";
   saveButton.style.backgroundColor = "#28a745";
@@ -318,24 +321,38 @@ function openModal(originalIndex) {
   saveButton.style.border = "none";
   saveButton.style.borderRadius = "6px";
   saveButton.style.cursor = "pointer";
-  modalBody.appendChild(saveButton); // Save button ist immer sichtbar
+  buttonContainer.appendChild(saveButton);
 
-  // Lösch-Button im Modal: Nur für Admins
-  if (isAdmin && originalIndex !== -1) { // Nur anzeigen, wenn es ein bestehender Eintrag ist
+  // NEU: History Button im Modal
+  const historyButton = document.createElement("button");
+  historyButton.textContent = "History";
+  historyButton.style.padding = "10px 20px";
+  historyButton.style.fontWeight = "bold";
+  historyButton.style.backgroundColor = "#17a2b8"; // Eine eigene Farbe für den History-Button
+  historyButton.style.color = "white";
+  historyButton.style.border = "none";
+  historyButton.style.borderRadius = "6px";
+  historyButton.style.cursor = "pointer";
+  historyButton.onclick = () => showHistory(r.Ref); 
+  buttonContainer.appendChild(historyButton);
+
+  // Lösch-Button im Modal: Nur für Admins und nur bei bestehenden Einträgen
+  if (isAdmin && originalIndex !== -1) { 
     const deleteButtonModal = document.createElement("button");
     deleteButtonModal.textContent = "Eintrag löschen";
     deleteButtonModal.className = "btn btn-delete";
-    deleteButtonModal.style.margin = "10px auto 0";
     deleteButtonModal.style.padding = "10px 20px";
     deleteButtonModal.style.fontWeight = "bold";
-    deleteButtonModal.style.backgroundColor = "#dc3545"; // Rot
+    deleteButtonModal.style.backgroundColor = "#dc3545"; 
     deleteButtonModal.style.color = "white";
     deleteButtonModal.style.border = "none";
     deleteButtonModal.style.borderRadius = "6px";
     deleteButtonModal.style.cursor = "pointer";
-    deleteButtonModal.onclick = () => deleteRowFromModal(r.Ref); // Neue Funktion, die das Modal schließt
-    modalBody.appendChild(deleteButtonModal);
+    deleteButtonModal.onclick = () => deleteRowFromModal(r.Ref); 
+    buttonContainer.appendChild(deleteButtonModal);
   }
+  
+  modalBody.appendChild(buttonContainer); // Button-Container hinzufügen
 
   modal.style.display = "flex";
 }
@@ -346,10 +363,16 @@ function deleteRowFromModal(ref) {
     return;
   }
 
+  const data = {
+    Ref: ref,
+    mode: "delete",
+    user: currentLoggedInUser // Aktuellen Benutzer senden
+  };
+
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-    body: new URLSearchParams({ Ref: ref, mode: "delete" })
+    body: new URLSearchParams(data)
   })
   .then(res => res.json()) 
   .then((response) => { 
@@ -368,13 +391,15 @@ function deleteRowFromModal(ref) {
   });
 }
 
-
 function closeModal() {
   document.getElementById("detailModal").style.display = "none";
 }
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === "Escape") closeModal();
+  if (e.key === "Escape") {
+    closeModal();
+    closeHistoryModal(); // Auch History Modal schließen
+  }
 });
 
 function saveDetails() {
@@ -386,7 +411,6 @@ function saveDetails() {
         data[i.name] = i.value; 
     } else if (i.name === "Tonnage" || i.name === "Rate" || i.name === "Security charges" || i.name === "Dangerous Goods" || i.name === "10ft consumables" || i.name === "20ft consumables") {
         // Ersetze Komma durch Punkt für das Backend, falls es numerische Werte erwartet
-        // Sicherstellen, dass auch leere Strings korrekt behandelt werden
         data[i.name] = i.value.replace(/,/g, '.') || "";
     } else {
         data[i.name] = i.type === "checkbox" ? (i.checked ? "Ja" : "Nein") : i.value;
@@ -394,8 +418,11 @@ function saveDetails() {
   });
 
   const refValue = document.querySelector("#modalBody input[name='Ref']").value;
-  data.mode = requestData.find(r => r.Ref === refValue) ? "update" : "create";
-  
+  // Der Modus wird im Backend anhand der Existenz der Ref entschieden (Update vs. Create)
+  // Wir müssen hier nur den 'write' Modus senden.
+  data.mode = "write"; // Muss "write" sein, damit doPost den create/update-Pfad nimmt
+  data.user = currentLoggedInUser; // Aktuellen Benutzer senden
+
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
@@ -430,10 +457,16 @@ function deleteRow(btn) {
     return;
   }
 
+  const data = {
+    Ref: ref,
+    mode: "delete",
+    user: currentLoggedInUser // Aktuellen Benutzer senden
+  };
+
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-    body: new URLSearchParams({ Ref: ref, mode: "delete" })
+    body: new URLSearchParams(data)
   })
   .then(res => {
     if (!res.ok) {
@@ -484,24 +517,18 @@ function openCalendarDayFlights(year, month, day) {
   });
 
   if (flightsOnThisDay.length > 0) {
-    // Wenn es mehrere Flüge gibt, öffne den Modal für den ERSTEN gefundenen Flug.
-    // Eine Verbesserung wäre hier, eine Liste der Flüge für den Tag anzuzeigen
-    // und den Benutzer auswählen zu lassen, welchen er öffnen möchte.
     const firstFlight = flightsOnThisDay[0];
     const originalIndex = requestData.indexOf(firstFlight);
     if (originalIndex !== -1) {
       openModal(originalIndex);
     } else {
-      // Dies sollte bei korrekter Datenhaltung nicht passieren, aber ein Fallback ist gut.
       console.warn("Konnte den Originalindex des Fluges nicht finden:", firstFlight);
-      // Optional: Modal mit den Details des ersten Fluges direkt öffnen, auch ohne originalIndex
-      openModal(requestData.indexOf(firstFlight)); // Dies ist ein möglicher Workaround
+      openModal(requestData.indexOf(firstFlight)); 
     }
   }
 }
 
 function generateCalendarHTML(year, month) {
-  // Wochentag des ersten Tages im Monat (0=So, 1=Mo, ..., 6=Sa). Anpassung auf Mo=0, So=6
   const firstDayOfMonthWeekday = (new Date(year, month, 1).getDay() + 6) % 7; 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const monthName = new Date(year, month).toLocaleString('de-DE', { month: 'long' }); 
@@ -578,9 +605,7 @@ function generateCalendarHTML(year, month) {
 
 // === UHRZEIT UND DATUM ===
 document.addEventListener("DOMContentLoaded", () => {
-  // Stelle sicher, dass die Authentifizierung zuerst geprüft und der currentUser gesetzt wird
-  // auth.js läuft bereits auf DOMContentLoaded, wir rufen getAdminStatusFromLocalStorage() danach auf.
-  getAdminStatusFromLocalStorage(); // Admin-Status beim Laden der Seite abrufen
+  getAdminStatusFromLocalStorage(); 
   updateClock();
   setInterval(updateClock, 1000);
   fetchData(); 
@@ -595,7 +620,6 @@ function updateClock() {
 // === NEUE ANFRAGE ERSTELLEN ===
 function generateReference() {
   const now = new Date();
-  // Nutzt das deutsche Datum für den Zeitstempel im Referenzcode
   const timestamp = now.toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\./g, '').replace(/\//g, ''); 
   const random = Math.random().toString(36).substring(2, 6).toUpperCase(); 
   return `CC-${timestamp}-${random}`;
@@ -620,4 +644,65 @@ function showSaveFeedback(message, success) {
   feedback.style.zIndex = "9999";
   document.body.appendChild(feedback);
   setTimeout(() => feedback.remove(), 3000);
+}
+
+// NEUE FUNKTIONEN FÜR HISTORY MODAL
+async function showHistory(ref) {
+  const historyModal = document.getElementById("historyModal");
+  const historyBody = document.getElementById("historyBody");
+  const historyRefSpan = document.getElementById("historyRef");
+
+  historyRefSpan.textContent = ref;
+  historyBody.innerHTML = '<p style="text-align: center;">Loading history...</p>';
+  historyModal.style.display = "flex";
+
+  try {
+    const response = await fetch(API_URL + "?mode=readAuditLog");
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const auditLogs = await response.json();
+
+    const filteredLogs = auditLogs.filter(log => log.Reference === ref);
+
+    if (filteredLogs.length === 0) {
+      historyBody.innerHTML = '<p style="text-align: center;">No history found for this reference.</p>';
+      return;
+    }
+
+    let historyHTML = '<ul style="list-style-type: none; padding: 0;">';
+    filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp)).forEach(log => {
+      // Versuch, JSON-Strings in Details zu formatieren, falls vorhanden
+      let detailsContent = log.Details || '-';
+      try {
+          // Prüfen, ob Details ein JSON-String von einem gelöschten Eintrag sein könnte
+          const parsedDetails = JSON.parse(detailsContent);
+          if (typeof parsedDetails === 'object' && parsedDetails !== null) {
+              detailsContent = 'Gelöschte Daten: <pre>' + JSON.stringify(parsedDetails, null, 2) + '</pre>';
+          }
+      } catch (e) {
+          // Nichts tun, wenn es kein JSON ist
+      }
+
+
+      historyHTML += `
+        <li style="background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; padding: 15px;">
+          <strong style="color: #007BFF;">Timestamp:</strong> ${log.Timestamp || '-'} <br>
+          <strong style="color: #007BFF;">User:</strong> ${log.User || '-'} <br>
+          <strong style="color: #007BFF;">Action:</strong> ${log.Action || '-'} <br>
+          <strong style="color: #007BFF;">Details:</strong> ${detailsContent}
+        </li>
+      `;
+    });
+    historyHTML += '</ul>';
+    historyBody.innerHTML = historyHTML;
+
+  } catch (error) {
+    console.error("Error fetching audit log:", error);
+    historyBody.innerHTML = '<p style="color: red; text-align: center;">Error loading history: ' + error.message + '</p>';
+  }
+}
+
+function closeHistoryModal() {
+  document.getElementById("historyModal").style.display = "none";
 }
