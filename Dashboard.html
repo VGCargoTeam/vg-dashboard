@@ -291,7 +291,12 @@
     <img src="VG_Cargo_Logo_small.png" alt="VG Cargo Logo" style="height:50px;">
   </div>
   <div class="main">
-    <h1>Charter Dashboard</h1>
+    <div class="header-area" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h1 style="flex-grow: 1; text-align: center; margin-left: 70px;">Charter Dashboard</h1>
+      <button onclick="openProfileModal()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+        Profil
+      </button>
+    </div>
 
     <button onclick="createNewRequest()" style="margin: 10px 0 20px; padding: 10px 16px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
       Charter Anfrage erstellen
@@ -303,13 +308,10 @@
     <div style="margin-top: 10px;">
       <label>Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
       <label>Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
+      <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" /> <!-- NEU: Flugnummer Suchfeld -->
       <label>From:</label> <input type="date" id="fromDate" onchange="filterTable()" />
       <label>To:</label> <input type="date" id="toDate" onchange="filterTable()" />
-      <!-- Fügen Sie dies in Ihre Dashboard.html-Datei ein, wo die Filter sind -->
-      <div class="filter-group">
-          <label for="archiveCheckbox" style="margin-left: 10px;">Archiv anzeigen:</label>
-          <input type="checkbox" id="archiveCheckbox" style="width: 20px; height: 20px; vertical-align: middle;">
-      </div>
+      <!-- Archiv Checkbox entfernt -->
     </div>
     <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
     <table id="dataTable"><thead><tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage</th><th>Action</th></tr></thead><tbody></tbody></table>
@@ -330,6 +332,28 @@
         <div id="historyBody" style="width:100%; max-height: 70vh; overflow-y: auto;">
           <!-- History content will be loaded here -->
         </div>
+      </div>
+    </div>
+
+    <!-- NEU: Profil Modal -->
+    <div class="modal" id="profileModal">
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeProfileModal()">✖</span>
+        <h3 style="width:100%; text-align: center;">Profilverwaltung</h3>
+        <p>Angemeldet als: <span id="loggedInUsername"></span> (<span id="loggedInUserRole"></span>)</p>
+        <div style="width:100%; margin-top: 20px;">
+          <label>Neues Passwort:</label>
+          <input type="password" id="newPasswordInput" style="width: calc(100% - 12px);">
+          <label>Passwort bestätigen:</label>
+          <input type="password" id="confirmPasswordInput" style="width: calc(100% - 12px);">
+          <button onclick="changePassword()" style="width: 100%; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 6px; margin-top: 15px; cursor: pointer;">
+            Passwort ändern
+          </button>
+          <p id="passwordChangeMessage" style="color: red; margin-top: 10px;"></p>
+        </div>
+        <button onclick="logoutUser()" style="width: 100%; padding: 10px; background-color: #dc3545; color: white; border: none; border-radius: 6px; margin-top: 20px; cursor: pointer;">
+          Abmelden
+        </button>
       </div>
     </div>
 
