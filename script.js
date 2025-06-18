@@ -1,47 +1,115 @@
 // Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
-// Aktualisierte API_URL aus deinen letzten Uploads
-const API_URL = 'https://script.google.com/macros/s/AKfycbxlkY1f94D26BKvs7oeiNUhOJHEycsox3J61kb4iN7z_3frXRzfB8sCuCnWQVbFgk88/exec'; // <-- Überprüfen Sie, ob dies die aktuelle URL Ihrer bereitgestellten Web-App ist!
+const API_URL = 'https://script.google.com/macros/s/AKfycbxlkY1f94D26BKvs7oeiNUhOJHEycsox3J61kb4iN7z_3frXRzfB8sCuCnWQVbFgk88/exec'; // <<< VERIFIZIERE DIESE URL
 
-let isAdmin = false; // Initialisiere isAdmin als false
+// !!! WICHTIG: Dies ist eine vereinfachte clientseitige Authentifizierung für Demonstrationszwecke.
+// !!! FÜR EINE PRODUKTIONSUMGEBUNG IST EINE ROBUSTERE BACKEND-AUTHENTIFIZIERUNG ERFORDERLICH!
+const USERS = [
+  { username: 'admin', password: 'adminpassword', role: 'admin', name: 'Administrator' },
+  { username: 'viewer', password: 'viewerpassword', role: 'viewer', name: 'Betrachter' }
+];
+
+let currentUser = null; // Speichert den aktuell angemeldeten Benutzer
 let requestData = []; // Speichert alle abgerufenen Charterdaten
 let baseMonth = new Date().getMonth(); // Aktueller Monat (0-indexed)
 let baseYear = new Date().getFullYear(); // Aktuelles Jahr
 
-// Setze das heutige Datum (nur den Tag, ohne Zeit), um Zeitzonenprobleme beim Vergleich zu minimieren.
+// Setzt das heutige Datum (nur den Tag, ohne Zeit), um Zeitzonenprobleme beim Vergleich zu minimieren.
 const today = new Date();
 today.setHours(0, 0, 0, 0); // Setzt die Zeit auf Mitternacht für den Vergleich
 
-// NEU: Globaler Variable für den eingeloggten Benutzer
-let currentLoggedInUser = "Unbekannt"; 
-
-// NEUE FUNKTION: Admin-Status aus localStorage lesen
-function getAdminStatusFromLocalStorage() {
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  if (currentUser) {
-    currentLoggedInUser = currentUser.name; // Benutzername für Audit-Log speichern
-    if (currentUser.role === "admin") {
-      isAdmin = true;
-    } else {
-      isAdmin = false;
-    }
+// === AUTHENTIFIZIERUNG UND BENUTZERVERWALTUNG ===
+function checkAuthStatus() {
+  const storedUser = localStorage.getItem('currentUser');
+  if (storedUser) {
+    currentUser = JSON.parse(storedUser);
+    updateUIBasedOnUserRole();
+    fetchData(); // Daten laden, wenn angemeldet
   } else {
-    isAdmin = false;
-    currentLoggedInUser = "Gast"; // Falls kein Benutzer angemeldet ist
+    // Wenn nicht angemeldet, zur Login-Seite umleiten
+    window.location.href = 'login.html'; 
   }
-  console.log("Admin Status aus localStorage geladen:", isAdmin); // Zum Debuggen
-  console.log("Aktueller Benutzer:", currentLoggedInUser); // Zum Debuggen
-  
-  // Elemente basierend auf Admin-Status sichtbar/unsichtbar machen
-  updateUIBasedOnAdminStatus();
 }
 
-function updateUIBasedOnAdminStatus() {
+function updateUIBasedOnUserRole() {
   const adminElements = document.querySelectorAll(".admin-only");
-  if (isAdmin) {
-    adminElements.forEach(el => el.style.display = ""); // Standardanzeige wiederherstellen (block, inline-block etc.)
+  const loggedInUsernameSpan = document.getElementById('loggedInUsername');
+  const loggedInUserRoleSpan = document.getElementById('loggedInUserRole');
+
+  if (currentUser) {
+    if (loggedInUsernameSpan) loggedInUsernameSpan.textContent = currentUser.name;
+    if (loggedInUserRoleSpan) loggedInUserRoleSpan.textContent = currentUser.role;
+
+    if (currentUser.role === 'admin') {
+      adminElements.forEach(el => el.style.display = ""); // Standardanzeige
+    } else {
+      adminElements.forEach(el => el.style.display = "none"); // Ausblenden
+    }
   } else {
+    // Falls kein Benutzer angemeldet ist (sollte durch checkAuthStatus abgefangen werden)
     adminElements.forEach(el => el.style.display = "none");
+    if (loggedInUsernameSpan) loggedInUsernameSpan.textContent = 'N/A';
+    if (loggedInUserRoleSpan) loggedInUserRoleSpan.textContent = 'N/A';
   }
+}
+
+function openProfileModal() {
+  const profileModal = document.getElementById('profileModal');
+  profileModal.style.display = 'flex'; // Modal anzeigen
+  // Initialwerte setzen
+  document.getElementById('newPasswordInput').value = '';
+  document.getElementById('confirmPasswordInput').value = '';
+  document.getElementById('passwordChangeMessage').textContent = '';
+}
+
+function closeProfileModal() {
+  document.getElementById('profileModal').style.display = 'none'; // Modal schließen
+}
+
+function changePassword() {
+  const newPass = document.getElementById('newPasswordInput').value;
+  const confirmPass = document.getElementById('confirmPasswordInput').value;
+  const messageElem = document.getElementById('passwordChangeMessage');
+
+  if (newPass === '' || confirmPass === '') {
+    messageElem.textContent = 'Bitte beide Passwortfelder ausfüllen.';
+    messageElem.style.color = 'red';
+    return;
+  }
+  if (newPass !== confirmPass) {
+    messageElem.textContent = 'Passwörter stimmen nicht überein.';
+    messageElem.style.color = 'red';
+    return;
+  }
+  if (newPass.length < 6) { // Beispiel: Mindestlänge
+      messageElem.textContent = 'Passwort muss mindestens 6 Zeichen lang sein.';
+      messageElem.style.color = 'red';
+      return;
+  }
+
+  // !!! HINWEIS: In einer echten Anwendung würde hier ein sicherer Hash des Passworts
+  // !!! an ein Backend gesendet und dort gespeichert werden.
+  // Hier simulieren wir nur die Änderung im lokalen Speicher.
+  // Das aktuelle Benutzerobjekt im localStorage aktualisieren
+  const userIndex = USERS.findIndex(u => u.username === currentUser.username);
+  if (userIndex !== -1) {
+    USERS[userIndex].password = newPass; // Update in hardcoded array (for demo)
+    currentUser.password = newPass; // Update current session user
+    localStorage.setItem('currentUser', JSON.stringify(currentUser)); // Update localStorage
+    messageElem.textContent = 'Passwort erfolgreich geändert!';
+    messageElem.style.color = 'green';
+    // Leere die Felder nach erfolgreicher Änderung
+    document.getElementById('newPasswordInput').value = '';
+    document.getElementById('confirmPasswordInput').value = '';
+  } else {
+    messageElem.textContent = 'Fehler beim Ändern des Passworts.';
+    messageElem.style.color = 'red';
+  }
+}
+
+function logoutUser() {
+  localStorage.removeItem('currentUser'); // Sitzung beenden
+  currentUser = null;
+  window.location.href = 'login.html'; // Zur Login-Seite umleiten
 }
 
 // === DATENABRUF UND TABELLEN-RENDERUNG ===
@@ -78,17 +146,25 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
     // WICHTIG: originalIndex muss auf das ungefilterte requestData zugreifen
     const originalIndex = requestData.findIndex(item => item.Ref === r.Ref); 
 
-    // Datum für die Anzeige in der Tabelle formatieren (Stellt sicher, dass es YYYY-MM-DD ist)
+    // Datum für die Anzeige in der Tabelle formatieren (Stellt sicher, dass es überall konsistent ist)
+    // Bei Ankunft im Frontend ist das Datum bereits String. Nur Parsen bei Bedarf.
     let displayFlightDate = r['Flight Date'] || "-";
     if (displayFlightDate !== "-") {
-        if (String(displayFlightDate).includes('T')) {
-            displayFlightDate = String(displayFlightDate).split('T')[0];
+        try {
+            // Versuche, ein Datum aus dem String zu erstellen und lokal zu formatieren, wenn es ein gültiges Datumsformat ist
+            const dateObj = new Date(displayFlightDate);
+            if (!isNaN(dateObj.getTime())) { // Prüfen, ob Date-Objekt gültig ist
+                displayFlightDate = dateObj.toLocaleDateString('de-DE'); // Formatiere für lokale Anzeige
+            }
+        } catch (e) {
+            // Bleibt beim Originalstring, wenn Fehler beim Parsen
         }
     }
 
-    // Zeigen/Verstecken des Delete-Buttons basierend auf isAdmin (Klasse 'admin-only' verwenden)
+
+    // Zeigen/Verstecken des Delete-Buttons basierend auf currentUser.role (Klasse 'admin-only' verwenden)
     // Der Delete-Button ist jetzt Teil des HTML und wird per CSS/JS gesteuert
-    const deleteButtonHTML = `<button class="btn btn-delete admin-only" onclick="deleteRow(this)">Delete</button>`;
+    const deleteButtonHTML = (currentUser && currentUser.role === 'admin') ? `<button class="btn btn-delete admin-only" onclick="deleteRow(this)">Delete</button>` : '';
 
     row.innerHTML = `
       <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})">${r.Ref}</a></td>
@@ -107,76 +183,78 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
   document.getElementById("summaryInfo").textContent =
     `Total Flights: ${totalFlights} | Total Tonnage: ${totalWeight.toLocaleString('de-DE')} kg`; // 'de-DE' für Anzeige
   
-  // UI nach dem Rendern der Tabelle basierend auf Admin-Status aktualisieren
-  updateUIBasedOnAdminStatus();
+  // UI nach dem Rendern der Tabelle basierend auf Benutzerrolle aktualisieren
+  updateUIBasedOnUserRole();
 }
 
-// Filterfunktion (unverändert)
+// Filterfunktion (aktualisiert für Flugnummer)
 function filterTable() {
   const refSearch = document.getElementById("refSearch").value.toLowerCase();
   const airlineSearch = document.getElementById("airlineSearch").value.toLowerCase();
+  const flightNumberSearch = document.getElementById("flightNumberSearch").value.toLowerCase(); // NEU: Flugnummer Suchfeld
   const fromDateInput = document.getElementById("fromDate").value; // String YYYY-MM-DD
   const toDateInput = document.getElementById("toDate").value;     // String YYYY-MM-DD
 
   const filtered = requestData.filter(r => {
     const matchesRef = (r.Ref || '').toLowerCase().includes(refSearch);
     const matchesAirline = (r.Airline || '').toLowerCase().includes(airlineSearch);
+    const matchesFlightNumber = (r.Flugnummer || '').toLowerCase().includes(flightNumberSearch); // NEU: Flugnummer Filter
 
-    let matchesDateRange = true; // Ob das Datum im From/To-Bereich liegt
-    let isPastOrTodayAndGoneFlight = false;    // Ob der Flug in der Vergangenheit liegt oder heute und bereits abgeflogen ist
+    let matchesDateRange = true; 
+    let isPastOrTodayAndGoneFlight = false;    
 
-    const flightDateFromData = r['Flight Date'] ? (String(r['Flight Date']).includes('T') ? String(r['Flight Date']).split('T')[0] : String(r['Flight Date'])) : '';
+    let flightDateFromData = r['Flight Date'] || '';
+    if (typeof flightDateFromData === 'string' && flightDateFromData.includes('T')) {
+        flightDateFromData = flightDateFromData.split('T')[0]; 
+    }
 
     if (flightDateFromData) {
-      // Datum aus den Daten in ein Date-Objekt umwandeln
       const flightDateObj = new Date(flightDateFromData);
-      flightDateObj.setHours(0, 0, 0, 0); // Auch auf Mitternacht setzen für konsistenten Vergleich
+      flightDateObj.setHours(0, 0, 0, 0); 
 
-      // Überprüfen, ob der Flug in der Vergangenheit liegt (oder heute und bereits abgeflogen ist)
       if (flightDateObj < today) {
           isPastOrTodayAndGoneFlight = true;
       } else if (flightDateObj.getTime() === today.getTime()) {
-          // Wenn der Flug heute ist, prüfen, ob die Abflugzeit bereits verstrichen ist
-          const abflugzeit = r['Abflugzeit']; // HH:MM String
+          const abflugzeit = r['Abflugzeit']; 
           if (abflugzeit) {
               const [hours, minutes] = abflugzeit.split(':').map(Number);
-              const flightTime = new Date(); // Aktuelles Datum
+              const flightTime = new Date(); 
               flightTime.setHours(hours, minutes, 0, 0);
 
-              const now = new Date(); // Aktuelle Zeit
-              now.setSeconds(0, 0); // Sekunden ignorieren für Vergleich
-              now.setMilliseconds(0); // Millisekunden ignorieren
+              const now = new Date(); 
+              now.setSeconds(0, 0); 
+              now.setMilliseconds(0); 
 
-              if (flightTime <= now) { // Wenn Abflugzeit <= jetzige Zeit
+              if (flightTime <= now) { 
                   isPastOrTodayAndGoneFlight = true;
               }
           }
       }
 
-      // Filterung nach 'From' und 'To' Datum
       if (fromDateInput && flightDateFromData < fromDateInput) matchesDateRange = false;
       if (toDateInput && flightDateFromData > toDateInput) matchesDateRange = false;
     }
 
-    const isExplicitlyFiltered = refSearch || airlineSearch || fromDateInput || toDateInput;
+    // Die Logik für die Archiv-Checkbox wurde entfernt. Standardmäßig werden vergangene Flüge nicht gezeigt.
+    // Wenn alle Filter leer sind, zeige nur zukünftige Flüge an.
+    // Wenn Filter aktiv sind, zeige alle Flüge, die den aktiven Filtern entsprechen (einschließlich vergangener Flüge, wenn keine Datumsfilter aktiv sind, die dies einschränken würden)
+    const isExplicitlyFiltered = refSearch || airlineSearch || flightNumberSearch || fromDateInput || toDateInput;
 
     if (!isExplicitlyFiltered) {
-        // Wenn keine Filter aktiv sind, zeige nur zukünftige Flüge an
-        return matchesRef && matchesAirline && !isPastOrTodayAndGoneFlight;
+        return matchesRef && matchesAirline && matchesFlightNumber && !isPastOrTodayAndGoneFlight;
     } else {
-        // Wenn Filter aktiv sind, zeige alle Flüge, die den Filtern entsprechen, unabhängig vom Datum
-        return matchesRef && matchesAirline && matchesDateRange;
+        return matchesRef && matchesAirline && matchesFlightNumber && matchesDateRange;
     }
   });
-  renderTable(filtered); // Übergibt die gefilterten Daten an renderTable
-  renderCalendars(); // Rendert die Kalender immer neu, auch wenn nur gefiltert wurde (oder keine Filter aktiv)
+  renderTable(filtered); 
+  renderCalendars(); 
 }
 
 // === MODAL FUNKTIONEN ===
 function openModal(originalIndex) {
   const r = originalIndex === -1 ? {
     Ref: generateReference(),
-    'Created At': new Date().toISOString(), // Speichert ISO-Format für Konsistenz
+    'Created At': new Date().toLocaleString('de-DE'), // Lokal formatiert für die Anzeige im Modal
     'Billing Company': "", 'Billing Address': "", 'Tax Number': "",
     'Contact Name Invoicing': "", 'Contact E-Mail Invoicing': "",
     'Airline': "", 'Aircraft Type': "", 'Flugnummer': "",
@@ -185,15 +263,15 @@ function openModal(originalIndex) {
     'Rate': "", 'Security charges': "", 'Dangerous Goods': "",
     '10ft consumables': "", '20ft consumables': "",
     'Zusatzkosten': "", 'Email Request': "",
-    'AGB Accepted': "Nein", // NEU
-    'Service Description Accepted': "Nein", // NEU
-    'Accepted By Name': "", // NEU
-    'Acceptance Timestamp': "" // NEU
-  } : requestData[originalIndex]; // Hier requestData direkt verwenden
+    'AGB Accepted': "Nein", 
+    'Service Description Accepted': "Nein",
+    'Accepted By Name': "", 
+    'Acceptance Timestamp': "" 
+  } : requestData[originalIndex]; 
 
   const modal = document.getElementById("detailModal");
   const modalBody = document.getElementById("modalBody");
-  modalBody.innerHTML = ""; // Inhalt leeren
+  modalBody.innerHTML = ""; 
 
   const section = (title, contentHTML) => {
     const wrap = document.createElement("div");
@@ -207,31 +285,31 @@ function openModal(originalIndex) {
       let value = r[key];
       if (value === undefined || value === null) value = "";
       
-      // Felder, die nur für Admins bearbeitbar sein sollen (Preis-bezogen)
       const isPriceRelatedField = [
         'Rate', 'Security charges', 'Dangerous Goods', 
-        '10ft consumables', '20ft consumables', 'Zusatzkosten', 'Email Request'
+        '10ft consumables', '20ft consumables', 'Zusatzkosten', 'Email Request', 'Flugnummer' // Flugnummer ist für Viewer nicht editierbar
       ].includes(key);
 
-      // Felder, die IMMER readonly sein sollen, unabhängig vom Admin-Status
       const isAlwaysReadOnlyField = [
-          "Ref", "Created At", "Acceptance Timestamp", "Accepted By Name" // Hinzugefügt "Accepted By Name"
+          "Ref", "Created At", "Acceptance Timestamp", "Accepted By Name" 
       ].includes(key);
 
       let readOnlyAttr = '';
       if (isAlwaysReadOnlyField) {
           readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
-      } else if (isPriceRelatedField && !isAdmin) { // Admin-Felder sind readonly, wenn kein Admin
+      } else if (isPriceRelatedField && currentUser.role === 'viewer') { // Viewer können Preis- und Flugnummerfelder nicht bearbeiten
           readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
+      } else if (isPriceRelatedField && !isAdmin) { // Falls isAdmin nicht gesetzt ist (Fehlerfall)
+           readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
       }
 
 
       if (key === "Flight Date") {
-        // Stellt sicher, dass das Datum im YYYY-MM-DD Format ist
         if (String(value).includes('T')) {
             value = String(value).split('T')[0];
+        } else if (value instanceof Date) { 
+            value = value.toISOString().split('T')[0];
         } else if (!String(value).match(/^\d{4}-\d{2}-\d{2}$/)) {
-            // Wenn es kein ISO- oder YYYY-MM-DD-Format ist, versuchen Sie zu parsen
             try {
                 const parsedDate = new Date(value);
                 if (!isNaN(parsedDate.getTime())) {
@@ -245,26 +323,28 @@ function openModal(originalIndex) {
         }
         return `<label>${label}</label><input type="date" name="${key}" value="${value}" ${readOnlyAttr}>`;
       } else if (key === "Abflugzeit") {
-        // Stellt sicher, dass die Abflugzeit im HH:MM Format ist
-        if (String(value).includes('T')) {
+        if (value instanceof Date) { 
+            value = value.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+        } else if (String(value).includes('T')) {
             const dateObj = new Date(value);
             value = dateObj.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
         } else if (!(String(value).length === 5 && String(value).includes(':'))) {
-            value = ""; // Wenn nicht HH:MM, leeren
+            value = ""; 
         }
         return `<label>${label}</label><input type="time" name="${key}" value="${value}" ${readOnlyAttr}>`;
-      } else if (key === "AGB Accepted" || key === "Service Description Accepted") { // NEU: Spezifische Behandlung für AGB/Service
+      } else if (key === "AGB Accepted" || key === "Service Description Accepted") { 
           const isAccepted = String(value).toLowerCase() === "ja";
-          const icon = isAccepted ? '&#10004;' : '&#10008;'; // Grüner Haken oder rotes X
+          const icon = isAccepted ? '&#10004;' : '&#10008;'; 
           const color = isAccepted ? 'green' : 'red';
           return `<label>${label}: <span style="color: ${color}; font-size: 1.2em; font-weight: bold;">${icon}</span></label>`;
-      } else if (key === "Vorfeldbegleitung" && type === "checkbox") { // Vorfeldbegleitung bleibt Checkbox
+      } else if (key === "Vorfeldbegleitung" && type === "checkbox") { 
         const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
         return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr}> ${label}</label>`;
-      } else if (key === "Tonnage" || key === "Rate" || key === "Security charges" || key === "Dangerous Goods" || key === "10ft consumables" || key === "20ft consumables") {
-          // Für numerische Felder: Formatiere Punkt zu Komma für die Anzeige im Modal
+      } else if (['Tonnage', 'Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables'].includes(key)) {
           const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
           return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" ${readOnlyAttr} />`;
+      } else if (key === "Created At" || key === "Acceptance Timestamp") { 
+            return `<label>${label}:</label><input type="text" name="${key}" value="${value}" ${readOnlyAttr} />`;
       }
       return `<label>${label}:</label><input type="text" name="${key}" value="${value}" ${readOnlyAttr} />`;
     }).join("");
@@ -278,9 +358,9 @@ function openModal(originalIndex) {
     { label: "Tax Number", key: "Tax Number" },
     { label: "Contact Name Invoicing", key: "Contact Name Invoicing" },
     { label: "Contact E-Mail Invoicing", key: "Contact E-Mail Invoicing" },
-    { label: "AGB Accepted", key: "AGB Accepted" }, // Typ hier entfernt, wird in renderFields speziell behandelt
-    { label: "Service Description Accepted", key: "Service Description Accepted" }, // Typ hier entfernt
-    { label: "Accepted By Name", key: "Accepted By Name" }, // Wird jetzt in isAlwaysReadOnlyField behandelt
+    { label: "AGB Accepted", key: "AGB Accepted" }, 
+    { label: "Service Description Accepted", key: "Service Description Accepted" }, 
+    { label: "Accepted By Name", key: "Accepted By Name" }, 
     { label: "Acceptance Timestamp", key: "Acceptance Timestamp" }
   ];
 
@@ -302,49 +382,51 @@ function openModal(originalIndex) {
     { label: "20ft consumables", key: "20ft consumables" }
   ];
 
+  // Nur die Price-Extra Felder filtern, wenn der Benutzer ein Viewer ist
   const priceExtra = `
     <label>Zusatzkosten:</label>
-    <textarea name="Zusatzkosten" placeholder="Labeln, Fotos" style="height:80px" ${!isAdmin ? 'readonly style="background-color:#eee; cursor: not-allowed;"' : ''}>${r["Zusatzkosten"] || ""}</textarea>
+    <textarea name="Zusatzkosten" placeholder="Labeln, Fotos" style="height:80px" ${(currentUser && currentUser.role === 'viewer') ? 'readonly style="background-color:#eee; cursor: not-allowed;"' : ''}>${r["Zusatzkosten"] || ""}</textarea>
     <label>E-Mail Request:</label>
-    <textarea name="Email Request" style="height:150px" ${!isAdmin ? 'readonly style="background-color:#eee; cursor: not-allowed;"' : ''}>${r["Email Request"] || ""}</textarea>
+    <textarea name="Email Request" style="height:150px" ${(currentUser && currentUser.role === 'viewer') ? 'readonly style="background-color:#eee; cursor: not-allowed;"' : ''}>${r["Email Request"] || ""}</textarea>
   `;
 
   modalBody.appendChild(section("Kundendetails", renderFields(customerFields)));
   modalBody.appendChild(section("Flugdetails", renderFields(flightFields)));
   
-  // Hier wird der Preisdetails-Bereich nur für Admins sichtbar
-  if (isAdmin) {
+  if (currentUser && currentUser.role === 'admin') { // Nur Admins sehen Preisdetails
     modalBody.appendChild(section("Preisdetails", renderFields(priceFields) + priceExtra));
   } else {
-    // Optional: Wenn kein Admin, zeige eine Meldung an
-    // modalBody.appendChild(section("Preisdetails", "<p>Keine Berechtigung zur Ansicht dieser Details.</p>"));
+    // Falls kein Admin, optional eine Meldung anzeigen oder Abschnitt weglassen
+    modalBody.appendChild(section("Preisdetails", "<p>Keine Berechtigung zur Ansicht dieser Details.</p>"));
   }
 
   const buttonContainer = document.createElement("div");
   buttonContainer.style.width = "100%";
   buttonContainer.style.display = "flex";
-  buttonContainer.style.justifyContent = "center"; // Buttons zentrieren
-  buttonContainer.style.gap = "10px"; // Abstand zwischen den Buttons
+  buttonContainer.style.justifyContent = "center"; 
+  buttonContainer.style.gap = "10px"; 
   buttonContainer.style.marginTop = "20px";
 
-  const saveButton = document.createElement("button");
-  saveButton.textContent = "Speichern";
-  saveButton.onclick = saveDetails;
-  saveButton.style.padding = "10px 20px";
-  saveButton.style.fontWeight = "bold";
-  saveButton.style.backgroundColor = "#28a745";
-  saveButton.style.color = "white";
-  saveButton.style.border = "none";
-  saveButton.style.borderRadius = "6px";
-  saveButton.style.cursor = "pointer";
-  buttonContainer.appendChild(saveButton);
+  // Speichern-Button nur für Admins sichtbar machen
+  if (currentUser && currentUser.role === 'admin') {
+    const saveButton = document.createElement("button");
+    saveButton.textContent = "Speichern";
+    saveButton.onclick = saveDetails;
+    saveButton.style.padding = "10px 20px";
+    saveButton.style.fontWeight = "bold";
+    saveButton.style.backgroundColor = "#28a745";
+    saveButton.style.color = "white";
+    saveButton.style.border = "none";
+    saveButton.style.borderRadius = "6px";
+    saveButton.style.cursor = "pointer";
+    buttonContainer.appendChild(saveButton);
+  }
 
-  // NEU: History Button im Modal
   const historyButton = document.createElement("button");
   historyButton.textContent = "History";
   historyButton.style.padding = "10px 20px";
   historyButton.style.fontWeight = "bold";
-  historyButton.style.backgroundColor = "#17a2b8"; // Eine eigene Farbe für den History-Button
+  historyButton.style.backgroundColor = "#17a2b8"; 
   historyButton.style.color = "white";
   historyButton.style.border = "none";
   historyButton.style.borderRadius = "6px";
@@ -352,8 +434,7 @@ function openModal(originalIndex) {
   historyButton.onclick = () => showHistory(r.Ref); 
   buttonContainer.appendChild(historyButton);
 
-  // Lösch-Button im Modal: Nur für Admins und nur bei bestehenden Einträgen
-  if (isAdmin && originalIndex !== -1) { 
+  if (currentUser && currentUser.role === 'admin' && originalIndex !== -1) { 
     const deleteButtonModal = document.createElement("button");
     deleteButtonModal.textContent = "Eintrag löschen";
     deleteButtonModal.className = "btn btn-delete";
@@ -368,7 +449,7 @@ function openModal(originalIndex) {
     buttonContainer.appendChild(deleteButtonModal);
   }
   
-  modalBody.appendChild(buttonContainer); // Button-Container hinzufügen
+  modalBody.appendChild(buttonContainer); 
 
   modal.style.display = "flex";
 }
@@ -382,20 +463,20 @@ async function deleteRowFromModal(ref) {
   const data = {
     Ref: ref,
     mode: "delete",
-    user: currentLoggedInUser // Aktuellen Benutzer senden
+    user: currentUser.name // Aktuellen Benutzer senden
   };
 
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, 
       body: new URLSearchParams(data)
     });
 
     if (!response.ok) {
       throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
-    const responseData = await response.json(); // Muss response.json() sein
+    const responseData = await response.json(); 
 
     if (responseData && responseData.status === "success") { 
       showSaveFeedback("Eintrag gelöscht!", true);
@@ -403,8 +484,8 @@ async function deleteRowFromModal(ref) {
       showSaveFeedback(`Fehler beim Löschen des Eintrags! ${responseData.message || ''}`, false);
       console.error("Löschen fehlgeschlagen:", responseData);
     }
-    closeModal(); // Modal schließen nach dem Löschen
-    fetchData(); // Daten neu laden
+    closeModal(); 
+    fetchData(); 
   } catch (err) {
     showSaveFeedback("Fehler beim Löschen!", false);
     console.error(err);
@@ -418,7 +499,8 @@ function closeModal() {
 document.addEventListener('keydown', (e) => {
   if (e.key === "Escape") {
     closeModal();
-    closeHistoryModal(); // Auch History Modal schließen
+    closeHistoryModal(); 
+    closeProfileModal(); // Auch Profil Modal schließen
   }
 });
 
@@ -431,15 +513,12 @@ async function saveDetails() {
   const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled])");
   const data = {};
   inputs.forEach(i => {
-    // Sicherstellen, dass readonly Felder trotzdem gesendet werden, da sie nicht disabled sind
+    // Ensure readonly fields are sent as they are not disabled
     if (i.name === "Flight Date") {
         data[i.name] = i.value; 
-    } else if (i.name === "Tonnage" || i.name === "Rate" || i.name === "Security charges" || i.name === "Dangerous Goods" || i.name === "10ft consumables" || i.name === "20ft consumables") {
-        // Ersetze Komma durch Punkt für das Backend, falls es numerische Werte erwartet
+    } else if (['Tonnage', 'Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables'].includes(i.name)) {
         data[i.name] = i.value.replace(/,/g, '.') || "";
     } else {
-        // Für AGB Accepted und Service Description Accepted, die jetzt Icons sind,
-        // und für das Vorfeldbegleitung-Checkbox: Stelle sicher, dass der Wert korrekt erfasst wird
         if (i.type === "checkbox") {
             data[i.name] = i.checked ? "Ja" : "Nein";
         } else {
@@ -449,10 +528,8 @@ async function saveDetails() {
   });
 
   const refValue = document.querySelector("#modalBody input[name='Ref']").value;
-  // Der Modus wird im Backend anhand der Existenz der Ref entschieden (Update vs. Create)
-  // Wir müssen hier nur den 'write' Modus senden.
-  data.mode = "write"; // Muss "write" sein, damit doPost den create/update-Pfad nimmt
-  data.user = currentLoggedInUser; // Aktuellen Benutzer senden
+  data.mode = "write"; 
+  data.user = currentUser.name; // Aktuellen Benutzer senden
 
   try {
     const response = await fetch(API_URL, {
@@ -473,7 +550,7 @@ async function saveDetails() {
       console.error("Speichern fehlgeschlagen:", responseData);
     }
     closeModal();
-    fetchData(); // Daten neu laden, um Änderungen anzuzeigen
+    fetchData(); 
   } catch (err) {
     showSaveFeedback("Fehler beim Speichern!", false);
     console.error(err);
@@ -490,7 +567,7 @@ async function deleteRow(btn) {
   const data = {
     Ref: ref,
     mode: "delete",
-    user: currentLoggedInUser // Aktuellen Benutzer senden
+    user: currentUser.name 
   };
 
   try {
@@ -511,7 +588,7 @@ async function deleteRow(btn) {
       showSaveFeedback(`Fehler beim Löschen des Eintrags! ${responseData.message || ''}`, false);
       console.error("Löschen fehlgeschlagen:", responseData);
     }
-    fetchData(); // Daten neu laden, um die gelöschte Zeile zu entfernen
+    fetchData(); 
   } catch (err) {
     showSaveFeedback("Fehler beim Löschen!", false);
     console.error(err);
@@ -532,7 +609,7 @@ function renderCalendars() {
   for (let i = 0; i < 2; i++) {
     const m = baseMonth + i;
     const y = baseYear + Math.floor(m / 12);
-    const month = (m % 12 + 12) % 12; // Normalisiere den Monat auf 0-11
+    const month = (m % 12 + 12) % 12; 
     container.innerHTML += generateCalendarHTML(y, month);
   }
 }
@@ -541,7 +618,12 @@ function openCalendarDayFlights(year, month, day) {
   const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   
   const flightsOnThisDay = requestData.filter(r => {
-    const flightDateFromData = r['Flight Date'] ? (String(r['Flight Date']).includes('T') ? String(r['Flight Date']).split('T')[0] : String(r['Flight Date'])) : '';
+    let flightDateFromData = r['Flight Date'] || '';
+    if (typeof flightDateFromData === 'string' && flightDateFromData.includes('T')) {
+        flightDateFromData = flightDateFromData.split('T')[0];
+    } else if (flightDateFromData instanceof Date) { 
+        flightDateFromData = flightDateFromData.toISOString().split('T')[0];
+    }
     return flightDateFromData === dateStr;
   });
 
@@ -566,22 +648,28 @@ function generateCalendarHTML(year, month) {
 
   const flightsByDay = new Map(); 
   requestData.forEach((r) => {
-    const flightDate = r['Flight Date']; 
-    if (flightDate) {
-      const datePart = String(flightDate).includes('T') ? String(flightDate).split('T')[0] : String(flightDate);
-      const [fYear, fMonth, fDay] = datePart.split('-').map(Number);
-      if (fYear === year && fMonth === (month + 1)) { 
+    let flightDate = r['Flight Date']; 
+    if (typeof flightDate === 'string') {
+        const parsedDate = new Date(flightDate); 
+        if (!isNaN(parsedDate.getTime())) {
+            flightDate = parsedDate;
+        } else {
+            flightDate = null; 
+        }
+    }
+
+    if (flightDate && flightDate.getFullYear() === year && flightDate.getMonth() === month) { 
+        const fDay = flightDate.getDate();
         if (!flightsByDay.has(fDay)) { 
           flightsByDay.set(fDay, []); 
         }
         flightsByDay.get(fDay).push(r); 
-      }
     }
   });
 
-  for (let i = 0; i < 6; i++) { // Max 6 Zeilen für Wochen
+  for (let i = 0; i < 6; i++) { 
     html += "<tr>";
-    for (let j = 0; j < 7; j++) { // 7 Tage pro Woche
+    for (let j = 0; j < 7; j++) { 
       if ((i === 0 && j < firstDayOfMonthWeekday) || day > daysInMonth) {
         html += "<td class='empty'></td>";
       } else {
@@ -591,7 +679,6 @@ function generateCalendarHTML(year, month) {
         let simpleTitleContent = ''; 
         let dayHasVorfeldbegleitung = false; 
 
-        // Überprüfe, ob der aktuelle Tag der heutige Tag ist
         const currentCalendarDay = new Date(year, month, day);
         currentCalendarDay.setHours(0,0,0,0);
         if (currentCalendarDay.getTime() === today.getTime()) {
@@ -617,7 +704,6 @@ function generateCalendarHTML(year, month) {
           simpleTitleContent = `Flüge: ${flightsForDay.length}`; 
         }
 
-        // Sicherstellen, dass data-tooltip HTML-Entities korrekt escapen
         const dataTooltipContent = tooltipContentArray.join('\n\n').replace(/'/g, '&apos;').replace(/"/g, '&quot;'); 
         const flightIcon = dayHasVorfeldbegleitung ? ' <span class="flight-icon">&#9992;</span>' : '';
 
@@ -634,10 +720,17 @@ function generateCalendarHTML(year, month) {
 
 // === UHRZEIT UND DATUM ===
 document.addEventListener("DOMContentLoaded", () => {
-  getAdminStatusFromLocalStorage(); 
+  checkAuthStatus(); // Überprüfen des Authentifizierungsstatus
   updateClock();
   setInterval(updateClock, 1000);
-  fetchData(); 
+  
+  // Polling für Echtzeit-Synchronisation (alle 10 Sekunden), NUR wenn angemeldet
+  if (currentUser) {
+      setInterval(fetchData, 10000); 
+  }
+
+  // Event listener for Flugnummer search field
+  document.getElementById("flightNumberSearch").addEventListener('keyup', filterTable);
 });
 
 function updateClock() {
@@ -690,9 +783,8 @@ async function showHistory(ref) {
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
-    const auditResult = await response.json(); // Muss response.json() sein
+    const auditResult = await response.json(); 
 
-    // KORREKTUR HIER: Greife auf den 'data'-Schlüssel des Audit-Objekts zu
     const filteredLogs = auditResult.data.filter(log => log.Reference === ref);
 
     if (filteredLogs.length === 0) {
@@ -702,18 +794,32 @@ async function showHistory(ref) {
 
     let historyHTML = '<ul style="list-style-type: none; padding: 0;">';
     filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp)).forEach(log => {
-      // Versuch, JSON-Strings in Details zu formatieren, falls vorhanden
       let detailsContent = log.Details || '-';
-      try {
-          // Prüfen, ob Details ein JSON-String von einem gelöschten Eintrag sein könnte
-          const parsedDetails = JSON.parse(detailsContent);
-          if (typeof parsedDetails === 'object' && parsedDetails !== null) {
-              detailsContent = 'Gelöschte Daten: <pre>' + JSON.stringify(parsedDetails, null, 2) + '</pre>';
-          }
-      } catch (e) {
-          // Nichts tun, wenn es kein JSON ist
+      
+      // <<< NEU: Sensible Daten für Viewer filtern
+      if (currentUser && currentUser.role === 'viewer' && log.Action === 'update' && typeof detailsContent === 'string') {
+        const sensitiveFields = [
+          'Rate:', 'Security charges:', 'Dangerous Goods:', 
+          '10ft consumables:', '20ft consumables:', 'Zusatzkosten:'
+        ];
+        
+        let filteredDetails = detailsContent;
+        sensitiveFields.forEach(field => {
+          const regex = new RegExp(`(${field}[^;]*)`, 'g'); // Sucht das Feld bis zum nächsten Semikolon
+          filteredDetails = filteredDetails.replace(regex, `${field} [REDACTED]`);
+        });
+        detailsContent = filteredDetails;
+      } else {
+        // Versuch, JSON-Strings in Details zu formatieren, falls vorhanden (für Admins oder andere Aktionen)
+        try {
+            const parsedDetails = JSON.parse(detailsContent);
+            if (typeof parsedDetails === 'object' && parsedDetails !== null) {
+                detailsContent = 'Deleted data: <pre>' + JSON.stringify(parsedDetails, null, 2) + '</pre>';
+            }
+        } catch (e) {
+            // Nichts tun, wenn es kein JSON ist
+        }
       }
-
 
       historyHTML += `
         <li style="background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; padding: 15px;">
@@ -736,3 +842,24 @@ async function showHistory(ref) {
 function closeHistoryModal() {
   document.getElementById("historyModal").style.display = "none";
 }
+
+// === INITIALISIERUNG ===
+document.addEventListener("DOMContentLoaded", () => {
+  checkAuthStatus(); // Überprüft den Authentifizierungsstatus beim Laden der Seite
+  updateClock();
+  setInterval(updateClock, 1000);
+  
+  // Polling für Echtzeit-Synchronisation (alle 10 Sekunden)
+  // Nur starten, wenn der Benutzer erfolgreich authentifiziert ist
+  // Die fetchData() wird bereits von checkAuthStatus() aufgerufen
+  if (currentUser) {
+      setInterval(fetchData, 10000); 
+  }
+
+  // Event Listener für Flugnummer Suchfeld (falls es existiert)
+  const flightNumberSearchInput = document.getElementById("flightNumberSearch");
+  if (flightNumberSearchInput) {
+      flightNumberSearchInput.addEventListener('keyup', filterTable);
+  }
+});
+
