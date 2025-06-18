@@ -1,4 +1,5 @@
-const users = {
+
+export const users = {
   "andreas": { password: "vgcargo123", name: "Andreas Klassen", role: "admin" },
   "jan": { password: "vgcargo123", name: "Jan Krepstekies", role: "admin" },
   "eugen": { password: "vgcargo123", name: "Eugen Beljakov", role: "admin" },
