@@ -1,19 +1,14 @@
 // Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
 const API_URL = 'https://script.google.com/macros/s/AKfycbxlkY1f94D26BKvs7oeiNUhOJHEycsox3J61kb4iN7z_3frXRzfB8sCuCnWQVbFgk88/exec'; // <<< VERIFIZIERE DIESE URL
 
-// !!! WICHTIG: Dies ist eine vereinfachte clientseitige Authentifizierung für Demonstrationszwecke.
-// !!! FÜR EINE PRODUKTIONSUMGEBUNG IST EINE ROBUSTERE BACKEND-AUTHENTIFIZIERUNG ERFORDERLICH!
-const USERS = [
-  { username: 'admin', password: 'adminpassword', role: 'admin', name: 'Administrator' },
-  { username: 'viewer', password: 'viewerpassword', role: 'viewer', name: 'Betrachter' }
-];
+// Importiere das Benutzerobjekt aus users.js
+import { users } from './users.js';
 
 let currentUser = null; // Speichert den aktuell angemeldeten Benutzer
 let requestData = []; // Speichert alle abgerufenen Charterdaten
 let baseMonth = new Date().getMonth(); // Aktueller Monat (0-indexed)
 let baseYear = new Date().getFullYear(); // Aktuelles Jahr
 
-// Setzt das heutige Datum (nur den Tag, ohne Zeit), um Zeitzonenprobleme beim Vergleich zu minimieren.
 const today = new Date();
 today.setHours(0, 0, 0, 0); // Setzt die Zeit auf Mitternacht für den Vergleich
 
@@ -22,6 +17,16 @@ function checkAuthStatus() {
   const storedUser = localStorage.getItem('currentUser');
   if (storedUser) {
     currentUser = JSON.parse(storedUser);
+    // Überprüfe, ob der gespeicherte Benutzer noch im 'users'-Objekt existiert
+    if (!users[currentUser.username]) {
+        console.warn("Stored user not found in USERS data. Logging out.");
+        logoutUser(); // Logout, wenn Benutzer nicht mehr existiert
+        return;
+    }
+    // Aktualisiere currentUser mit den neuesten Daten aus dem users-Objekt (für den Fall, dass Rollen oder Namen sich ändern)
+    currentUser.name = users[currentUser.username].name;
+    currentUser.role = users[currentUser.username].role;
+
     updateUIBasedOnUserRole();
     fetchData(); // Daten laden, wenn angemeldet
   } else {
@@ -86,13 +91,13 @@ function changePassword() {
       return;
   }
 
-  // !!! HINWEIS: In einer echten Anwendung würde hier ein sicherer Hash des Passworts
-  // !!! an ein Backend gesendet und dort gespeichert werden.
-  // Hier simulieren wir nur die Änderung im lokalen Speicher.
-  // Das aktuelle Benutzerobjekt im localStorage aktualisieren
-  const userIndex = USERS.findIndex(u => u.username === currentUser.username);
-  if (userIndex !== -1) {
-    USERS[userIndex].password = newPass; // Update in hardcoded array (for demo)
+  // Hier wird das Passwort im importierten 'users'-Objekt (im Speicher) geändert
+  // und auch im localStorage.
+  // BEACHTE: Bei einem Neuladen der Seite würde das Hardcoded-Passwort in users.js
+  // wieder aktiv werden, es sei denn, users.js wird auch dynamisch aktualisiert
+  // (was bei einer lokalen Datei nicht der Fall ist). Für Persistenz wäre ein Backend nötig.
+  if (users[currentUser.username]) {
+    users[currentUser.username].password = newPass; // Update in hardcoded object (for demo)
     currentUser.password = newPass; // Update current session user
     localStorage.setItem('currentUser', JSON.stringify(currentUser)); // Update localStorage
     messageElem.textContent = 'Passwort erfolgreich geändert!';
@@ -139,31 +144,21 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
 
   dataToRender.forEach((r) => { // dataToRender verwenden
     const row = document.createElement("tr");
-    // Sicherstellen, dass Tonnage als Zahl mit Punkt gelesen und korrekt formatiert wird
     const ton = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0; 
     
-    // Finde den ursprünglichen Index im requestData Array
-    // WICHTIG: originalIndex muss auf das ungefilterte requestData zugreifen
     const originalIndex = requestData.findIndex(item => item.Ref === r.Ref); 
 
-    // Datum für die Anzeige in der Tabelle formatieren (Stellt sicher, dass es überall konsistent ist)
-    // Bei Ankunft im Frontend ist das Datum bereits String. Nur Parsen bei Bedarf.
     let displayFlightDate = r['Flight Date'] || "-";
     if (displayFlightDate !== "-") {
         try {
-            // Versuche, ein Datum aus dem String zu erstellen und lokal zu formatieren, wenn es ein gültiges Datumsformat ist
             const dateObj = new Date(displayFlightDate);
-            if (!isNaN(dateObj.getTime())) { // Prüfen, ob Date-Objekt gültig ist
-                displayFlightDate = dateObj.toLocaleDateString('de-DE'); // Formatiere für lokale Anzeige
+            if (!isNaN(dateObj.getTime())) { 
+                displayFlightDate = dateObj.toLocaleDateString('de-DE'); 
             }
         } catch (e) {
-            // Bleibt beim Originalstring, wenn Fehler beim Parsen
         }
     }
 
-
-    // Zeigen/Verstecken des Delete-Buttons basierend auf currentUser.role (Klasse 'admin-only' verwenden)
-    // Der Delete-Button ist jetzt Teil des HTML und wird per CSS/JS gesteuert
     const deleteButtonHTML = (currentUser && currentUser.role === 'admin') ? `<button class="btn btn-delete admin-only" onclick="deleteRow(this)">Delete</button>` : '';
 
     row.innerHTML = `
@@ -181,24 +176,22 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
   });
 
   document.getElementById("summaryInfo").textContent =
-    `Total Flights: ${totalFlights} | Total Tonnage: ${totalWeight.toLocaleString('de-DE')} kg`; // 'de-DE' für Anzeige
+    `Total Flights: ${totalFlights} | Total Tonnage: ${totalWeight.toLocaleString('de-DE')} kg`; 
   
-  // UI nach dem Rendern der Tabelle basierend auf Benutzerrolle aktualisieren
   updateUIBasedOnUserRole();
 }
 
-// Filterfunktion (aktualisiert für Flugnummer)
 function filterTable() {
   const refSearch = document.getElementById("refSearch").value.toLowerCase();
   const airlineSearch = document.getElementById("airlineSearch").value.toLowerCase();
-  const flightNumberSearch = document.getElementById("flightNumberSearch").value.toLowerCase(); // NEU: Flugnummer Suchfeld
-  const fromDateInput = document.getElementById("fromDate").value; // String YYYY-MM-DD
-  const toDateInput = document.getElementById("toDate").value;     // String YYYY-MM-DD
+  const flightNumberSearch = document.getElementById("flightNumberSearch").value.toLowerCase(); 
+  const fromDateInput = document.getElementById("fromDate").value; 
+  const toDateInput = document.getElementById("toDate").value;     
 
   const filtered = requestData.filter(r => {
     const matchesRef = (r.Ref || '').toLowerCase().includes(refSearch);
     const matchesAirline = (r.Airline || '').toLowerCase().includes(airlineSearch);
-    const matchesFlightNumber = (r.Flugnummer || '').toLowerCase().includes(flightNumberSearch); // NEU: Flugnummer Filter
+    const matchesFlightNumber = (r.Flugnummer || '').toLowerCase().includes(flightNumberSearch); 
 
     let matchesDateRange = true; 
     let isPastOrTodayAndGoneFlight = false;    
@@ -235,9 +228,6 @@ function filterTable() {
       if (toDateInput && flightDateFromData > toDateInput) matchesDateRange = false;
     }
 
-    // Die Logik für die Archiv-Checkbox wurde entfernt. Standardmäßig werden vergangene Flüge nicht gezeigt.
-    // Wenn alle Filter leer sind, zeige nur zukünftige Flüge an.
-    // Wenn Filter aktiv sind, zeige alle Flüge, die den aktiven Filtern entsprechen (einschließlich vergangener Flüge, wenn keine Datumsfilter aktiv sind, die dies einschränken würden)
     const isExplicitlyFiltered = refSearch || airlineSearch || flightNumberSearch || fromDateInput || toDateInput;
 
     if (!isExplicitlyFiltered) {
@@ -252,9 +242,15 @@ function filterTable() {
 
 // === MODAL FUNKTIONEN ===
 function openModal(originalIndex) {
+  if (!currentUser) {
+      console.error("Versuch, Modal ohne angemeldeten Benutzer zu öffnen. Weiterleitung zum Login.");
+      window.location.href = 'login.html'; 
+      return;
+  }
+
   const r = originalIndex === -1 ? {
     Ref: generateReference(),
-    'Created At': new Date().toLocaleString('de-DE'), // Lokal formatiert für die Anzeige im Modal
+    'Created At': new Date().toLocaleString('de-DE'), 
     'Billing Company': "", 'Billing Address': "", 'Tax Number': "",
     'Contact Name Invoicing': "", 'Contact E-Mail Invoicing': "",
     'Airline': "", 'Aircraft Type': "", 'Flugnummer': "",
@@ -285,9 +281,9 @@ function openModal(originalIndex) {
       let value = r[key];
       if (value === undefined || value === null) value = "";
       
-      const isPriceRelatedField = [
+      const isPriceRelatedFieldOrFlightNumber = [ 
         'Rate', 'Security charges', 'Dangerous Goods', 
-        '10ft consumables', '20ft consumables', 'Zusatzkosten', 'Email Request', 'Flugnummer' // Flugnummer ist für Viewer nicht editierbar
+        '10ft consumables', '20ft consumables', 'Zusatzkosten', 'Email Request', 'Flugnummer' 
       ].includes(key);
 
       const isAlwaysReadOnlyField = [
@@ -297,10 +293,10 @@ function openModal(originalIndex) {
       let readOnlyAttr = '';
       if (isAlwaysReadOnlyField) {
           readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
-      } else if (isPriceRelatedField && currentUser.role === 'viewer') { // Viewer können Preis- und Flugnummerfelder nicht bearbeiten
-          readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
-      } else if (isPriceRelatedField && !isAdmin) { // Falls isAdmin nicht gesetzt ist (Fehlerfall)
-           readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
+      } else if (isPriceRelatedFieldOrFlightNumber) { 
+          if (!currentUser || currentUser.role === 'viewer') {
+              readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
+          }
       }
 
 
@@ -382,7 +378,6 @@ function openModal(originalIndex) {
     { label: "20ft consumables", key: "20ft consumables" }
   ];
 
-  // Nur die Price-Extra Felder filtern, wenn der Benutzer ein Viewer ist
   const priceExtra = `
     <label>Zusatzkosten:</label>
     <textarea name="Zusatzkosten" placeholder="Labeln, Fotos" style="height:80px" ${(currentUser && currentUser.role === 'viewer') ? 'readonly style="background-color:#eee; cursor: not-allowed;"' : ''}>${r["Zusatzkosten"] || ""}</textarea>
@@ -393,10 +388,9 @@ function openModal(originalIndex) {
   modalBody.appendChild(section("Kundendetails", renderFields(customerFields)));
   modalBody.appendChild(section("Flugdetails", renderFields(flightFields)));
   
-  if (currentUser && currentUser.role === 'admin') { // Nur Admins sehen Preisdetails
+  if (currentUser && currentUser.role === 'admin') { 
     modalBody.appendChild(section("Preisdetails", renderFields(priceFields) + priceExtra));
   } else {
-    // Falls kein Admin, optional eine Meldung anzeigen oder Abschnitt weglassen
     modalBody.appendChild(section("Preisdetails", "<p>Keine Berechtigung zur Ansicht dieser Details.</p>"));
   }
 
@@ -407,7 +401,6 @@ function openModal(originalIndex) {
   buttonContainer.style.gap = "10px"; 
   buttonContainer.style.marginTop = "20px";
 
-  // Speichern-Button nur für Admins sichtbar machen
   if (currentUser && currentUser.role === 'admin') {
     const saveButton = document.createElement("button");
     saveButton.textContent = "Speichern";
@@ -463,7 +456,7 @@ async function deleteRowFromModal(ref) {
   const data = {
     Ref: ref,
     mode: "delete",
-    user: currentUser.name // Aktuellen Benutzer senden
+    user: currentUser.name 
   };
 
   try {
@@ -500,7 +493,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === "Escape") {
     closeModal();
     closeHistoryModal(); 
-    closeProfileModal(); // Auch Profil Modal schließen
+    closeProfileModal(); 
   }
 });
 
@@ -513,7 +506,6 @@ async function saveDetails() {
   const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled])");
   const data = {};
   inputs.forEach(i => {
-    // Ensure readonly fields are sent as they are not disabled
     if (i.name === "Flight Date") {
         data[i.name] = i.value; 
     } else if (['Tonnage', 'Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables'].includes(i.name)) {
@@ -529,7 +521,7 @@ async function saveDetails() {
 
   const refValue = document.querySelector("#modalBody input[name='Ref']").value;
   data.mode = "write"; 
-  data.user = currentUser.name; // Aktuellen Benutzer senden
+  data.user = currentUser.name; 
 
   try {
     const response = await fetch(API_URL, {
@@ -720,17 +712,18 @@ function generateCalendarHTML(year, month) {
 
 // === UHRZEIT UND DATUM ===
 document.addEventListener("DOMContentLoaded", () => {
-  checkAuthStatus(); // Überprüfen des Authentifizierungsstatus
+  checkAuthStatus(); 
   updateClock();
   setInterval(updateClock, 1000);
   
-  // Polling für Echtzeit-Synchronisation (alle 10 Sekunden), NUR wenn angemeldet
   if (currentUser) {
       setInterval(fetchData, 10000); 
   }
 
-  // Event listener for Flugnummer search field
-  document.getElementById("flightNumberSearch").addEventListener('keyup', filterTable);
+  const flightNumberSearchInput = document.getElementById("flightNumberSearch");
+  if (flightNumberSearchInput) {
+      flightNumberSearchInput.addEventListener('keyup', filterTable);
+  }
 });
 
 function updateClock() {
@@ -796,7 +789,6 @@ async function showHistory(ref) {
     filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp)).forEach(log => {
       let detailsContent = log.Details || '-';
       
-      // <<< NEU: Sensible Daten für Viewer filtern
       if (currentUser && currentUser.role === 'viewer' && log.Action === 'update' && typeof detailsContent === 'string') {
         const sensitiveFields = [
           'Rate:', 'Security charges:', 'Dangerous Goods:', 
@@ -805,19 +797,17 @@ async function showHistory(ref) {
         
         let filteredDetails = detailsContent;
         sensitiveFields.forEach(field => {
-          const regex = new RegExp(`(${field}[^;]*)`, 'g'); // Sucht das Feld bis zum nächsten Semikolon
+          const regex = new RegExp(`(${field}[^;]*)`, 'g'); 
           filteredDetails = filteredDetails.replace(regex, `${field} [REDACTED]`);
         });
         detailsContent = filteredDetails;
       } else {
-        // Versuch, JSON-Strings in Details zu formatieren, falls vorhanden (für Admins oder andere Aktionen)
         try {
             const parsedDetails = JSON.parse(detailsContent);
             if (typeof parsedDetails === 'object' && parsedDetails !== null) {
                 detailsContent = 'Deleted data: <pre>' + JSON.stringify(parsedDetails, null, 2) + '</pre>';
             }
         } catch (e) {
-            // Nichts tun, wenn es kein JSON ist
         }
       }
 
@@ -842,24 +832,3 @@ async function showHistory(ref) {
 function closeHistoryModal() {
   document.getElementById("historyModal").style.display = "none";
 }
-
-// === INITIALISIERUNG ===
-document.addEventListener("DOMContentLoaded", () => {
-  checkAuthStatus(); // Überprüft den Authentifizierungsstatus beim Laden der Seite
-  updateClock();
-  setInterval(updateClock, 1000);
-  
-  // Polling für Echtzeit-Synchronisation (alle 10 Sekunden)
-  // Nur starten, wenn der Benutzer erfolgreich authentifiziert ist
-  // Die fetchData() wird bereits von checkAuthStatus() aufgerufen
-  if (currentUser) {
-      setInterval(fetchData, 10000); 
-  }
-
-  // Event Listener für Flugnummer Suchfeld (falls es existiert)
-  const flightNumberSearchInput = document.getElementById("flightNumberSearch");
-  if (flightNumberSearchInput) {
-      flightNumberSearchInput.addEventListener('keyup', filterTable);
-  }
-});
-
