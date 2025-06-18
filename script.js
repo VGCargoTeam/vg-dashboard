@@ -54,8 +54,6 @@ function fetchData() {
       return r.json();
     })
     .then(d => {
-      // KORREKTUR HIER: Greife auf den 'data'-Schlüssel des Objekts zu
-      // Da dein Google Apps Script jetzt ein Objekt der Form {status: "success", data: [...]} zurückgibt
       requestData = d.data; // Speichert das Array der Daten
       filterTable(); // Ruft filterTable auf, um sowohl Tabelle als auch Kalender zu aktualisieren
     })
@@ -209,17 +207,20 @@ function openModal(originalIndex) {
       let value = r[key];
       if (value === undefined || value === null) value = "";
       
-      // Felder, die nur für Admins bearbeitbar sein sollen
+      // Felder, die nur für Admins bearbeitbar sein sollen (Preis-bezogen)
       const isPriceRelatedField = [
         'Rate', 'Security charges', 'Dangerous Goods', 
         '10ft consumables', '20ft consumables', 'Zusatzkosten', 'Email Request'
       ].includes(key);
 
+      // Felder, die IMMER readonly sein sollen, unabhängig vom Admin-Status
+      const isAlwaysReadOnlyField = [
+          "Ref", "Created At", "Acceptance Timestamp", "Accepted By Name" // Hinzugefügt "Accepted By Name"
+      ].includes(key);
+
       let readOnlyAttr = '';
-      if (key === "Ref" && originalIndex !== -1) { // Ref bleibt readonly, wenn es ein bestehender Eintrag ist
+      if (isAlwaysReadOnlyField) {
           readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
-      } else if (key === "Created At" || key === "Acceptance Timestamp") { // Created At und Acceptance Timestamp bleiben immer readonly
-           readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
       } else if (isPriceRelatedField && !isAdmin) { // Admin-Felder sind readonly, wenn kein Admin
           readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
       }
@@ -252,11 +253,14 @@ function openModal(originalIndex) {
             value = ""; // Wenn nicht HH:MM, leeren
         }
         return `<label>${label}</label><input type="time" name="${key}" value="${value}" ${readOnlyAttr}>`;
-      } else if (type === "checkbox") { // Hier wird der 'type' für die Checkboxen genutzt
-        // Checkboxen AGB Accepted und Service Description Accepted sind editierbar
-        // Vorfeldbegleitung wird auch als Checkbox behandelt
+      } else if (key === "AGB Accepted" || key === "Service Description Accepted") { // NEU: Spezifische Behandlung für AGB/Service
+          const isAccepted = String(value).toLowerCase() === "ja";
+          const icon = isAccepted ? '&#10004;' : '&#10008;'; // Grüner Haken oder rotes X
+          const color = isAccepted ? 'green' : 'red';
+          return `<label>${label}: <span style="color: ${color}; font-size: 1.2em; font-weight: bold;">${icon}</span></label>`;
+      } else if (key === "Vorfeldbegleitung" && type === "checkbox") { // Vorfeldbegleitung bleibt Checkbox
         const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
-        return `<label><input type="checkbox" name="${key}" ${checked}> ${label}</label>`;
+        return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr}> ${label}</label>`;
       } else if (key === "Tonnage" || key === "Rate" || key === "Security charges" || key === "Dangerous Goods" || key === "10ft consumables" || key === "20ft consumables") {
           // Für numerische Felder: Formatiere Punkt zu Komma für die Anzeige im Modal
           const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
@@ -274,10 +278,9 @@ function openModal(originalIndex) {
     { label: "Tax Number", key: "Tax Number" },
     { label: "Contact Name Invoicing", key: "Contact Name Invoicing" },
     { label: "Contact E-Mail Invoicing", key: "Contact E-Mail Invoicing" },
-    // NEU HINZUGEFÜGT:
-    { label: "AGB Accepted", key: "AGB Accepted", type: "checkbox" },
-    { label: "Service Description Accepted", key: "Service Description Accepted", type: "checkbox" },
-    { label: "Accepted By Name", key: "Accepted By Name" },
+    { label: "AGB Accepted", key: "AGB Accepted" }, // Typ hier entfernt, wird in renderFields speziell behandelt
+    { label: "Service Description Accepted", key: "Service Description Accepted" }, // Typ hier entfernt
+    { label: "Accepted By Name", key: "Accepted By Name" }, // Wird jetzt in isAlwaysReadOnlyField behandelt
     { label: "Acceptance Timestamp", key: "Acceptance Timestamp" }
   ];
 
@@ -385,7 +388,7 @@ async function deleteRowFromModal(ref) {
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, // Behalten für Dashboard-Anfragen
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
       body: new URLSearchParams(data)
     });
 
@@ -435,7 +438,13 @@ async function saveDetails() {
         // Ersetze Komma durch Punkt für das Backend, falls es numerische Werte erwartet
         data[i.name] = i.value.replace(/,/g, '.') || "";
     } else {
-        data[i.name] = i.type === "checkbox" ? (i.checked ? "Ja" : "Nein") : i.value;
+        // Für AGB Accepted und Service Description Accepted, die jetzt Icons sind,
+        // und für das Vorfeldbegleitung-Checkbox: Stelle sicher, dass der Wert korrekt erfasst wird
+        if (i.type === "checkbox") {
+            data[i.name] = i.checked ? "Ja" : "Nein";
+        } else {
+            data[i.name] = i.value;
+        }
     }
   });
 
@@ -448,7 +457,7 @@ async function saveDetails() {
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, // Behalten für Dashboard-Anfragen
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
       body: new URLSearchParams(data)
     });
 
@@ -487,7 +496,7 @@ async function deleteRow(btn) {
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, // Behalten für Dashboard-Anfragen
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
       body: new URLSearchParams(data)
     });
 
@@ -543,10 +552,6 @@ function openCalendarDayFlights(year, month, day) {
       openModal(originalIndex);
     } else {
       console.warn("Konnte den Originalindex des Fluges nicht finden:", firstFlight);
-      // Fallback: Wenn der Originalindex nicht gefunden wird, versuche das Modal mit den Daten des ersten Fluges zu öffnen.
-      // Dies könnte passieren, wenn requestData gefiltert oder neu geordnet wurde.
-      // Um ein direktes Problem zu vermeiden, könnte man hier -1 oder einen Klon des Objekts übergeben,
-      // aber da die filterTable() jetzt requestData auf d.data setzt, sollte indexOf wieder zuverlässig sein.
       openModal(requestData.indexOf(firstFlight)); 
     }
   }
