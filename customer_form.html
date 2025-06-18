@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: url('Airplane.jpg') no-repeat center center fixed;
+            background: url('https://placehold.co/1920x1080/000000/FFFFFF?text=Airplane+Background') no-repeat center center fixed; /* Using placeholder for Airplane.jpg */
             background-size: cover;
             display: flex;
             justify-content: center;
@@ -143,14 +143,90 @@
             padding-bottom: 10px;
             margin-bottom: 15px;
         }
+
+        /* Modal Styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+        }
+
+        .close-button {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-content input[type="text"] {
+            width: calc(100% - 24px); /* Adjusted for padding */
+            margin-bottom: 20px;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: space-around;
+            gap: 10px;
+        }
+        .modal-buttons button {
+            flex: 1;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .modal-buttons .confirm-button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+        }
+        .modal-buttons .confirm-button:hover {
+            background-color: #218838;
+        }
+        .modal-buttons .cancel-button {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+        }
+        .modal-buttons .cancel-button:hover {
+            background-color: #c82333;
+        }
     </style>
 </head>
 <body>
     <div class="form-container">
         <h2>VG Cargo - Flight Request Form</h2>
         <form id="flightRequestForm">
-            <!-- Reference removed as per request -->
-            
             <h3>Billing Information:</h3>
             <div class="form-group">
                 <label for="BillingCompany" class="required-field">Billing Company:</label>
@@ -175,7 +251,7 @@
 
             <div class="additional-costs-container">
                 <h3>Additional Flight Details (optional):</h3> <!-- '& Costs' entfernt -->
-                <!-- Verschobene Felder beginnen hier -->
+                
                 <div class="form-group">
                     <label for="Airline">Airline (optional):</label>
                     <input type="text" id="Airline" name="Airline">
@@ -188,22 +264,26 @@
                     <label for="Tonnage">Tonnage (kg) (optional):</label>
                     <input type="number" id="Tonnage" name="Tonnage" step="any">
                 </div>
-                <div class="form-group">
-                    <label for="EmailRequest">E-Mail Request (optional):</label>
-                    <textarea id="EmailRequest" name="Email Request"></textarea>
-                </div>
-                <!-- Verschobene Felder enden hier -->
-
+                
                 <div class="form-group">
                     <label for="Abflugzeit">Abflugzeit (optional):</label>
                     <input type="time" id="Abflugzeit" name="Abflugzeit">
                 </div>
                 
-                 <div class="form-group">
+                <div class="form-group">
                     <label for="AircraftType">Aircraft Type (optional):</label>
                     <input type="text" id="AircraftType" name="Aircraft Type">
                 </div>
+                <!-- E-Mail Request hierher verschoben und Platzhalter geändert -->
+                <div class="form-group">
+                    <label for="EmailRequest">E-Mail Request (optional):</label>
+                    <textarea id="EmailRequest" name="Email Request" placeholder="Enter your email request here."></textarea>
+                </div>
             </div>
+            
+            <hr style="margin: 30px 0; border: 0; border-top: 1px solid #eee;">
+
+            <!-- Das Eingabefeld "Name (for Acceptance)" wird im Modal behandelt und hier entfernt -->
 
             <div class="checkbox-group">
                 <input type="checkbox" id="termsAccepted" required>
@@ -225,8 +305,23 @@
         </form>
     </div>
 
+    <!-- The Modal for Name Confirmation -->
+    <div id="nameConfirmModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeNameModal">&times;</span>
+            <h3>Confirm your Name</h3>
+            <p>Please enter your name to confirm acceptance of the terms and conditions.</p>
+            <input type="text" id="confirmNameInput" placeholder="Your Name" required>
+            <div class="modal-buttons">
+                <button class="confirm-button" id="modalConfirmBtn">Confirm</button>
+                <button class="cancel-button" id="modalCancelBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbxlkY1f94D26BKvs7oeiNUhOJHEycsox3J61kb4iN7z_3frXRzfB8sCuCnWQVbFgk88/exec'; // <-- Überprüfen Sie, ob dies die aktuelle URL Ihrer bereitgestellten Web-App ist!
+        // API_URL aus deinen letzten Uploads - BITTE BESTÄTIGE DIESE URL ERNEUT VOR DEM HOCHLADEN AUF VERCEL!
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxlkY1f94D26BKvs7oeiNUhOJHEycsox3J61kb4iN7z_3frXRzfB8sCuCnWQVbFgk88/exec'; 
 
         const form = document.getElementById('flightRequestForm');
         const submitButton = document.getElementById('submitButton');
@@ -234,6 +329,15 @@
         const serviceAccepted = document.getElementById('serviceAccepted');
         const successMessage = document.getElementById('successMessage');
         const errorMessage = document.getElementById('errorMessage');
+
+        // Modal Elemente
+        const nameConfirmModal = document.getElementById('nameConfirmModal');
+        const confirmNameInput = document.getElementById('confirmNameInput');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+        const modalCancelBtn = document.getElementById('modalCancelBtn');
+        const closeNameModal = document.getElementById('closeNameModal');
+
+        let pendingPayload = null; // Speichert das Payload, bis der Name bestätigt wurde
 
         // Function to toggle submit button based on checkbox and form validity
         function toggleSubmitButton() {
@@ -256,61 +360,81 @@
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            submitButton.disabled = true;
-            submitButton.textContent = 'Submitting...';
-            successMessage.style.display = 'none';
-            errorMessage.style.display = 'none'; // Ensure error message is hidden on new submission
-
-            // Get form data
-            const formData = new FormData(form);
-            const payload = {};
-            // Manually add 'mode' to the payload
-            payload.mode = 'submitCustomerRequest';
-
-            // Generate Reference here as it's no longer a form field
-            payload.Ref = `REQ-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
             
-            // Add AGB and Service Description acceptance status
-            payload.agbAccepted = termsAccepted.checked ? 'Ja' : 'Nein';
-            payload.serviceDescriptionAccepted = serviceAccepted.checked ? 'Ja' : 'Nein';
-            payload.acceptedByName = payload['Contact Name Invoicing'] || 'Unknown Customer'; // Use contact name or default
-            payload.acceptedTimestamp = new Date().toLocaleString('de-DE');
-
-
-            // Iterate over formData to build the payload object
-            for (const [key, value] of formData.entries()) {
-                payload[key] = value;
+            // Wenn das Formular nicht gültig ist (z.B. required Felder nicht gefüllt),
+            // dann verhindern, dass das Modal geöffnet wird. Browser behandelt dies.
+            if (!form.checkValidity() || !(termsAccepted.checked && serviceAccepted.checked)) {
+                return; 
             }
 
-            // Convert payload to URL-encoded string
-            const urlEncodedData = new URLSearchParams(payload).toString(); // <-- WICHTIGE ÄNDERUNG
+            // Payload vorbereiten, aber noch nicht senden
+            const formData = new FormData(form);
+            pendingPayload = {};
+            pendingPayload.mode = 'submitCustomerRequest';
+            pendingPayload.Ref = `REQ-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+            pendingPayload.agbAccepted = termsAccepted.checked ? 'Ja' : 'Nein';
+            pendingPayload.serviceDescriptionAccepted = serviceAccepted.checked ? 'Ja' : 'Nein';
+            pendingPayload.acceptedTimestamp = new Date().toLocaleString('de-DE');
+
+            for (const [key, value] of formData.entries()) {
+                pendingPayload[key] = value;
+            }
+
+            // Optional: Vorbelegung des Namensfeldes im Modal, falls E-Mail-Kontaktname vorhanden
+            if (pendingPayload['Contact Name Invoicing']) {
+                confirmNameInput.value = pendingPayload['Contact Name Invoicing'];
+            } else {
+                confirmNameInput.value = '';
+            }
+
+            // Modal anzeigen
+            nameConfirmModal.style.display = 'flex';
+            confirmNameInput.focus(); // Fokus auf das Eingabefeld setzen
+            errorMessage.style.display = 'none'; // Fehlermeldung ausblenden
+        });
+
+        // Event Listener für den Bestätigen-Button im Modal
+        modalConfirmBtn.addEventListener('click', async () => {
+            const acceptedName = confirmNameInput.value.trim();
+            if (acceptedName === '') {
+                alert('Bitte geben Sie Ihren Namen ein, um die Bedingungen zu bestätigen.'); // Simple alert, could be better UX
+                return;
+            }
+
+            pendingPayload.acceptedByName = acceptedName; // Name zum Payload hinzufügen
+            nameConfirmModal.style.display = 'none'; // Modal schließen
+            submitButton.disabled = true; // Submit Button deaktivieren
+            submitButton.textContent = 'Submitting...'; // Text ändern
+
+            const urlEncodedData = new URLSearchParams(pendingPayload).toString();
 
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded', // <-- WICHTIGE ÄNDERUNG
+                        'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: urlEncodedData, // <-- WICHTIGE ÄNDERUNG
+                    body: urlEncodedData,
                 });
 
-                const result = await response.json(); // Erwarte immer noch eine JSON-Antwort vom Apps Script
+                const result = await response.json();
 
-                if (response.ok && result.status === 'success') { // Prüfe sowohl response.ok als auch result.status
-                    form.reset(); // Formular leeren
-                    // Manually uncheck checkboxes after form reset as reset() doesn't always handle them as expected
+                if (response.ok && result.status === 'success') {
+                    form.reset();
                     termsAccepted.checked = false;
                     serviceAccepted.checked = false;
+                    // acceptedByNameField.value = ''; // Dieses Feld wurde entfernt, daher nicht zurücksetzen
+
                     successMessage.style.display = 'block'; // Erfolgsmeldung anzeigen
                     submitButton.disabled = false;
                     submitButton.textContent = 'Submit Request';
-                    toggleSubmitButton(); // Button-Status nach dem Zurücksetzen neu bewerten
+                    toggleSubmitButton();
                     setTimeout(() => {
                         successMessage.style.display = 'none';
                     }, 5000);
                 } else {
                     const message = result.message || 'Unknown error occurred.';
-                    errorMessage.textContent = 'Error submitting request: ' + message; // Fehlermeldung verwenden
+                    errorMessage.textContent = 'Error submitting request: ' + message;
                     errorMessage.style.display = 'block';
                     submitButton.disabled = false;
                     submitButton.textContent = 'Submit Request';
@@ -321,8 +445,42 @@
                 errorMessage.style.display = 'block';
                 submitButton.disabled = false;
                 submitButton.textContent = 'Submit Request';
+            } finally {
+                pendingPayload = null; // Payload zurücksetzen
             }
         });
+
+        // Event Listener für den Abbrechen-Button und den Schließen-Button im Modal
+        modalCancelBtn.addEventListener('click', () => {
+            nameConfirmModal.style.display = 'none';
+            submitButton.disabled = false; // Submit Button wieder aktivieren
+            submitButton.textContent = 'Submit Request'; // Text zurücksetzen
+        });
+
+        closeNameModal.addEventListener('click', () => {
+            nameConfirmModal.style.display = 'none';
+            submitButton.disabled = false; // Submit Button wieder aktivieren
+            submitButton.textContent = 'Submit Request'; // Text zurücksetzen
+        });
+
+        // Schließe das Modal auch bei Klick außerhalb des Modal-Inhalts
+        window.addEventListener('click', (event) => {
+            if (event.target === nameConfirmModal) {
+                nameConfirmModal.style.display = 'none';
+                submitButton.disabled = false; // Submit Button wieder aktivieren
+                submitButton.textContent = 'Submit Request'; // Text zurücksetzen
+            }
+        });
+
+        // Schließe das Modal bei ESC-Taste
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && nameConfirmModal.style.display === 'flex') {
+                nameConfirmModal.style.display = 'none';
+                submitButton.disabled = false;
+                submitButton.textContent = 'Submit Request';
+            }
+        });
+
     </script>
 </body>
 </html>
