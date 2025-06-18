@@ -149,27 +149,8 @@
     <div class="form-container">
         <h2>VG Cargo - Flight Request Form</h2>
         <form id="flightRequestForm">
-            <div class="form-group">
-                <label for="Ref" class="required-field">Reference:</label>
-                <input type="text" id="Ref" name="Ref" required>
-            </div>
-            <div class="form-group">
-                <label for="Airline">Airline (optional):</label>
-                <input type="text" id="Airline" name="Airline">
-            </div>
-            <div class="form-group">
-                <label for="FlightDate">Flight Date (optional):</label>
-                <input type="date" id="FlightDate" name="Flight Date">
-            </div>
-            <div class="form-group">
-                <label for="Tonnage">Tonnage (kg) (optional):</label>
-                <input type="number" id="Tonnage" name="Tonnage" step="any">
-            </div>
-            <div class="form-group">
-                <label for="EmailRequest">E-Mail Request (optional):</label>
-                <textarea id="EmailRequest" name="Email Request"></textarea>
-            </div>
-
+            <!-- Reference removed as per request -->
+            
             <h3>Billing Information:</h3>
             <div class="form-group">
                 <label for="BillingCompany" class="required-field">Billing Company:</label>
@@ -193,43 +174,31 @@
             </div>
 
             <div class="additional-costs-container">
-                <h3>Additional Flight Details & Costs (optional):</h3>
+                <h3>Additional Flight Details (optional):</h3> <!-- '& Costs' entfernt -->
+                <!-- Verschobene Felder beginnen hier -->
+                <div class="form-group">
+                    <label for="Airline">Airline (optional):</label>
+                    <input type="text" id="Airline" name="Airline">
+                </div>
+                <div class="form-group">
+                    <label for="FlightDate">Flight Date (optional):</label>
+                    <input type="date" id="FlightDate" name="Flight Date">
+                </div>
+                <div class="form-group">
+                    <label for="Tonnage">Tonnage (kg) (optional):</label>
+                    <input type="number" id="Tonnage" name="Tonnage" step="any">
+                </div>
+                <div class="form-group">
+                    <label for="EmailRequest">E-Mail Request (optional):</label>
+                    <textarea id="EmailRequest" name="Email Request"></textarea>
+                </div>
+                <!-- Verschobene Felder enden hier -->
+
                 <div class="form-group">
                     <label for="Abflugzeit">Abflugzeit (optional):</label>
                     <input type="time" id="Abflugzeit" name="Abflugzeit">
                 </div>
-                <div class="form-group">
-                    <label for="Zusatzkosten">Zusatzkosten (optional):</label>
-                    <input type="number" id="Zusatzkosten" name="Zusatzkosten" step="any">
-                </div>
-                <div class="form-group">
-                    <label for="Rate">Rate (optional):</label>
-                    <input type="number" id="Rate" name="Rate" step="any">
-                </div>
-                <div class="form-group">
-                    <label for="SecurityCharges">Security charges (optional):</label>
-                    <input type="number" id="SecurityCharges" name="Security charges" step="any">
-                </div>
-                <div class="form-group">
-                    <label for="Vorfeldbegleitung">Vorfeldbegleitung (optional):</label>
-                    <input type="number" id="Vorfeldbegleitung" name="Vorfeldbegleitung" step="any">
-                </div>
-                <div class="form-group">
-                    <label for="DangerousGoods">Dangerous Goods (optional):</label>
-                    <input type="text" id="DangerousGoods" name="Dangerous Goods">
-                </div>
-                <div class="form-group">
-                    <label for="Flugnummer">Flugnummer (optional):</label>
-                    <input type="text" id="Flugnummer" name="Flugnummer">
-                </div>
-                <div class="form-group">
-                    <label for="TenFtConsumables">10ft consumables (optional):</label>
-                    <input type="number" id="TenFtConsumables" name="10ft consumables" step="any">
-                </div>
-                <div class="form-group">
-                    <label for="TwentyFtConsumables">20ft consumables (optional):</label>
-                    <input type="number" id="TwentyFtConsumables" name="20ft consumables" step="any">
-                </div>
+                
                  <div class="form-group">
                     <label for="AircraftType">Aircraft Type (optional):</label>
                     <input type="text" id="AircraftType" name="Aircraft Type">
@@ -298,6 +267,16 @@
             // Manually add 'mode' to the payload
             payload.mode = 'submitCustomerRequest';
 
+            // Generate Reference here as it's no longer a form field
+            payload.Ref = `REQ-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+            
+            // Add AGB and Service Description acceptance status
+            payload.agbAccepted = termsAccepted.checked ? 'Ja' : 'Nein';
+            payload.serviceDescriptionAccepted = serviceAccepted.checked ? 'Ja' : 'Nein';
+            payload.acceptedByName = payload['Contact Name Invoicing'] || 'Unknown Customer'; // Use contact name or default
+            payload.acceptedTimestamp = new Date().toLocaleString('de-DE');
+
+
             // Iterate over formData to build the payload object
             for (const [key, value] of formData.entries()) {
                 payload[key] = value;
@@ -309,7 +288,6 @@
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
-                    // KEIN 'mode: "cors"' mehr explizit nötig, da dies eine "einfache Anfrage" wird
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded', // <-- WICHTIGE ÄNDERUNG
                     },
@@ -320,6 +298,9 @@
 
                 if (response.ok && result.status === 'success') { // Prüfe sowohl response.ok als auch result.status
                     form.reset(); // Formular leeren
+                    // Manually uncheck checkboxes after form reset as reset() doesn't always handle them as expected
+                    termsAccepted.checked = false;
+                    serviceAccepted.checked = false;
                     successMessage.style.display = 'block'; // Erfolgsmeldung anzeigen
                     submitButton.disabled = false;
                     submitButton.textContent = 'Submit Request';
@@ -329,7 +310,7 @@
                     }, 5000);
                 } else {
                     const message = result.message || 'Unknown error occurred.';
-                    errorMessage.textContent = 'Error submitting request: ' + message;
+                    errorMessage.textContent = 'Error submitting request: ' + message; // Fehlermeldung verwenden
                     errorMessage.style.display = 'block';
                     submitButton.disabled = false;
                     submitButton.textContent = 'Submit Request';
