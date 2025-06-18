@@ -24,19 +24,16 @@
       position: relative;
     }
     .calendar {
-      /* Breite des Kalenders anpassen, um mehr Platz für Tooltips zu lassen */
-      width: 500px; /* Hier kannst du experimentieren, z.B. 550px oder 600px */
+      width: 500px; 
       background: rgba(255,255,255,0.85);
       backdrop-filter: blur(6px);
       padding: 20px;
       margin: 20px 20px 20px 0;
       border-radius: 12px;
       box-shadow: 0 0 20px rgba(0,0,0,0.3);
-      /* Hinzugefügt: Stellt sicher, dass der Kalender selbst den Tooltip nicht abschneidet */
       overflow: visible; 
     }
-    .calendar-wrapper { /* Der Container für die beiden Monate */
-        /* Hinzugefügt: Stellt sicher, dass der Wrapper den Tooltip nicht abschneidet */
+    .calendar-wrapper { 
         overflow: visible; 
     }
     input[type="text"], input[type="date"] {
@@ -51,10 +48,6 @@
       margin-top: 20px;
       background: white;
       border-radius: 8px;
-      /* overflow: hidden;  --> Diese Zeile könnte Tooltips beschneiden, wenn sie hier war.
-                            Falls doch benötigt, z.B. für abgerundete Ecken, 
-                            muss der Tooltip an body gehängt werden.
-                            In diesem Fall ist es unwahrscheinlich, dass table overflow hidden hat. */
     }
     th, td {
       border: 1px solid #ccc;
@@ -75,11 +68,11 @@
       cursor: pointer;
     }
     .nav button {
-      background-color: #28a745; /* grün */
+      background-color: #28a745; 
       color: white;
     }
     .nav button:hover {
-      background-color: #218838; /* dunkleres grün */
+      background-color: #218838; 
     }
     .btn-view { background-color: #17a2b8; color: white; }
     .btn-delete { background-color: #dc3545; color: white; }
@@ -96,7 +89,7 @@
       background: rgba(0,0,0,0.6);
       justify-content: center;
       align-items: center;
-      z-index: 2000; /* Stellt sicher, dass das Modal über allem liegt */
+      z-index: 2000; 
     }
     .modal-content {
       background: white;
@@ -107,9 +100,39 @@
       display: flex;
       flex-wrap: wrap;
       gap: 20px;
-      max-height: 90vh; /* Begrenzt die Höhe des Modals */
-      overflow-y: auto; /* Aktiviert Scrollen bei zu viel Inhalt */
+      max-height: 90vh; 
+      overflow-y: auto; 
     }
+    /* Stil für das History-Modal, damit es sich vom Detail-Modal unterscheidet */
+    #historyModal .modal-content {
+        max-width: 800px; /* Breiter für die Historie */
+        flex-direction: column; /* Elemente untereinander anordnen */
+        align-items: flex-start;
+    }
+    #historyModal .modal-content h3 {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    #historyBody ul {
+        width: 100%;
+    }
+    #historyBody li {
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid #eee;
+        border-radius: 5px;
+        background-color: #fdfdfd;
+        font-size: 0.9em;
+    }
+    #historyBody pre {
+        background-color: #eee;
+        padding: 5px;
+        border-radius: 3px;
+        overflow-x: auto;
+        font-size: 0.8em;
+    }
+
     .modal-content p {
       flex: 1 1 45%;
       margin: 0;
@@ -126,7 +149,7 @@
       position: fixed;
       top: 20px;
       left: 20px;
-      z-index: 100; /* Stellt sicher, dass das Logo über dem Hintergrund liegt */
+      z-index: 100; 
     }
     
     .checkbox-label {
@@ -152,7 +175,7 @@
       vertical-align: top;
       font-size: 14px;
       position: relative; 
-      overflow: visible; /* WICHTIG: Erlaubt dem Tooltip, über die Zellgrenzen hinauszugehen */
+      overflow: visible; 
     }
     .calendar-day {
       cursor: pointer;
@@ -163,7 +186,7 @@
       background-color: #d1d9e0;
     }
     .calendar-day.has-flights {
-      background-color: #ffc107; /* Gelb für Tage mit Flügen */
+      background-color: #ffc107; 
       font-weight: bold;
       color: #333;
     }
@@ -184,74 +207,65 @@
 
     /* TOOLTIP-STILE */
     [data-tooltip] {
-      position: relative; /* Muss relativ sein, damit ::after und ::before absolut positioniert werden können */
-      z-index: 1; /* Stellt sicher, dass die Zelle selbst über dem Hintergrund liegt */
+      position: relative; 
+      z-index: 1; 
     }
 
-    /* Der Tooltip Text */
     [data-tooltip]:hover::after {
       content: attr(data-tooltip);
       position: absolute;
-      /* Positionierung oberhalb und zentriert relativ zur Zelle */
-      bottom: calc(100% + 5px); /* 5px Abstand zur Zelle */
+      bottom: calc(100% + 5px); 
       left: 50%;
-      transform: translateX(-50%); /* Zentriert den Tooltip horizontal */
+      transform: translateX(-50%); 
       
-      background-color: rgba(0, 0, 0, 0.9); /* Dunklerer Hintergrund */
+      background-color: rgba(0, 0, 0, 0.9); 
       color: #fff;
       padding: 8px 12px;
       border-radius: 6px;
-      white-space: pre-wrap; /* Wichtig für Zeilenumbrüche im Tooltip-Text */
-      z-index: 1000; /* Sehr hoher z-index, damit der Tooltip über allen anderen Elementen liegt */
-      min-width: 180px; /* Minimale Breite */
-      max-width: 280px; /* Maximale Breite, passt sich dynamisch an, wenn kürzer */
+      white-space: pre-wrap; 
+      z-index: 1000; 
+      min-width: 180px; 
+      max-width: 280px; 
       text-align: left;
       box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-      pointer-events: none; /* Sorgt dafür, dass der Tooltip keine Klicks abfängt */
-      opacity: 0; /* Standardmäßig unsichtbar */
-      visibility: hidden; /* Standardmäßig ausgeblendet */
-      transition: opacity 0.2s, visibility 0.2s; /* Sanfter Übergang */
+      pointer-events: none; 
+      opacity: 0; 
+      visibility: hidden; 
+      transition: opacity 0.2s, visibility 0.2s; 
 
-      /* Zusätzliche Anpassung, um zu verhindern, dass er links abgeschnitten wird */
-      /* Berechnet den linken Rand basierend auf der max-width des Tooltips und dem linken Rand des Kalenders.
-         Sicherstellung, dass er nicht negativ wird. */
-      left: max(10px, 50% - 140px); /* 140px ist die Hälfte von max-width 280px */
-      right: auto; /* Stellt sicher, dass es nicht von rechts begrenzt wird */
-      transform: none; /* Entfernt die zentrale Transformation, wenn link/right explizit gesetzt sind */
-      /* Man könnte auch calc(50vw - ...) benutzen, wenn der Tooltip nur auf der rechten Seite ist */
+      left: max(10px, 50% - 140px); 
+      right: auto; 
+      transform: none; 
     }
 
-    /* Das Tooltip Dreieck */
     [data-tooltip]:hover::before {
       content: '';
       position: absolute;
-      /* Positionierung unter dem Tooltip-Text, zeigt auf die Zelle */
-      bottom: 100%; /* Positioniert es direkt unter dem ::after Element */
+      bottom: 100%; 
       left: 50%;
-      transform: translateX(-50%) translateY(5px); /* Zentriert das Dreieck und verschiebt es nach unten */
+      transform: translateX(-50%) translateY(5px); 
       border-width: 5px;
       border-style: solid;
-      border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent; /* Farbe des Dreiecks */
-      z-index: 1001; /* Über dem Tooltip-Text */
+      border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent; 
+      z-index: 1001; 
       pointer-events: none;
       opacity: 0;
       visibility: hidden;
       transition: opacity 0.2s, visibility 0.2s;
     }
 
-    /* Beim Hovern den Tooltip und das Dreieck sichtbar machen */
     [data-tooltip]:hover::after,
     [data-tooltip]:hover::before {
       opacity: 1;
       visibility: visible;
     }
 
-    /* Modal spezifische Stile (zur besseren Lesbarkeit hier getrennt, kann auch oben rein) */
+    /* Modal spezifische Stile */
     .modal-section {
       background: #f7f7f7;
       padding: 15px;
       border-radius: 10px;
-      width: 100%;
+      width: 100%; /* Wichtig, damit Abschnitte 100% Breite einnehmen */
     }
     .modal-section h3 {
       margin-top: 0;
@@ -294,12 +308,26 @@
     </div>
     <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
     <table id="dataTable"><thead><tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage</th><th>Action</th></tr></thead><tbody></tbody></table>
+    
+    <!-- Detail Modal (existing) -->
     <div class="modal" id="detailModal">
       <div class="modal-content">
         <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeModal()">✖</span>
         <div id="modalBody" style="width:100%; display:flex; flex-wrap:wrap; gap:20px;"></div>
       </div>
     </div>
+
+    <!-- NEU: History Modal -->
+    <div class="modal" id="historyModal">
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeHistoryModal()">✖</span>
+        <h3>History for Reference: <span id="historyRef"></span></h3>
+        <div id="historyBody" style="width:100%; max-height: 70vh; overflow-y: auto;">
+          <!-- History content will be loaded here -->
+        </div>
+      </div>
+    </div>
+
   </div>
   <div class="calendar">
     <div class="nav">
