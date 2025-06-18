@@ -3,15 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <title>Charter Dashboard</title>
-  <script type="module" src="script.js"></script>
+  <!-- Google Fonts - Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            // Die 'Inter'-Schriftart ist jetzt global verfügbar,
+            // auch wenn 'Segoe UI' im body-Stil deklariert ist.
+            // Du kannst 'font-inter' Klassen in deinen Elementen verwenden.
+            inter: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
   <style>
+    /* Custom styles for specific overrides or complex designs not easily done with Tailwind */
     body {
       margin: 0;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Segoe UI', sans-serif; /* Behält deine aktuelle Schriftart */
       background: url('https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg') no-repeat center center fixed;
       background-size: cover;
-      display: flex;
-      min-height: 100vh;
+      background-position: center;
+      background-attachment: fixed;
     }
     .main {
       flex: 1;
@@ -286,11 +304,12 @@
     }
   </style>
 </head>
-<body>
-  <div class="logo">
-    <img src="VG_Cargo_Logo_small.png" alt="VG Cargo Logo" style="height:50px;">
+<body class="font-inter flex flex-col lg:flex-row min-h-screen text-gray-800">
+  <div class="fixed top-4 left-4 z-50">
+    <img src="VG_Cargo_Logo_small.png" alt="VG Cargo Logo" class="h-12 md:h-16 rounded-lg shadow-md">
   </div>
-  <div class="main">
+
+  <div class="flex-1 bg-white bg-opacity-85 backdrop-blur-sm p-6 md:p-8 m-4 md:m-8 rounded-xl shadow-lg relative">
     <div class="header-area" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h1 style="flex-grow: 1; text-align: center; margin-left: 70px;">Charter Dashboard</h1>
       <button onclick="openProfileModal()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
@@ -311,7 +330,11 @@
       <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" /> <!-- NEU: Flugnummer Suchfeld -->
       <label>From:</label> <input type="date" id="fromDate" onchange="filterTable()" />
       <label>To:</label> <input type="date" id="toDate" onchange="filterTable()" />
-      <!-- Archiv Checkbox entfernt -->
+      <!-- Moderne Archiv-Checkbox -->
+      <div class="inline-flex items-center ml-4">
+          <label for="archiveCheckbox" class="font-medium text-gray-700 mr-2 cursor-pointer">Archiv anzeigen:</label>
+          <input type="checkbox" id="archiveCheckbox" class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer border-gray-300 shadow-sm">
+      </div>
     </div>
     <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
     <table id="dataTable"><thead><tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage</th><th>Action</th></tr></thead><tbody></tbody></table>
@@ -365,5 +388,7 @@
     </div>
     <div id="calendarArea" class="calendar-wrapper"></div>
   </div>
+  <!-- WICHTIGE KORREKTUR: script.js hierher verschoben und 'defer' entfernt -->
+  <script src="script.js" type="module"></script>
 </body>
 </html>
