@@ -118,14 +118,9 @@
         </form>
     </div>
 
-    <script>
-        // !!! WICHTIG: Diese Benutzerdaten sind Hardcoded und NUR FÜR DEMONSTRATIONSZWECKE GEEIGNET.
-        // !!! IN EINER PRODUKTIONSUMGEBUNG SOLLTEN BENUTZERDATEN NIEMALS IM CLIENTSEITIGEN CODE GESPEICHERT WERDEN.
-        // Authentifizierung sollte auf einem sicheren Backend erfolgen (z.B. Firebase Authentication).
-        const USERS = [
-            { username: 'admin', password: 'adminpassword', role: 'admin', name: 'Administrator' },
-            { username: 'viewer', password: 'viewerpassword', role: 'viewer', name: 'Betrachter' }
-        ];
+    <script type="module">
+        // Importiere das users-Objekt aus users.js
+        import { users } from './users.js';
 
         const loginForm = document.getElementById('loginForm');
         const usernameInput = document.getElementById('username');
@@ -143,17 +138,23 @@
             const username = usernameInput.value;
             const password = passwordInput.value;
 
-            const user = USERS.find(u => u.username === username && u.password === password);
+            // Finde den Benutzer im importierten users-Objekt
+            const userEntry = users[username]; // Zugriff auf das spezifische Benutzerobjekt
 
-            if (user) {
-                localStorage.setItem('currentUser', JSON.stringify(user));
+            if (userEntry && userEntry.password === password) {
+                // Speichere das vollständige Benutzerobjekt (mit Name und Rolle)
+                localStorage.setItem('currentUser', JSON.stringify({
+                    username: username,
+                    name: userEntry.name,
+                    role: userEntry.role
+                }));
                 window.location.href = 'Dashboard.html'; // Weiterleitung zum Dashboard
             } else {
                 loginMessage.textContent = 'Ungültiger Benutzername oder Passwort.';
                 loginMessage.style.display = 'block';
-                loginMessage.style.color = 'red'; // Sicherstellen, dass es rot ist
-                loginMessage.style.backgroundColor = '#f8d7da'; // Sicherstellen des Hintergrunds
-                loginMessage.style.borderColor = '#f5c6cb'; // Sicherstellen des Rahmens
+                loginMessage.style.color = 'red'; 
+                loginMessage.style.backgroundColor = '#f8d7da'; 
+                loginMessage.style.borderColor = '#f5c6cb'; 
             }
         });
     </script>
