@@ -305,6 +305,10 @@
       <label>Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
       <label>From:</label> <input type="date" id="fromDate" onchange="filterTable()" />
       <label>To:</label> <input type="date" id="toDate" onchange="filterTable()" />
+    </div>class="filter-group">
+          <label for="archiveCheckbox" style="margin-left: 10px;">Archiv anzeigen:</label>
+          <input type="checkbox" id="archiveCheckbox" style="width: 20px; height: 20px; vertical-align: middle;">
+      </div>
     </div>
     <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
     <table id="dataTable"><thead><tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage</th><th>Action</th></tr></thead><tbody></tbody></table>
