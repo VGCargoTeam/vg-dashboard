@@ -145,6 +145,7 @@ function fetchData() {
     })
     .then(d => {
       requestData = d.data; // Speichert das Array der Daten
+      console.log("Rohdaten von API:", JSON.parse(JSON.stringify(d.data))); // Zum Debuggen
       filterTable(); // Ruft filterTable auf, um sowohl Tabelle als auch Kalender zu aktualisieren
     })
     .catch((error) => {
@@ -169,18 +170,19 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
     let displayFlightDate = r['Flight Date'] || "-";
     if (displayFlightDate !== "-") {
         try {
-            // WICHTIG: Erstellen Sie das Date-Objekt immer basierend auf dem lokalen Datum
-            const dateParts = displayFlightDate.split('T')[0].split('-'); // Falls ISO-String
+            const dateParts = displayFlightDate.split('T')[0].split('-'); 
             const year = parseInt(dateParts[0]);
-            const month = parseInt(dateParts[1]) - 1; // Monate sind 0-indiziert
+            const month = parseInt(dateParts[1]) - 1; 
             const day = parseInt(dateParts[2]);
             const dateObj = new Date(year, month, day); // Erstellt Date-Objekt in lokaler Zeitzone
+            console.log(`[renderTable] Original: "${displayFlightDate}", Geparsed (Lokal): ${dateObj}`);
 
             if (!isNaN(dateObj.getTime())) { 
                 displayFlightDate = dateObj.toLocaleDateString('de-DE'); 
+                console.log(`[renderTable] Formatiert (de-DE): ${displayFlightDate}`);
             }
         } catch (e) {
-             console.error("Fehler bei der Datumskonvertierung für die Anzeige:", displayFlightDate, e);
+             console.error("Fehler bei der Datumskonvertierung für die Anzeige in Tabelle:", displayFlightDate, e);
         }
     }
 
@@ -223,7 +225,6 @@ function filterTable() {
     let matchesDateRange = true; 
     let isPastOrTodayAndGoneFlight = false;    
 
-    // Datum korrekt behandeln: Google Sheets gibt YYYY-MM-DD aus.
     let flightDateFromData = r['Flight Date'] || '';
     let flightDateObj;
 
@@ -238,6 +239,8 @@ function filterTable() {
     } else {
         flightDateObj = null;
     }
+    console.log(`[filterTable] Original: "${flightDateFromData}", Geparsed (Lokal): ${flightDateObj}`);
+
 
     if (flightDateObj && !isNaN(flightDateObj.getTime())) {
       if (flightDateObj < today) {
@@ -301,8 +304,8 @@ function openModal(originalIndex) {
     'Rate': "", 'Security charges': "", "Dangerous Goods": "Nein", // Standardwert "Nein"
     '10ft consumables': "", '20ft consumables': "",
     'Zusatzkosten': "", 'Email Request': "",
-    'AGB Accepted': "Ja", // Standardwert "Ja"
-    'Service Description Accepted': "Ja", // Standardwert "Ja"
+    'AGB Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
+    'Service Description Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
     'Accepted By Name': "", 
     'Acceptance Timestamp': "" 
   } : requestData[originalIndex]; 
@@ -340,13 +343,13 @@ function openModal(originalIndex) {
       }
       
       // Spezielle Handhabung für Price-related fields, damit sie für Viewer nicht angezeigt werden
-      const isPriceRelatedOrEmailRequest = [ 
+      const isPriceRelatedField = [ 
         'Rate', 'Security charges', 'Dangerous Goods', 
         '10ft consumables', '20ft consumables', 'Zusatzkosten'
       ].includes(key);
 
       // Überspringe das Rendern dieser Felder für Viewer
-      if (isPriceRelatedOrEmailRequest && currentUser.role === 'viewer') {
+      if (isPriceRelatedField && currentUser.role === 'viewer') {
           return ''; // Leerer String, um das Feld zu überspringen
       }
 
@@ -382,10 +385,9 @@ function openModal(originalIndex) {
         }
         return `<label>${label}</label><input type="time" name="${key}" value="${timeValue}" ${readOnlyAttr} style="${styleAttr}">`;
       } else if (key === "AGB Accepted" || key === "Service Description Accepted") { 
-          // Prüfen auf "Ja" (case-insensitive) oder true
-          const isAccepted = String(value).toLowerCase() === "ja" || value === true;
-          const icon = isAccepted ? '&#10004;' : '&#10008;'; 
-          const color = isAccepted ? 'green' : 'red';
+          // Immer einen grünen Haken anzeigen, da der Kunde die AGB akzeptieren MUSS, um eine Anfrage zu senden.
+          const icon = '&#10004;'; // Grüner Haken
+          const color = 'green';
           return `<label>${label}: <span style="color: ${color}; font-size: 1.2em; font-weight: bold;">${icon}</span></label>`;
       } else if (key === "Vorfeldbegleitung" && type === "checkbox") { 
         const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
@@ -532,7 +534,7 @@ async function deleteRowFromModal(ref) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
     }
     const responseData = await response.json(); 
 
@@ -598,7 +600,7 @@ async function saveDetails() {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
     }
     const responseData = await response.json();
 
@@ -639,7 +641,7 @@ async function deleteRow(btn) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
     }
     const responseData = await response.json();
 
@@ -723,6 +725,7 @@ function generateCalendarHTML(year, month) {
     } else if (flightDate instanceof Date) {
         currentFlightDateObj = new Date(flightDate.getFullYear(), flightDate.getMonth(), flightDate.getDate());
     }
+    console.log(`[generateCalendarHTML] Original: "${flightDate}", Geparsed (Lokal): ${currentFlightDateObj}`);
 
     if (currentFlightDateObj && !isNaN(currentFlightDateObj.getTime()) && currentFlightDateObj.getFullYear() === year && currentFlightDateObj.getMonth() === month) { 
         const fDay = currentFlightDateObj.getDate();
@@ -938,4 +941,4 @@ window.closeHistoryModal = closeHistoryModal;
 
 // Initialisiere Auth-Status, sobald das DOM geladen ist.
 // Dies wird nach dem window.onload Event, aber vor dem Polling ausgeführt.
-checkAuthStatus(); 
+checkAuthStatus();
