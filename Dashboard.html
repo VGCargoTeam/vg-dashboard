@@ -12,9 +12,6 @@
       theme: {
         extend: {
           fontFamily: {
-            // Die 'Inter'-Schriftart ist jetzt global verfügbar,
-            // auch wenn 'Segoe UI' im body-Stil deklariert ist.
-            // Du kannst 'font-inter' Klassen in deinen Elementen verwenden.
             inter: ['Inter', 'sans-serif'],
           }
         }
@@ -163,11 +160,17 @@
       border-radius: 6px;
       font-size: 13px;
     }
-    .logo {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      z-index: 100; 
+    .logo-container { /* NEU: Für das Logo */
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 10; /* Damit es über anderen Elementen liegt */
+    }
+    .logo-container img {
+        height: 50px; /* Oder die gewünschte Größe */
+        /* Optional: Schatten, Border-Radius für das Logo selbst */
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     
     .checkbox-label {
@@ -193,7 +196,7 @@
       vertical-align: top;
       font-size: 14px;
       position: relative; 
-      overflow: visible; 
+      overflow: visible; /* Wichtig für Tooltips/Icons */
     }
     .calendar-day {
       cursor: pointer;
@@ -233,35 +236,34 @@
       content: attr(data-tooltip);
       position: absolute;
       bottom: calc(100% + 5px); 
-      left: 50%;
-      transform: translateX(-50%); 
+      left: 50%; /* Zentriert über dem Element */
+      transform: translateX(-50%); /* Korrigiert die Zentrierung */
       
       background-color: rgba(0, 0, 0, 0.9); 
       color: #fff;
       padding: 8px 12px;
       border-radius: 6px;
-      white-space: pre-wrap; 
+      white-space: pre-wrap; /* Zeilenumbrüche im Tooltip erlauben */
       z-index: 1000; 
       min-width: 180px; 
-      max-width: 280px; 
+      max-width: 300px; /* Breitere Tooltips erlauben */
       text-align: left;
       box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-      pointer-events: none; 
+      pointer-events: none; /* Tooltip soll Klicks nicht blockieren */
       opacity: 0; 
       visibility: hidden; 
       transition: opacity 0.2s, visibility 0.2s; 
 
-      left: max(10px, 50% - 140px); 
-      right: auto; 
-      transform: none; 
+      /* Zusätzliche Anpassung, um sicherzustellen, dass es nicht den Bildschirmrand überlappt */
+      /* Max-width und transform: translateX(-50%) sollten die meisten Fälle abdecken */
     }
 
     [data-tooltip]:hover::before {
       content: '';
       position: absolute;
-      bottom: 100%; 
+      bottom: 100%; /* Pfeil über dem Tooltip-Inhalt */
       left: 50%;
-      transform: translateX(-50%) translateY(5px); 
+      transform: translateX(-50%) translateY(5px); /* Positioniert den Pfeil */
       border-width: 5px;
       border-style: solid;
       border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent; 
@@ -272,6 +274,7 @@
       transition: opacity 0.2s, visibility 0.2s;
     }
 
+    /* Tooltip anzeigen bei Hover */
     [data-tooltip]:hover::after,
     [data-tooltip]:hover::before {
       opacity: 1;
@@ -302,16 +305,26 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
+    /* Stil für Referenzlinks in der Tabelle */
+    #dataTable tbody td a {
+        color: #007BFF; /* Blau */
+        text-decoration: underline; /* Unterstrichen */
+        font-weight: bold;
+        cursor: pointer;
+    }
+    #dataTable tbody td a:hover {
+        color: #0056b3; /* Dunkleres Blau beim Hover */
+    }
   </style>
 </head>
 <body class="font-inter flex flex-col lg:flex-row min-h-screen text-gray-800">
-  <div class="fixed top-4 left-4 z-50">
-    <img src="VG_Cargo_Logo_small.png" alt="VG Cargo Logo" class="h-12 md:h-16 rounded-lg shadow-md">
-  </div>
+  <div class="main">
+    <div class="logo-container"> <!-- NEU: Logo-Container -->
+        <img src="Logo.jpg" alt="VG Cargo Logo"> <!-- Dein Logo-Bild -->
+    </div>
 
-  <div class="flex-1 bg-white bg-opacity-85 backdrop-blur-sm p-6 md:p-8 m-4 md:m-8 rounded-xl shadow-lg relative">
     <div class="header-area" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h1 style="flex-grow: 1; text-align: center; margin-left: 70px;">Charter Dashboard</h1>
+      <h1 style="flex-grow: 1; text-align: center; margin-left: 70px; font-size: 2.5rem;">Charter Dashboard</h1> <!-- Überschrift vergrößert -->
       <button onclick="openProfileModal()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
         Profil
       </button>
@@ -324,7 +337,7 @@
     <div style="text-align: center; font-size: 16px; color: #e63244;">
       <span id="currentDate">Date: --</span> | <span id="clock">Time: --:--:--</span>
     </div>
-    <div style="margin-top: 10px;">
+    <div style="margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
       <label>Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
       <label>Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
       <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" /> <!-- NEU: Flugnummer Suchfeld -->
