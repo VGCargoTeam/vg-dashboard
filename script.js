@@ -165,14 +165,16 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
     
     const originalIndex = requestData.findIndex(item => item.Ref === r.Ref); 
 
+    // Datum korrekt für die Anzeige formatieren (DD.MM.YYYY)
     let displayFlightDate = r['Flight Date'] || "-";
     if (displayFlightDate !== "-") {
         try {
-            const dateObj = new Date(displayFlightDate);
+            const dateObj = new Date(displayFlightDate + 'T00:00:00'); // Fügen Sie T00:00:00 hinzu, um es als lokalen Datumstring zu behandeln
             if (!isNaN(dateObj.getTime())) { 
                 displayFlightDate = dateObj.toLocaleDateString('de-DE'); 
             }
         } catch (e) {
+             console.error("Fehler bei der Datumskonvertierung für die Anzeige:", displayFlightDate, e);
         }
     }
 
@@ -215,17 +217,22 @@ function filterTable() {
     let matchesDateRange = true; 
     let isPastOrTodayAndGoneFlight = false;    
 
+    // Datum korrekt behandeln: Google Sheets gibt YYYY-MM-DD aus.
+    // Wir wollen es für Vergleiche als Date-Objekt mit fester Uhrzeit (Mitternacht)
     let flightDateFromData = r['Flight Date'] || '';
-    if (typeof flightDateFromData === 'string' && flightDateFromData.includes('T')) {
-        flightDateFromData = flightDateFromData.split('T')[0]; 
+    let flightDateObj;
+
+    if (typeof flightDateFromData === 'string') {
+        // Versuch, ein Datum aus YYYY-MM-DD oder YYYY-MM-DDTHH:mm:ss.sssZ zu parsen
+        // Indem wir 'T00:00:00' hinzufügen, stellen wir sicher, dass es als lokales Datum behandelt wird
+        flightDateObj = new Date(flightDateFromData.split('T')[0] + 'T00:00:00'); 
     } else if (flightDateFromData instanceof Date) { 
-        flightDateFromData = flightDateFromData.toISOString().split('T')[0];
+        flightDateObj = new Date(flightDateFromData.toISOString().split('T')[0] + 'T00:00:00');
+    } else {
+        flightDateObj = null;
     }
 
-    if (flightDateFromData) {
-      const flightDateObj = new Date(flightDateFromData);
-      flightDateObj.setHours(0, 0, 0, 0); 
-
+    if (flightDateObj && !isNaN(flightDateObj.getTime())) {
       if (flightDateObj < today) {
           isPastOrTodayAndGoneFlight = true;
       } else if (flightDateObj.getTime() === today.getTime()) {
@@ -245,8 +252,20 @@ function filterTable() {
           }
       }
 
-      if (fromDateInput && flightDateFromData < fromDateInput) matchesDateRange = false;
-      if (toDateInput && flightDateFromData > toDateInput) matchesDateRange = false;
+      // Filter nach Datumsbereich
+      if (fromDateInput) {
+          const fromDateObj = new Date(fromDateInput + 'T00:00:00');
+          if (flightDateObj < fromDateObj) matchesDateRange = false;
+      }
+      if (toDateInput) {
+          const toDateObj = new Date(toDateInput + 'T00:00:00');
+          if (flightDateObj > toDateObj) matchesDateRange = false;
+      }
+    } else {
+        // Wenn flightDateFromData kein gültiges Datum ist, sollte es nicht gefiltert werden,
+        // es sei denn, der Filter ist spezifisch dafür ausgelegt (aktuell nicht der Fall).
+        // Hier lassen wir es einfach durch, wenn kein gültiges Datum vorhanden ist.
+        isPastOrTodayAndGoneFlight = false; // Kann nicht "Vergangenheit" sein, wenn kein Datum
     }
 
     const passesPastFlightFilter = showArchive || !isPastOrTodayAndGoneFlight;
@@ -298,68 +317,85 @@ function openModal(originalIndex) {
       let value = r[key];
       if (value === undefined || value === null) value = "";
       
+      // Felder, die nur für Admin bearbeitbar sein sollen
       const isPriceRelatedFieldOrFlightNumber = [ 
         'Rate', 'Security charges', 'Dangerous Goods', 
         '10ft consumables', '20ft consumables', 'Zusatzkosten', 'Email Request', 'Flugnummer' 
       ].includes(key);
 
+      // Felder, die immer schreibgeschützt sind (Ref, Created At, Acceptance...)
       const isAlwaysReadOnlyField = [
           "Ref", "Created At", "Acceptance Timestamp", "Accepted By Name" 
       ].includes(key);
 
       let readOnlyAttr = '';
+      let styleAttr = '';
+
       if (isAlwaysReadOnlyField) {
-          readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
-      } else if (isPriceRelatedFieldOrFlightNumber) { 
-          if (!currentUser || currentUser.role === 'viewer') {
-              readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
-          }
+          readOnlyAttr = 'readonly';
+          styleAttr = 'background-color:#eee; cursor: not-allowed;';
+      } else if (currentUser && currentUser.role === 'viewer') {
+          // NEUE LOGIK: Wenn der Benutzer ein Viewer ist, sind alle Felder außer den
+          // "Always Read-Only" Feldern bearbeitbar.
+          readOnlyAttr = ''; // Nicht schreibgeschützt
+          styleAttr = ''; // Standardstil
       }
+      // Bestehende Admin-Logik für spezielle Felder beibehalten, falls sie spezifisch war
+      // Aber durch die neue Viewer-Logik wird dies im Grunde überschrieben,
+      // sodass Viewer nun fast alles bearbeiten können, außer den "always read-only" Feldern.
+      // Falls bestimmte Felder NUR für Admin und NICHT für Viewer editierbar sein sollen,
+      // müsste hier eine explizitere if-else if-Bedingung hinzugefügt werden.
+      // Aktueller Zustand: Admin kann alles bearbeiten, Viewer kann alles außer readOnlyField
+      // Wenn isPriceRelatedFieldOrFlightNumber nur für Admin editierbar sein soll:
+      // if (isPriceRelatedFieldOrFlightNumber && currentUser.role !== 'admin') {
+      //    readOnlyAttr = 'readonly';
+      //    styleAttr = 'background-color:#eee; cursor: not-allowed;';
+      // }
 
 
       if (key === "Flight Date") {
-        if (String(value).includes('T')) {
-            value = String(value).split('T')[0];
-        } else if (value instanceof Date) { 
-            value = value.toISOString().split('T')[0];
-        } else if (!String(value).match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Sicherstellen, dass das Datum im YYYY-MM-DD Format ist
+        let dateValue = "";
+        if (value) {
             try {
-                const parsedDate = new Date(value);
-                if (!isNaN(parsedDate.getTime())) {
-                    value = parsedDate.toISOString().split('T')[0];
-                } else {
-                    value = "";
+                const dateObj = new Date(value.split('T')[0]); // Nur das Datum, ohne Zeit
+                if (!isNaN(dateObj.getTime())) {
+                    dateValue = dateObj.toISOString().split('T')[0];
                 }
             } catch (e) {
-                value = "";
+                console.error("Fehler beim Parsen des Flugdatums:", value, e);
             }
         }
-        return `<label>${label}</label><input type="date" name="${key}" value="${value}" ${readOnlyAttr}>`;
+        return `<label>${label}</label><input type="date" name="${key}" value="${dateValue}" ${readOnlyAttr} style="${styleAttr}">`;
       } else if (key === "Abflugzeit") {
-        if (value instanceof Date) { 
-            value = value.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-        } else if (String(value).includes('T')) {
-            const dateObj = new Date(value);
-            value = dateObj.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-        } else if (!(String(value).length === 5 && String(value).includes(':'))) {
-            value = ""; 
+        let timeValue = "";
+        if (value) {
+            if (value instanceof Date) { 
+                timeValue = value.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            } else if (typeof value === 'string' && value.includes('T')) {
+                const dateObj = new Date(value);
+                timeValue = dateObj.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            } else if (typeof value === 'string' && value.length === 5 && value.includes(':')) {
+                timeValue = value;
+            }
         }
-        return `<label>${label}</label><input type="time" name="${key}" value="${value}" ${readOnlyAttr}>`;
+        return `<label>${label}</label><input type="time" name="${key}" value="${timeValue}" ${readOnlyAttr} style="${styleAttr}">`;
       } else if (key === "AGB Accepted" || key === "Service Description Accepted") { 
-          const isAccepted = String(value).toLowerCase() === "ja";
+          // Prüfen auf "Ja" (case-insensitive) oder true
+          const isAccepted = String(value).toLowerCase() === "ja" || value === true;
           const icon = isAccepted ? '&#10004;' : '&#10008;'; 
           const color = isAccepted ? 'green' : 'red';
           return `<label>${label}: <span style="color: ${color}; font-size: 1.2em; font-weight: bold;">${icon}</span></label>`;
       } else if (key === "Vorfeldbegleitung" && type === "checkbox") { 
         const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
-        return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr}> ${label}</label>`;
+        return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}"> ${label}</label>`;
       } else if (['Tonnage', 'Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables'].includes(key)) {
           const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
-          return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" ${readOnlyAttr} />`;
+          return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" ${readOnlyAttr} style="${styleAttr}" />`;
       } else if (key === "Created At" || key === "Acceptance Timestamp") { 
-            return `<label>${label}:</label><input type="text" name="${key}" value="${value}" ${readOnlyAttr} />`;
+            return `<label>${label}:</label><input type="text" name="${key}" value="${value}" ${readOnlyAttr} style="${styleAttr}" />`;
       }
-      return `<label>${label}:</label><input type="text" name="${key}" value="${value}" ${readOnlyAttr} />`;
+      return `<label>${label}:</label><input type="text" name="${key}" value="${value}" ${readOnlyAttr} style="${styleAttr}" />`;
     }).join("");
   };
 
@@ -397,15 +433,16 @@ function openModal(originalIndex) {
 
   const priceExtra = `
     <label>Zusatzkosten:</label>
-    <textarea name="Zusatzkosten" placeholder="Labeln, Fotos" style="height:80px" ${(currentUser && currentUser.role === 'viewer') ? 'readonly style="background-color:#eee; cursor: not-allowed;"' : ''}>${r["Zusatzkosten"] || ""}</textarea>
+    <textarea name="Zusatzkosten" placeholder="Labeln, Fotos" style="height:80px" ${(currentUser && currentUser.role === 'viewer') ? '' : ''}>${r["Zusatzkosten"] || ""}</textarea>
     <label>E-Mail Request:</label>
-    <textarea name="Email Request" style="height:150px" ${(currentUser && currentUser.role === 'viewer') ? 'readonly style="background-color:#eee; cursor: not-allowed;"' : ''}>${r["Email Request"] || ""}</textarea>
+    <textarea name="Email Request" style="height:150px" ${(currentUser && currentUser.role === 'viewer') ? '' : ''}>${r["Email Request"] || ""}</textarea>
   `;
 
   modalBody.appendChild(section("Kundendetails", renderFields(customerFields)));
   modalBody.appendChild(section("Flugdetails", renderFields(flightFields)));
   
-  if (currentUser && currentUser.role === 'admin') { 
+  // Preisdetails nur für Admins anzeigen, aber für Viewer editierbar machen
+  if (currentUser) { // Jeder eingeloggte Benutzer sieht Preisdetails
     modalBody.appendChild(section("Preisdetails", renderFields(priceFields) + priceExtra));
   } else {
     modalBody.appendChild(section("Preisdetails", "<p>Keine Berechtigung zur Ansicht dieser Details.</p>"));
@@ -418,7 +455,8 @@ function openModal(originalIndex) {
   buttonContainer.style.gap = "10px"; 
   buttonContainer.style.marginTop = "20px";
 
-  if (currentUser && currentUser.role === 'admin') {
+  // Speichern-Button ist für Admin und Viewer verfügbar (wenn Viewer editieren dürfen)
+  if (currentUser) {
     const saveButton = document.createElement("button");
     saveButton.textContent = "Speichern";
     saveButton.onclick = saveDetails;
@@ -466,7 +504,9 @@ function openModal(originalIndex) {
 
 // Neue Funktion, die vom Modal aus den Löschvorgang startet und dann das Modal schließt
 async function deleteRowFromModal(ref) {
-  if (!confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
+  // Statt alert() eine benutzerdefinierte Bestätigung verwenden, da alert() in iframes nicht gut funktioniert
+  const isConfirmed = confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`);
+  if (!isConfirmed) {
     return;
   }
 
@@ -515,8 +555,9 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function saveDetails() {
-  const confirmSave = confirm('Sind Sie sicher, dass Sie diese Änderungen speichern möchten?');
-  if (!confirmSave) {
+  // Statt alert() eine benutzerdefinierte Bestätigung verwenden
+  const isConfirmed = confirm('Sind Sie sicher, dass Sie diese Änderungen speichern möchten?');
+  if (!isConfirmed) {
     return;
   }
 
@@ -526,6 +567,7 @@ async function saveDetails() {
     if (i.name === "Flight Date") {
         data[i.name] = i.value; 
     } else if (['Tonnage', 'Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables'].includes(i.name)) {
+        // Tonnage und Preis-Felder: Kommas durch Punkte ersetzen
         data[i.name] = i.value.replace(/,/g, '.') || "";
     } else {
         if (i.type === "checkbox") {
@@ -569,7 +611,9 @@ async function saveDetails() {
 async function deleteRow(btn) {
   const ref = btn.closest("tr").querySelector("a").textContent;
 
-  if (!confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
+  // Statt alert() eine benutzerdefinierte Bestätigung verwenden
+  const isConfirmed = confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`);
+  if (!isConfirmed) {
     return;
   }
 
@@ -624,10 +668,12 @@ function renderCalendars() {
 }
 
 function openCalendarDayFlights(year, month, day) {
+  // Erstellen eines Datumsstrings im YYYY-MM-DD Format für den Vergleich
   const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   
   const flightsOnThisDay = requestData.filter(r => {
     let flightDateFromData = r['Flight Date'] || '';
+    // Sicherstellen, dass das Datum aus den Daten ebenfalls im YYYY-MM-DD Format ist
     if (typeof flightDateFromData === 'string' && flightDateFromData.includes('T')) {
         flightDateFromData = flightDateFromData.split('T')[0];
     } else if (flightDateFromData instanceof Date) { 
@@ -658,13 +704,18 @@ function generateCalendarHTML(year, month) {
   const flightsByDay = new Map(); 
   requestData.forEach((r) => {
     let flightDate = r['Flight Date']; 
+    // Sicherstellen, dass flightDate immer ein Date-Objekt ist und die Uhrzeit auf Mitternacht gesetzt ist
     if (typeof flightDate === 'string') {
-        const parsedDate = new Date(flightDate); 
+        const parsedDate = new Date(flightDate.split('T')[0] + 'T00:00:00'); // Als lokales Datum parsen
         if (!isNaN(parsedDate.getTime())) {
             flightDate = parsedDate;
         } else {
             flightDate = null; 
         }
+    } else if (flightDate instanceof Date) {
+        flightDate = new Date(flightDate.toISOString().split('T')[0] + 'T00:00:00');
+    } else {
+        flightDate = null;
     }
 
     if (flightDate && flightDate.getFullYear() === year && flightDate.getMonth() === month) { 
