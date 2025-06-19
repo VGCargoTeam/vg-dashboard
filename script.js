@@ -85,6 +85,11 @@ function changePassword() {
   const confirmPass = document.getElementById('confirmPasswordInput').value;
   const messageElem = document.getElementById('passwordChangeMessage');
 
+  if (!messageElem) {
+    console.error("Password change message element not found.");
+    return;
+  }
+
   if (newPass === '' || confirmPass === '') {
     messageElem.textContent = 'Bitte beide Passwortfelder ausfüllen.';
     messageElem.style.color = 'red';
@@ -106,17 +111,19 @@ function changePassword() {
   // BEACHTE: Bei einem Neuladen der Seite würde das Hardcoded-Passwort in users.js
   // wieder aktiv werden, es sei denn, users.js wird auch dynamisch aktualisiert
   // (was bei einer lokalen Datei nicht der Fall ist). Für Persistenz wäre ein Backend nötig.
-  if (users[currentUser.username]) {
+  if (currentUser && users[currentUser.username]) {
     users[currentUser.username].password = newPass; // Update in hardcoded object (for demo)
     currentUser.password = newPass; // Update current session user
     localStorage.setItem('currentUser', JSON.stringify(currentUser)); // Update localStorage
     messageElem.textContent = 'Passwort erfolgreich geändert!';
     messageElem.style.color = 'green';
     // Leere die Felder nach erfolgreicher Änderung
-    document.getElementById('newPasswordInput').value = '';
-    document.getElementById('confirmPasswordInput').value = '';
+    const newPassInput = document.getElementById('newPasswordInput');
+    const confirmPassInput = document.getElementById('confirmPasswordInput');
+    if (newPassInput) newPassInput.value = '';
+    if (confirmPassInput) confirmPassInput.value = '';
   } else {
-    messageElem.textContent = 'Fehler beim Ändern des Passworts.';
+    messageElem.textContent = 'Fehler beim Ändern des Passworts. Benutzer nicht gefunden.';
     messageElem.style.color = 'red';
   }
 }
@@ -198,7 +205,7 @@ function filterTable() {
   const flightNumberSearch = flightNumberSearchInput ? flightNumberSearchInput.value.toLowerCase() : '';
   const fromDateInput = document.getElementById("fromDate").value; 
   const toDateInput = document.getElementById("toDate").value;     
-  const showArchive = document.getElementById("archiveCheckbox").checked; // Archiv-Checkbox
+  const showArchive = document.getElementById("archiveCheckbox") ? document.getElementById("archiveCheckbox").checked : false; // Archiv-Checkbox, falls vorhanden
 
   const filtered = requestData.filter(r => {
     const matchesRef = (r.Ref || '').toLowerCase().includes(refSearch);
@@ -242,8 +249,6 @@ function filterTable() {
       if (toDateInput && flightDateFromData > toDateInput) matchesDateRange = false;
     }
 
-    const isExplicitlyFiltered = refSearch || airlineSearch || flightNumberSearch || fromDateInput || toDateInput;
-
     const passesPastFlightFilter = showArchive || !isPastOrTodayAndGoneFlight;
 
     return matchesRef && matchesAirline && matchesFlightNumber && matchesDateRange && passesPastFlightFilter;
@@ -268,11 +273,11 @@ function openModal(originalIndex) {
     'Airline': "", 'Aircraft Type': "", 'Flugnummer': "",
     'Flight Date': "", 'Abflugzeit': "", 'Tonnage': "",
     'Vorfeldbegleitung': "Nein",
-    'Rate': "", 'Security charges': "", 'Dangerous Goods': "",
+    'Rate': "", 'Security charges': "", "Dangerous Goods": "Nein", // Standardwert "Nein"
     '10ft consumables': "", '20ft consumables': "",
     'Zusatzkosten': "", 'Email Request': "",
-    'AGB Accepted': "Nein", 
-    'Service Description Accepted': "Nein",
+    'AGB Accepted': "Nein", // Standardwert "Nein"
+    'Service Description Accepted': "Nein", // Standardwert "Nein"
     'Accepted By Name': "", 
     'Acceptance Timestamp': "" 
   } : requestData[originalIndex]; 
@@ -858,14 +863,14 @@ window.fetchData = fetchData;
 window.renderTable = renderTable;
 window.filterTable = filterTable;
 window.openModal = openModal;
-window.deleteRowFromModal = deleteRowFromModal; // Diese Funktion wird von saveDetails aufgerufen, also sollte sie nicht direkt im HTML sein, aber sie ist hier zur Vollständigkeit
+window.deleteRowFromModal = deleteRowFromModal;
 window.closeModal = closeModal;
 window.saveDetails = saveDetails;
 window.deleteRow = deleteRow;
 window.shiftCalendar = shiftCalendar;
 window.renderCalendars = renderCalendars;
 window.openCalendarDayFlights = openCalendarDayFlights;
-window.generateCalendarHTML = generateCalendarHTML; // Auch diese, falls indirekt benötigt
+window.generateCalendarHTML = generateCalendarHTML;
 window.createNewRequest = createNewRequest;
 window.showSaveFeedback = showSaveFeedback;
 window.showHistory = showHistory;
