@@ -301,8 +301,8 @@ function openModal(originalIndex) {
     'Rate': "", 'Security charges': "", "Dangerous Goods": "Nein", // Standardwert "Nein"
     '10ft consumables': "", '20ft consumables': "",
     'Zusatzkosten': "", 'Email Request': "",
-    'AGB Accepted': "Nein", // Standardwert "Nein"
-    'Service Description Accepted': "Nein", // Standardwert "Nein"
+    'AGB Accepted': "Ja", // Standardwert "Ja"
+    'Service Description Accepted': "Ja", // Standardwert "Ja"
     'Accepted By Name': "", 
     'Acceptance Timestamp': "" 
   } : requestData[originalIndex]; 
