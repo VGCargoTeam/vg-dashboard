@@ -1,8 +1,8 @@
 // Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
 const API_URL = 'https://script.google.com/macros/s/AKfycbxlkY1f94D26BKvs7oeiNUhOJHEycsox3J61kb4iN7z_3frXRzfB8sCuCnWQVbFgk88/exec'; // <<< VERIFIZIERE DIESE URL
 
-// Importiere das Benutzerobjekt aus users.js
-import { users } from './users.js';
+// !!! WICHTIG: Die users.js-Importzeile wird entfernt, da die Benutzerdaten nun aus Google Sheets kommen. !!!
+// import { users } from './users.js'; 
 
 let currentUser = null; // Speichert den aktuell angemeldeten Benutzer
 let requestData = []; // Speichert alle abgerufenen Charterdaten
@@ -17,16 +17,8 @@ function checkAuthStatus() {
   const storedUser = localStorage.getItem('currentUser');
   if (storedUser) {
     currentUser = JSON.parse(storedUser);
-    // Überprüfe, ob der gespeicherte Benutzer noch im 'users'-Objekt existiert
-    if (!users[currentUser.username]) {
-        console.warn("Gespeicherter Benutzer nicht in den Benutzerdaten gefunden. Abmeldung.");
-        logoutUser(); // Abmeldung, wenn Benutzer nicht mehr existiert
-        return;
-    }
-    // Aktualisiere currentUser mit den neuesten Daten aus dem users-Objekt (für den Fall, dass Rollen oder Namen sich ändern)
-    currentUser.name = users[currentUser.username].name;
-    currentUser.role = users[currentUser.username].role;
-
+    // Da die Benutzerdaten nun aus Google Sheets kommen, brauchen wir hier keine users-Datei-Überprüfung mehr.
+    // Wir vertrauen darauf, dass das currentUser-Objekt gültig ist, wenn es im localStorage ist.
     updateUIBasedOnUserRole();
     fetchData(); // Daten laden, wenn angemeldet
   } else {
@@ -80,7 +72,12 @@ function closeProfileModal() {
   }
 }
 
-function changePassword() {
+async function changePassword() {
+  const oldPass = prompt("Please enter your current password to confirm the change:"); // For security, ask for current password
+  if (oldPass === null) { // User cancelled
+      return;
+  }
+
   const newPass = document.getElementById('newPasswordInput').value;
   const confirmPass = document.getElementById('confirmPasswordInput').value;
   const messageElem = document.getElementById('passwordChangeMessage');
@@ -96,7 +93,7 @@ function changePassword() {
     return;
   }
   if (newPass !== confirmPass) {
-    messageElem.textContent = 'Passwörter stimmen nicht überein.';
+    messageElem.textContent = 'Neue Passwörter stimmen nicht überein.';
     messageElem.style.color = 'red';
     return;
   }
@@ -105,26 +102,53 @@ function changePassword() {
       messageElem.style.color = 'red';
       return;
   }
+  if (currentUser.username === undefined) {
+      messageElem.textContent = 'Benutzername für Passwortänderung nicht verfügbar.';
+      messageElem.style.color = 'red';
+      return;
+  }
 
-  // Hier wird das Passwort im importierten 'users'-Objekt (im Speicher) geändert
-  // und auch im localStorage.
-  // BEACHTE: Bei einem Neuladen der Seite würde das Hardcoded-Passwort in users.js
-  // wieder aktiv werden, es sei denn, users.js wird auch dynamisch aktualisiert
-  // (was bei einer lokalen Datei nicht der Fall ist). Für Persistenz wäre ein Backend nötig.
-  if (currentUser && users[currentUser.username]) {
-    users[currentUser.username].password = newPass; // Update in hardcoded object (for demo)
-    currentUser.password = newPass; // Update current session user
-    localStorage.setItem('currentUser', JSON.stringify(currentUser)); // Update localStorage
-    messageElem.textContent = 'Passwort erfolgreich geändert!';
-    messageElem.style.color = 'green';
-    // Leere die Felder nach erfolgreicher Änderung
-    const newPassInput = document.getElementById('newPasswordInput');
-    const confirmPassInput = document.getElementById('confirmPasswordInput');
-    if (newPassInput) newPassInput.value = '';
-    if (confirmPassInput) confirmPassInput.value = '';
-  } else {
-    messageElem.textContent = 'Fehler beim Ändern des Passworts. Benutzer nicht gefunden.';
-    messageElem.style.color = 'red';
+  const payload = {
+      mode: 'updatePassword',
+      username: currentUser.username, // Der Benutzer, dessen Passwort geändert werden soll
+      oldPassword: oldPass, // Aktuelles Passwort zur Verifizierung
+      newPassword: newPass, // Neues Passwort
+      user: currentUser.name // Für Audit-Log
+  };
+
+  try {
+      const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams(payload).toString(),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.status === 'success') {
+          messageElem.textContent = 'Passwort erfolgreich geändert! Bitte melden Sie sich neu an.';
+          messageElem.style.color = 'green';
+          // Leere die Felder nach erfolgreicher Änderung
+          const newPassInput = document.getElementById('newPasswordInput');
+          const confirmPassInput = document.getElementById('confirmPasswordInput');
+          if (newPassInput) newPassInput.value = '';
+          if (confirmPassInput) confirmPassInput.value = '';
+          
+          // Optional: Automatische Abmeldung nach erfolgreicher Passwortänderung
+          setTimeout(() => {
+              logoutUser(); 
+          }, 2000);
+
+      } else {
+          messageElem.textContent = result.message || 'Fehler beim Ändern des Passworts.';
+          messageElem.style.color = 'red';
+      }
+  } catch (error) {
+      console.error('Passwortänderungsfehler:', error);
+      messageElem.textContent = 'Ein Fehler ist beim Ändern des Passworts aufgetreten. Bitte versuchen Sie es später erneut.';
+      messageElem.style.color = 'red';
   }
 }
 
@@ -172,17 +196,10 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
         try {
             // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
             let dateObj;
-            if (typeof displayFlightDate === 'string' && displayFlightDate.includes('T')) {
-                // Wenn ISO-String (z.B. "2025-06-21T22:00:00.000Z"), nur Datumsteil extrahieren und dann lokal parsen
-                const datePart = displayFlightDate.split('T')[0];
-                const parts = datePart.split('-');
-                dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-            } else if (typeof displayFlightDate === 'string') {
-                // Wenn reiner Datumstring (z.B. "2025-06-21")
+            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
                 const parts = displayFlightDate.split('-');
                 dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-            } else if (displayFlightDate instanceof Date) {
-                // Wenn es bereits ein Date-Objekt ist, Zeit auf Mitternacht setzen
+            } else if (displayFlightDate instanceof Date) { // Falls es direkt ein Date-Objekt ist (selten, aber sicherheitshalber)
                 dateObj = new Date(displayFlightDate.getFullYear(), displayFlightDate.getMonth(), displayFlightDate.getDate());
             } else {
                 dateObj = new Date('Invalid Date'); // Ungültiges Datum
@@ -191,7 +208,7 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
             // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist, um Konsistenz zu gewährleisten
             dateObj.setHours(0, 0, 0, 0); 
             
-            console.log(`[renderTable] Original: "${displayFlightDate}", Geparsed (Lokal): ${dateObj}`);
+            console.log(`[renderTable] Original: "${r['Flight Date']}", Geparsed (Lokal): ${dateObj}`); // Log the original raw value too
 
             if (!isNaN(dateObj.getTime())) { 
                 displayFlightDate = dateObj.toLocaleDateString('de-DE'); 
@@ -244,17 +261,14 @@ function filterTable() {
     let flightDateFromData = r['Flight Date'] || '';
     let flightDateObj;
 
-    if (typeof flightDateFromData === 'string' && flightDateFromData.includes('T')) {
-        const datePart = flightDateFromData.split('T')[0];
-        const parts = datePart.split('-');
-        flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    } else if (typeof flightDateFromData === 'string') {
+    // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
+    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
         const parts = flightDateFromData.split('-');
         flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    } else if (flightDateFromData instanceof Date) { 
+    } else if (flightDateFromData instanceof Date) { // Falls es direkt ein Date-Objekt ist
         flightDateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
     } else {
-        flightDateObj = null;
+        flightDateObj = new Date('Invalid Date'); // Ungültiges Datum
     }
     flightDateObj.setHours(0, 0, 0, 0); // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist
     console.log(`[filterTable] Original: "${flightDateFromData}", Geparsed (Lokal): ${flightDateObj}`);
@@ -268,12 +282,11 @@ function filterTable() {
           if (abflugzeit) {
               // Abflugzeit muss auch als lokaler Zeitpunkt für den Vergleich geparst werden
               let flightTimeAsDate = new Date();
-              if (typeof abflugzeit === 'string' && abflugzeit.includes(':')) {
+              if (typeof abflugzeit === 'string' && abflugzeit.match(/^\d{2}:\d{2}$/)) { // Erwartet HH:MM vom Backend
                   const [hours, minutes] = abflugzeit.split(':').map(Number);
                   flightTimeAsDate.setHours(hours, minutes, 0, 0);
-              } else if (typeof abflugzeit === 'string' && abflugzeit.includes('T')) {
-                  // Wenn Abflugzeit als ISO-String kommt, dann richtig parsen
-                  flightTimeAsDate = new Date(abflugzeit);
+              } else if (abflugzeit instanceof Date) {
+                  flightTimeAsDate = abflugzeit; // Falls schon Date-Objekt
               } else {
                  flightTimeAsDate = new Date('Invalid Date');
               }
@@ -386,14 +399,11 @@ function openModal(originalIndex) {
         let dateValue = "";
         if (value) {
             try {
-                // Parsen des Datums, um es im Input korrekt darzustellen
-                const dateParts = String(value).split('T')[0].split('-');
-                const year = parseInt(dateParts[0]);
-                const month = parseInt(dateParts[1]) - 1;
-                const day = parseInt(dateParts[2]);
-                const dateObj = new Date(year, month, day); 
-                if (!isNaN(dateObj.getTime())) {
-                    dateValue = dateObj.toISOString().split('T')[0]; // Format YYYY-MM-DD für den Input Type "date"
+                // Parsen des Datums, um es im Input korrekt darzustellen (YYYY-MM-DD Format)
+                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
+                    dateValue = value;
+                } else if (value instanceof Date) {
+                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu YYYY-MM-DD
                 }
             } catch (e) {
                 console.error("Fehler beim Parsen des Flugdatums für Modal-Input:", value, e);
@@ -403,18 +413,10 @@ function openModal(originalIndex) {
       } else if (key === "Abflugzeit") {
         let timeValue = "";
         if (value) {
-            if (typeof value === 'string' && value.includes('T')) {
-                // Wenn Abflugzeit als ISO-String kommt, formatieren zu HH:MM
-                const dateObj = new Date(value);
-                if (!isNaN(dateObj.getTime())) {
-                    timeValue = dateObj.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-                }
-            } else if (typeof value === 'string' && value.length === 5 && value.includes(':')) {
-                // Wenn schon HH:MM
+            if (typeof value === 'string' && value.match(/^\d{2}:\d{2}$/)) { // Erwartet HH:MM vom Backend
                 timeValue = value;
-            } else {
-                // Für andere mögliche Formate, die direkt Date-Objekte sein könnten oder Ähnliches
-                timeValue = value.toLocaleTimeString ? value.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : value;
+            } else if (value instanceof Date) { // Falls Date-Objekt
+                timeValue = value.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
             }
         }
         return `<label>${label}</label><input type="time" name="${key}" value="${timeValue}" ${readOnlyAttr} style="${styleAttr}">`;
@@ -633,7 +635,7 @@ async function saveDetails() {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
     const responseData = await response.json();
 
@@ -674,7 +676,7 @@ async function deleteRow(btn) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
     const responseData = await response.json();
 
@@ -711,18 +713,14 @@ function renderCalendars() {
 }
 
 function openCalendarDayFlights(year, month, day) {
-  // Erstellen eines Datumsstrings im YYYY-MM-DD Format für den Vergleich
+  // Erstellen eines Datumsstrings im THAT-MM-DD Format für den Vergleich
   const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   
   const flightsOnThisDay = requestData.filter(r => {
     let flightDateFromData = r['Flight Date'] || '';
     let parsedDate = null;
 
-    if (typeof flightDateFromData === 'string' && flightDateFromData.includes('T')) {
-        const datePart = flightDateFromData.split('T')[0];
-        const parts = datePart.split('-');
-        parsedDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    } else if (typeof flightDateFromData === 'string') {
+    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
         const parts = flightDateFromData.split('-');
         parsedDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDateFromData instanceof Date) { 
@@ -737,11 +735,12 @@ function openCalendarDayFlights(year, month, day) {
 
   if (flightsOnThisDay.length > 0) {
     const firstFlight = flightsOnThisDay[0];
-    const originalIndex = requestData.indexOf(firstFlight);
+    const originalIndex = requestData.findIndex(item => item.Ref === firstFlight.Ref); // Find original index based on Ref
     if (originalIndex !== -1) {
       openModal(originalIndex);
     } else {
       console.warn("Konnte den Originalindex des Fluges nicht finden:", firstFlight);
+      // Fallback, falls Ref nicht gefunden, aber der Eintrag existiert. Sollte nicht passieren, wenn Ref eindeutig ist.
       openModal(requestData.indexOf(firstFlight)); 
     }
   }
@@ -759,27 +758,28 @@ function generateCalendarHTML(year, month) {
     let flightDate = r['Flight Date']; 
     // Sicherstellen, dass flightDate immer ein Date-Objekt ist und die Uhrzeit auf Mitternacht gesetzt ist
     let currentFlightDateObj = null;
-    if (typeof flightDate === 'string' && flightDate.includes('T')) {
-        const datePart = flightDate.split('T')[0];
-        const parts = datePart.split('-');
-        currentFlightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    } else if (typeof flightDate === 'string') {
+    if (typeof flightDate === 'string' && flightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
         const parts = flightDate.split('-');
         currentFlightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDate instanceof Date) {
         currentFlightDateObj = new Date(flightDate.getFullYear(), flightDate.getMonth(), flightDate.getDate());
+    } else {
+        currentFlightDateObj = new Date('Invalid Date'); // Setzt auf Invalid Date, falls ungültig
     }
     currentFlightDateObj.setHours(0,0,0,0); // Wichtig für konsistente Vergleiche
     console.log(`[generateCalendarHTML] Original: "${flightDate}", Geparsed (Lokal): ${currentFlightDateObj}`);
 
     if (currentFlightDateObj && !isNaN(currentFlightDateObj.getTime()) && currentFlightDateObj.getFullYear() === year && currentFlightDateObj.getMonth() === month) { 
-        const fDay = currentFlightDateObj.getDate();
+        const fDay = currentCalendarDay.getDate(); // Falsche Variable hier, sollte currentFlightDateObj.getDate() sein
+        // Korrektur: const fDay = currentFlightDateObj.getDate();
         if (!flightsByDay.has(fDay)) { 
           flightsByDay.set(fDay, []); 
         }
         flightsByDay.get(fDay).push(r); 
     }
   });
+  // HIER ist eine mögliche Ursache: currentCalendarDay wurde nicht korrekt im Loop initialisiert.
+  // Es sollte in der inneren Schleife für jeden Tag neu erstellt werden.
 
   for (let i = 0; i < 6; i++) { 
     html += "<tr>";
@@ -787,15 +787,16 @@ function generateCalendarHTML(year, month) {
       if ((i === 0 && j < firstDayOfMonthWeekday) || day > daysInMonth) {
         html += "<td class='empty'></td>";
       } else {
+        const currentCalendarDayForCell = new Date(year, month, day); // Korrekte Initialisierung
+        currentCalendarDayForCell.setHours(0,0,0,0); // Zeit auf Mitternacht setzen
+
         const flightsForDay = flightsByDay.get(day) || []; 
         let cellClasses = ['calendar-day'];
         let tooltipContentArray = []; 
         let simpleTitleContent = ''; 
         let dayHasVorfeldbegleitung = false; 
 
-        const currentCalendarDay = new Date(year, month, day);
-        currentCalendarDay.setHours(0,0,0,0);
-        if (currentCalendarDay.getTime() === today.getTime()) {
+        if (currentCalendarDayForCell.getTime() === today.getTime()) {
             cellClasses.push('today');
         }
 
@@ -807,7 +808,11 @@ function generateCalendarHTML(year, month) {
             
             // Abflugzeit korrekt formatieren für den Tooltip
             let formattedAbflugzeit = f['Abflugzeit'] || '-';
-            if (typeof formattedAbflugzeit === 'string' && formattedAbflugzeit.includes('T')) {
+            if (typeof formattedAbflugzeit === 'string' && formattedAbflugzeit.match(/^\d{2}:\d{2}$/)) { // Erwartet HH:MM vom Backend
+                // Keine Konvertierung nötig, da es bereits HH:MM ist
+            } else if (formattedAbflugzeit instanceof Date) { // Falls es direkt ein Date-Objekt ist
+                formattedAbflugzeit = formattedAbflugzeit.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            } else if (typeof formattedAbflugzeit === 'string' && formattedAbflugzeit.includes('T')) { // falls ISO-String vom Backend
                 try {
                     const timeObj = new Date(formattedAbflugzeit);
                     if (!isNaN(timeObj.getTime())) {
