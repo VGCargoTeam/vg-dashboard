@@ -170,11 +170,27 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
     let displayFlightDate = r['Flight Date'] || "-";
     if (displayFlightDate !== "-") {
         try {
-            const dateParts = displayFlightDate.split('T')[0].split('-'); 
-            const year = parseInt(dateParts[0]);
-            const month = parseInt(dateParts[1]) - 1; 
-            const day = parseInt(dateParts[2]);
-            const dateObj = new Date(year, month, day); // Erstellt Date-Objekt in lokaler Zeitzone
+            // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
+            let dateObj;
+            if (typeof displayFlightDate === 'string' && displayFlightDate.includes('T')) {
+                // Wenn ISO-String (z.B. "2025-06-21T22:00:00.000Z"), nur Datumsteil extrahieren und dann lokal parsen
+                const datePart = displayFlightDate.split('T')[0];
+                const parts = datePart.split('-');
+                dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            } else if (typeof displayFlightDate === 'string') {
+                // Wenn reiner Datumstring (z.B. "2025-06-21")
+                const parts = displayFlightDate.split('-');
+                dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            } else if (displayFlightDate instanceof Date) {
+                // Wenn es bereits ein Date-Objekt ist, Zeit auf Mitternacht setzen
+                dateObj = new Date(displayFlightDate.getFullYear(), displayFlightDate.getMonth(), displayFlightDate.getDate());
+            } else {
+                dateObj = new Date('Invalid Date'); // Ungültiges Datum
+            }
+
+            // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist, um Konsistenz zu gewährleisten
+            dateObj.setHours(0, 0, 0, 0); 
+            
             console.log(`[renderTable] Original: "${displayFlightDate}", Geparsed (Lokal): ${dateObj}`);
 
             if (!isNaN(dateObj.getTime())) { 
@@ -228,17 +244,19 @@ function filterTable() {
     let flightDateFromData = r['Flight Date'] || '';
     let flightDateObj;
 
-    if (typeof flightDateFromData === 'string') {
-        const dateParts = flightDateFromData.split('T')[0].split('-');
-        const year = parseInt(dateParts[0]);
-        const month = parseInt(dateParts[1]) - 1;
-        const day = parseInt(dateParts[2]);
-        flightDateObj = new Date(year, month, day); // Erstellt Date-Objekt in lokaler Zeitzone
+    if (typeof flightDateFromData === 'string' && flightDateFromData.includes('T')) {
+        const datePart = flightDateFromData.split('T')[0];
+        const parts = datePart.split('-');
+        flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    } else if (typeof flightDateFromData === 'string') {
+        const parts = flightDateFromData.split('-');
+        flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDateFromData instanceof Date) { 
         flightDateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
     } else {
         flightDateObj = null;
     }
+    flightDateObj.setHours(0, 0, 0, 0); // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist
     console.log(`[filterTable] Original: "${flightDateFromData}", Geparsed (Lokal): ${flightDateObj}`);
 
 
@@ -248,15 +266,23 @@ function filterTable() {
       } else if (flightDateObj.getTime() === today.getTime()) {
           const abflugzeit = r['Abflugzeit']; 
           if (abflugzeit) {
-              const [hours, minutes] = abflugzeit.split(':').map(Number);
-              const flightTime = new Date(); 
-              flightTime.setHours(hours, minutes, 0, 0);
-
+              // Abflugzeit muss auch als lokaler Zeitpunkt für den Vergleich geparst werden
+              let flightTimeAsDate = new Date();
+              if (typeof abflugzeit === 'string' && abflugzeit.includes(':')) {
+                  const [hours, minutes] = abflugzeit.split(':').map(Number);
+                  flightTimeAsDate.setHours(hours, minutes, 0, 0);
+              } else if (typeof abflugzeit === 'string' && abflugzeit.includes('T')) {
+                  // Wenn Abflugzeit als ISO-String kommt, dann richtig parsen
+                  flightTimeAsDate = new Date(abflugzeit);
+              } else {
+                 flightTimeAsDate = new Date('Invalid Date');
+              }
+              
               const now = new Date(); 
               now.setSeconds(0, 0); 
               now.setMilliseconds(0); 
 
-              if (flightTime <= now) { 
+              if (!isNaN(flightTimeAsDate.getTime()) && flightTimeAsDate <= now) { 
                   isPastOrTodayAndGoneFlight = true;
               }
           }
@@ -266,11 +292,13 @@ function filterTable() {
       if (fromDateInput) {
           const fromDateParts = fromDateInput.split('-');
           const fromDateObj = new Date(parseInt(fromDateParts[0]), parseInt(fromDateParts[1]) - 1, parseInt(fromDateParts[2]));
+          fromDateObj.setHours(0,0,0,0); // Auch Filterdatum auf Mitternacht setzen
           if (flightDateObj < fromDateObj) matchesDateRange = false;
       }
       if (toDateInput) {
           const toDateParts = toDateInput.split('-');
           const toDateObj = new Date(parseInt(toDateParts[0]), parseInt(toDateParts[1]) - 1, parseInt(toDateParts[2]));
+          toDateObj.setHours(0,0,0,0); // Auch Filterdatum auf Mitternacht setzen
           if (flightDateObj > toDateObj) matchesDateRange = false;
       }
     } else {
@@ -358,29 +386,35 @@ function openModal(originalIndex) {
         let dateValue = "";
         if (value) {
             try {
+                // Parsen des Datums, um es im Input korrekt darzustellen
                 const dateParts = String(value).split('T')[0].split('-');
                 const year = parseInt(dateParts[0]);
                 const month = parseInt(dateParts[1]) - 1;
                 const day = parseInt(dateParts[2]);
                 const dateObj = new Date(year, month, day); 
                 if (!isNaN(dateObj.getTime())) {
-                    dateValue = dateObj.toISOString().split('T')[0];
+                    dateValue = dateObj.toISOString().split('T')[0]; // Format YYYY-MM-DD für den Input Type "date"
                 }
             } catch (e) {
-                console.error("Fehler beim Parsen des Flugdatums:", value, e);
+                console.error("Fehler beim Parsen des Flugdatums für Modal-Input:", value, e);
             }
         }
         return `<label>${label}</label><input type="date" name="${key}" value="${dateValue}" ${readOnlyAttr} style="${styleAttr}">`;
       } else if (key === "Abflugzeit") {
         let timeValue = "";
         if (value) {
-            if (value instanceof Date) { 
-                timeValue = value.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-            } else if (typeof value === 'string' && value.includes('T')) {
+            if (typeof value === 'string' && value.includes('T')) {
+                // Wenn Abflugzeit als ISO-String kommt, formatieren zu HH:MM
                 const dateObj = new Date(value);
-                timeValue = dateObj.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                if (!isNaN(dateObj.getTime())) {
+                    timeValue = dateObj.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                }
             } else if (typeof value === 'string' && value.length === 5 && value.includes(':')) {
+                // Wenn schon HH:MM
                 timeValue = value;
+            } else {
+                // Für andere mögliche Formate, die direkt Date-Objekte sein könnten oder Ähnliches
+                timeValue = value.toLocaleTimeString ? value.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : value;
             }
         }
         return `<label>${label}</label><input type="time" name="${key}" value="${timeValue}" ${readOnlyAttr} style="${styleAttr}">`;
@@ -440,13 +474,12 @@ function openModal(originalIndex) {
   
   // Preisdetails nur für Admins anzeigen
   if (currentUser && currentUser.role === 'admin') { 
-    // Erstellen des HTML für Preisdetails, wobei Zusatzkosten und Email Request separat behandelt werden
+    // Erstellen des HTML für Preisdetails
     let priceDetailsHTML = priceFields.map(({ label, key, type }) => {
         let value = r[key] || "";
         if (key === "Zusatzkosten") {
+            // Sicherstellen, dass die textarea für Zusatzkosten korrekt gerendert wird
             return `<label>${label}:</label><textarea name="${key}" placeholder="Labeln, Fotos" style="height:80px">${value}</textarea>`;
-        } else if (key === "Email Request") { // Email Request hier nicht rendern, da schon in flightFields
-            return '';
         } else {
             const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
             return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" />`;
@@ -534,7 +567,7 @@ async function deleteRowFromModal(ref) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
     const responseData = await response.json(); 
 
@@ -683,13 +716,23 @@ function openCalendarDayFlights(year, month, day) {
   
   const flightsOnThisDay = requestData.filter(r => {
     let flightDateFromData = r['Flight Date'] || '';
-    // Sicherstellen, dass das Datum aus den Daten ebenfalls im YYYY-MM-DD Format ist
+    let parsedDate = null;
+
     if (typeof flightDateFromData === 'string' && flightDateFromData.includes('T')) {
-        flightDateFromData = flightDateFromData.split('T')[0];
+        const datePart = flightDateFromData.split('T')[0];
+        const parts = datePart.split('-');
+        parsedDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    } else if (typeof flightDateFromData === 'string') {
+        const parts = flightDateFromData.split('-');
+        parsedDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDateFromData instanceof Date) { 
-        flightDateFromData = flightDateFromData.toISOString().split('T')[0];
+        parsedDate = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
     }
-    return flightDateFromData === dateStr;
+
+    if (parsedDate && !isNaN(parsedDate.getTime())) {
+        return parsedDate.toISOString().split('T')[0] === dateStr;
+    }
+    return false;
   });
 
   if (flightsOnThisDay.length > 0) {
@@ -716,15 +759,17 @@ function generateCalendarHTML(year, month) {
     let flightDate = r['Flight Date']; 
     // Sicherstellen, dass flightDate immer ein Date-Objekt ist und die Uhrzeit auf Mitternacht gesetzt ist
     let currentFlightDateObj = null;
-    if (typeof flightDate === 'string') {
-        const dateParts = flightDate.split('T')[0].split('-');
-        const y = parseInt(dateParts[0]);
-        const m = parseInt(dateParts[1]) - 1;
-        const d = parseInt(dateParts[2]);
-        currentFlightDateObj = new Date(y, m, d); // Erstellt Date-Objekt in lokaler Zeitzone
+    if (typeof flightDate === 'string' && flightDate.includes('T')) {
+        const datePart = flightDate.split('T')[0];
+        const parts = datePart.split('-');
+        currentFlightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    } else if (typeof flightDate === 'string') {
+        const parts = flightDate.split('-');
+        currentFlightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDate instanceof Date) {
         currentFlightDateObj = new Date(flightDate.getFullYear(), flightDate.getMonth(), flightDate.getDate());
     }
+    currentFlightDateObj.setHours(0,0,0,0); // Wichtig für konsistente Vergleiche
     console.log(`[generateCalendarHTML] Original: "${flightDate}", Geparsed (Lokal): ${currentFlightDateObj}`);
 
     if (currentFlightDateObj && !isNaN(currentFlightDateObj.getTime()) && currentFlightDateObj.getFullYear() === year && currentFlightDateObj.getMonth() === month) { 
@@ -759,11 +804,26 @@ function generateCalendarHTML(year, month) {
           
           flightsForDay.forEach(f => {
             const tonnageValue = parseFloat(String(f.Tonnage).replace(',', '.') || "0") || 0;
+            
+            // Abflugzeit korrekt formatieren für den Tooltip
+            let formattedAbflugzeit = f['Abflugzeit'] || '-';
+            if (typeof formattedAbflugzeit === 'string' && formattedAbflugzeit.includes('T')) {
+                try {
+                    const timeObj = new Date(formattedAbflugzeit);
+                    if (!isNaN(timeObj.getTime())) {
+                        formattedAbflugzeit = timeObj.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                    }
+                } catch (e) {
+                    console.error("Fehler beim Formatieren der Abflugzeit für Tooltip:", formattedAbflugzeit, e);
+                }
+            }
+
+
             tooltipContentArray.push(
               `Ref: ${f.Ref || '-'}` +
               `\nAirline: ${f.Airline || '-'}` +
               `\nFlugnummer: ${f.Flugnummer || '-'}` + 
-              `\nAbflugzeit: ${f['Abflugzeit'] || '-'}` + // Abflugzeit direkt übernehmen
+              `\nAbflugzeit: ${formattedAbflugzeit}` + 
               `\nTonnage: ${tonnageValue.toLocaleString('de-DE')} kg` 
             );
             if (f['Vorfeldbegleitung'] && String(f['Vorfeldbegleitung']).toLowerCase() === 'ja') {
