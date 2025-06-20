@@ -3,15 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <title>Charter Dashboard</title>
-  <script src="script.js" defer></script>
+  <!-- Google Fonts - Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            inter: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
   <style>
+    /* Custom styles for specific overrides or complex designs not easily done with Tailwind */
     body {
       margin: 0;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Segoe UI', sans-serif; /* Behält deine aktuelle Schriftart */
       background: url('https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg') no-repeat center center fixed;
       background-size: cover;
-      display: flex;
-      min-height: 100vh;
+      background-position: center;
+      background-attachment: fixed;
     }
     .main {
       flex: 1;
@@ -145,11 +160,17 @@
       border-radius: 6px;
       font-size: 13px;
     }
-    .logo {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      z-index: 100; 
+    .logo-container { /* NEU: Für das Logo */
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 10; /* Damit es über anderen Elementen liegt */
+    }
+    .logo-container img {
+        height: 50px; /* Oder die gewünschte Größe */
+        /* Optional: Schatten, Border-Radius für das Logo selbst */
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     
     .checkbox-label {
@@ -175,7 +196,7 @@
       vertical-align: top;
       font-size: 14px;
       position: relative; 
-      overflow: visible; 
+      overflow: visible; /* Wichtig für Tooltips/Icons */
     }
     .calendar-day {
       cursor: pointer;
@@ -204,6 +225,10 @@
       font-size: 1.2em;
       color: #007BFF;
     }
+    .calendar-day.today-border {
+    border: 2px solid red; /* Roter Rand für den heutigen Tag */
+    box-sizing: border-box; /* Sicherstellen, dass der Rand die Größe nicht verändert */
+    }
 
     /* TOOLTIP-STILE */
     [data-tooltip] {
@@ -215,35 +240,34 @@
       content: attr(data-tooltip);
       position: absolute;
       bottom: calc(100% + 5px); 
-      left: 50%;
-      transform: translateX(-50%); 
+      left: 50%; /* Zentriert über dem Element */
+      transform: translateX(-50%); /* Korrigiert die Zentrierung */
       
       background-color: rgba(0, 0, 0, 0.9); 
       color: #fff;
       padding: 8px 12px;
       border-radius: 6px;
-      white-space: pre-wrap; 
+      white-space: pre-wrap; /* Zeilenumbrüche im Tooltip erlauben */
       z-index: 1000; 
       min-width: 180px; 
-      max-width: 280px; 
+      max-width: 300px; /* Breitere Tooltips erlauben */
       text-align: left;
       box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-      pointer-events: none; 
+      pointer-events: none; /* Tooltip soll Klicks nicht blockieren */
       opacity: 0; 
       visibility: hidden; 
       transition: opacity 0.2s, visibility 0.2s; 
 
-      left: max(10px, 50% - 140px); 
-      right: auto; 
-      transform: none; 
+      /* Zusätzliche Anpassung, um sicherzustellen, dass es nicht den Bildschirmrand überlappt */
+      /* Max-width und transform: translateX(-50%) sollten die meisten Fälle abdecken */
     }
 
     [data-tooltip]:hover::before {
       content: '';
       position: absolute;
-      bottom: 100%; 
+      bottom: 100%; /* Pfeil über dem Tooltip-Inhalt */
       left: 50%;
-      transform: translateX(-50%) translateY(5px); 
+      transform: translateX(-50%) translateY(5px); /* Positioniert den Pfeil */
       border-width: 5px;
       border-style: solid;
       border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent; 
@@ -254,6 +278,7 @@
       transition: opacity 0.2s, visibility 0.2s;
     }
 
+    /* Tooltip anzeigen bei Hover */
     [data-tooltip]:hover::after,
     [data-tooltip]:hover::before {
       opacity: 1;
@@ -284,14 +309,30 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
+    /* Stil für Referenzlinks in der Tabelle */
+    #dataTable tbody td a {
+        color: #007BFF; /* Blau */
+        text-decoration: underline; /* Unterstrichen */
+        font-weight: bold;
+        cursor: pointer;
+    }
+    #dataTable tbody td a:hover {
+        color: #0056b3; /* Dunkleres Blau beim Hover */
+    }
   </style>
 </head>
-<body>
-  <div class="logo">
-    <img src="VG_Cargo_Logo_small.png" alt="VG Cargo Logo" style="height:50px;">
-  </div>
+<body class="font-inter flex flex-col lg:flex-row min-h-screen text-gray-800">
   <div class="main">
-    <h1>Charter Dashboard</h1>
+    <div class="logo-container"> <!-- NEU: Logo-Container -->
+        <img src="VG_Cargo_Logo_small.png" alt="VG Cargo Logo"> <!-- Dein Logo-Bild -->
+    </div>
+
+    <div class="header-area" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h1 style="flex-grow: 1; text-align: center; margin-left: 70px; font-size: 2.5rem;">Charter Dashboard</h1> <!-- Überschrift vergrößert -->
+      <button onclick="openProfileModal()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+        Profil
+      </button>
+    </div>
 
     <button onclick="createNewRequest()" style="margin: 10px 0 20px; padding: 10px 16px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
       Charter Anfrage erstellen
@@ -300,11 +341,17 @@
     <div style="text-align: center; font-size: 16px; color: #e63244;">
       <span id="currentDate">Date: --</span> | <span id="clock">Time: --:--:--</span>
     </div>
-    <div style="margin-top: 10px;">
+    <div style="margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
       <label>Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
       <label>Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
+      <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" /> <!-- NEU: Flugnummer Suchfeld -->
       <label>From:</label> <input type="date" id="fromDate" onchange="filterTable()" />
       <label>To:</label> <input type="date" id="toDate" onchange="filterTable()" />
+      <!-- Moderne Archiv-Checkbox -->
+      <div class="inline-flex items-center ml-4">
+          <label for="archiveCheckbox" class="font-medium text-gray-700 mr-2 cursor-pointer">Archiv anzeigen:</label>
+          <input type="checkbox" id="archiveCheckbox" class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer border-gray-300 shadow-sm">
+      </div>
     </div>
     <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
     <table id="dataTable"><thead><tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage</th><th>Action</th></tr></thead><tbody></tbody></table>
@@ -328,6 +375,28 @@
       </div>
     </div>
 
+    <!-- NEU: Profil Modal -->
+    <div class="modal" id="profileModal">
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeProfileModal()">✖</span>
+        <h3 style="width:100%; text-align: center;">Profilverwaltung</h3>
+        <p>Angemeldet als: <span id="loggedInUsername"></span> (<span id="loggedInUserRole"></span>)</p>
+        <div style="width:100%; margin-top: 20px;">
+          <label>Neues Passwort:</label>
+          <input type="password" id="newPasswordInput" style="width: calc(100% - 12px);">
+          <label>Passwort bestätigen:</label>
+          <input type="password" id="confirmPasswordInput" style="width: calc(100% - 12px);">
+          <button onclick="changePassword()" style="width: 100%; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 6px; margin-top: 15px; cursor: pointer;">
+            Passwort ändern
+          </button>
+          <p id="passwordChangeMessage" style="color: red; margin-top: 10px;"></p>
+        </div>
+        <button onclick="logoutUser()" style="width: 100%; padding: 10px; background-color: #dc3545; color: white; border: none; border-radius: 6px; margin-top: 20px; cursor: pointer;">
+          Abmelden
+        </button>
+      </div>
+    </div>
+
   </div>
   <div class="calendar">
     <div class="nav">
@@ -336,5 +405,7 @@
     </div>
     <div id="calendarArea" class="calendar-wrapper"></div>
   </div>
+  <!-- WICHTIGE KORREKTUR: script.js hierher verschoben und 'defer' entfernt -->
+  <script src="script.js" type="module"></script>
 </body>
 </html>
