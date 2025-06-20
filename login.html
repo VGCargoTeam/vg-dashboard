@@ -47,7 +47,7 @@
         }
         input[type="text"],
         input[type="password"] {
-            width: calc(100% - 20px);
+            width: calc(100% - 24px); /* Account for padding */
             padding: 12px;
             border: 1px solid #ccc;
             border-radius: 6px;
@@ -62,7 +62,7 @@
             box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
             outline: none;
         }
-        button {
+        button[type="submit"] {
             width: 100%;
             padding: 15px;
             background-color: #007bff;
@@ -75,7 +75,7 @@
             transition: background-color 0.3s ease, transform 0.2s ease;
             box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
         }
-        button:hover {
+        button[type="submit"]:hover {
             background-color: #0056b3;
             transform: translateY(-2px);
         }
@@ -85,43 +85,34 @@
             border-radius: 6px;
             font-weight: 600;
             text-align: center;
-            color: #721c24;
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
             display: none;
-        }
-        .logo {
-            margin-bottom: 20px;
-        }
-        .logo img {
-            height: 80px; /* Adjust size as needed */
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <div class="logo">
-            <img src="VG_Cargo_Logo_small.png" alt="VG Cargo Logo">
-        </div>
-        <h2>Dashboard Login</h2>
+        <h2>Login</h2>
         <form id="loginForm">
             <div class="form-group">
-                <label for="username">Benutzername:</label>
-                <input type="text" id="username" required>
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
             </div>
             <div class="form-group">
-                <label for="password">Passwort:</label>
-                <input type="password" id="password" required>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
             </div>
-            <button type="submit">Anmelden</button>
+            <button type="submit">Login</button>
             <div id="loginMessage" class="message"></div>
         </form>
     </div>
 
-    <script type="module">
-        // Importiere das users-Objekt aus users.js
-        // KORREKTUR: Der Dateiname wurde von 'users.js' in 'users.js' geändert
-        import { users } from './users.js'; 
+    <script>
+        // Setze die API_URL auf die URL deines bereitgestellten Google Apps Scripts
+        // BITTE HIER DEINE AKTUELLE APPS SCRIPT URL EINFÜGEN!
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxlkY1f94D26BKvs7oeiNUhOJHEycsox3J61kb4iN7z_3frXRzfB8sCuCnWQVbFgk88/exec'; 
 
         const loginForm = document.getElementById('loginForm');
         const usernameInput = document.getElementById('username');
@@ -129,33 +120,57 @@
         const loginMessage = document.getElementById('loginMessage');
 
         // Umleitung, wenn der Benutzer bereits angemeldet ist
+        // Prüft, ob ein 'currentUser' Objekt im localStorage existiert
         if (localStorage.getItem('currentUser')) {
             window.location.href = 'Dashboard.html';
         }
 
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const username = usernameInput.value;
-            const password = passwordInput.value;
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
 
-            // Finde den Benutzer im importierten users-Objekt
-            const userEntry = users[username]; // Zugriff auf das spezifische Benutzerobjekt
-
-            if (userEntry && userEntry.password === password) {
-                // Speichere das vollständige Benutzerobjekt (mit Name und Rolle)
-                localStorage.setItem('currentUser', JSON.stringify({
-                    username: username,
-                    name: userEntry.name,
-                    role: userEntry.role
-                }));
-                window.location.href = 'Dashboard.html'; // Weiterleitung zum Dashboard
-            } else {
-                loginMessage.textContent = 'Ungültiger Benutzername oder Passwort.';
+            if (!username || !password) {
+                loginMessage.textContent = 'Please enter both username and password.';
                 loginMessage.style.display = 'block';
-                loginMessage.style.color = 'red'; 
-                loginMessage.style.backgroundColor = '#f8d7da'; 
-                loginMessage.style.borderColor = '#f5c6cb'; 
+                return;
+            }
+
+            // Anfrage an Google Apps Script für Authentifizierung senden
+            const payload = {
+                mode: 'authenticateUser',
+                username: username,
+                password: password
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(payload).toString(),
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.status === 'success' && result.user) {
+                    // Speichere das vollständige Benutzerobjekt (ohne Passwort!)
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        username: result.user.username,
+                        name: result.user.name,
+                        role: result.user.role
+                    }));
+                    window.location.href = 'Dashboard.html'; // Weiterleitung zum Dashboard
+                } else {
+                    loginMessage.textContent = result.message || 'Login failed! Please check your credentials.';
+                    loginMessage.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Login Error:', error);
+                loginMessage.textContent = 'An error occurred during login. Please try again later.';
+                loginMessage.style.display = 'block';
             }
         });
     </script>
