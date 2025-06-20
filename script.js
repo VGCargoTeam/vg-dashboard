@@ -197,7 +197,7 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
         try {
             // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
             let dateObj;
-            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartetレンダー-MM-DD vom Backend
+            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
                 const parts = displayFlightDate.split('-');
                 dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
             } else if (displayFlightDate instanceof Date) { // Falls es direkt ein Date-Objekt ist (selten, aber sicherheitshalber)
@@ -263,7 +263,7 @@ function filterTable() {
     let flightDateObj;
 
     // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
-    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartetレンダー-MM-DD vom Backend
+    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
         const parts = flightDateFromData.split('-');
         flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDateFromData instanceof Date) { // Falls es direkt ein Date-Objekt ist
@@ -401,10 +401,10 @@ function openModal(originalIndex) {
         if (value) {
             try {
                 // Parsen des Datums, um es im Input korrekt darzustellen (YYYY-MM-DD Format)
-                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartetレンダー-MM-DD vom Backend
+                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
                     dateValue = value;
                 } else if (value instanceof Date) {
-                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zuレンダー-MM-DD
+                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu YYYY-MM-DD
                 }
             } catch (e) {
                 console.error("Fehler beim Parsen des Flugdatums für Modal-Input:", value, e);
@@ -628,6 +628,7 @@ async function saveDetails() {
   data.mode = "write"; 
   data.user = currentUser.name; 
 
+  console.log('Payload for saving:', data); // Hinzugefügter Log
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
@@ -677,7 +678,7 @@ async function deleteRow(btn) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
     const responseData = await response.json();
 
@@ -714,36 +715,44 @@ function renderCalendars() {
 }
 
 function openCalendarDayFlights(year, month, day) {
-  // Erstellen eines Datumsstrings im THAT-MM-DD Format für den Vergleich
   const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  console.log(`Clicked on calendar day: ${dateStr}`); // Hinzugefügter Log
   
   const flightsOnThisDay = requestData.filter(r => {
     let flightDateFromData = r['Flight Date'] || '';
     let parsedDate = null;
 
-    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartetレンダー-MM-DD vom Backend
+    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
         const parts = flightDateFromData.split('-');
         parsedDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDateFromData instanceof Date) { 
         parsedDate = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
+    } else {
+        parsedDate = new Date('Invalid Date'); // Ungültiges Datum
     }
-
-    if (parsedDate && !isNaN(parsedDate.getTime())) {
-        return parsedDate.toISOString().split('T')[0] === dateStr;
-    }
-    return false;
+    parsedDate.setHours(0,0,0,0); // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist
+    
+    // Debugging date comparison
+    console.log(`  Comparing flight date "${flightDateFromData}" (parsed: ${parsedDate}) with clicked date "${dateStr}"`); // Hinzugefügter Log
+    return parsedDate && !isNaN(parsedDate.getTime()) && parsedDate.toISOString().split('T')[0] === dateStr;
   });
+
+  console.log(`Flights found for ${dateStr}:`, flightsOnThisDay); // Hinzugefügter Log
 
   if (flightsOnThisDay.length > 0) {
     const firstFlight = flightsOnThisDay[0];
-    const originalIndex = requestData.findIndex(item => item.Ref === firstFlight.Ref); // Find original index based on Ref
+    const originalIndex = requestData.findIndex(item => item.Ref === firstFlight.Ref); 
+    console.log(`First flight Ref: ${firstFlight.Ref}, Original Index: ${originalIndex}`); // Hinzugefügter Log
+
     if (originalIndex !== -1) {
       openModal(originalIndex);
     } else {
       console.warn("Konnte den Originalindex des Fluges nicht finden:", firstFlight);
       // Fallback, falls Ref nicht gefunden, aber der Eintrag existiert. Sollte nicht passieren, wenn Ref eindeutig ist.
-      openModal(requestData.indexOf(firstFlight)); 
+      // openModal(requestData.indexOf(firstFlight)); 
     }
+  } else {
+      console.log("No flights found for this day."); // Hinzugefügter Log
   }
 }
 
@@ -759,7 +768,7 @@ function generateCalendarHTML(year, month) {
     let flightDate = r['Flight Date']; 
     // Sicherstellen, dass flightDate immer ein Date-Objekt ist und die Uhrzeit auf Mitternacht gesetzt ist
     let currentFlightDateObj = null;
-    if (typeof flightDate === 'string' && flightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartetレンダー-MM-DD vom Backend
+    if (typeof flightDate === 'string' && flightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
         const parts = flightDate.split('-');
         currentFlightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDate instanceof Date) {
