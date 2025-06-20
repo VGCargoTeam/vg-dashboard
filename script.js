@@ -87,7 +87,7 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
     // WICHTIG: originalIndex muss auf das ungefilterte requestData zugreifen
     const originalIndex = requestData.findIndex(item => item.Ref === r.Ref); 
 
-    // Datum für die Anzeige in der Tabelle formatieren (Stellt sicher, dass es Überblick-MM-DD ist)
+    // Datum für die Anzeige in der Tabelle formatieren (Stellt sicher, dass es YYYY-MM-DD ist)
     let displayFlightDate = r['Flight Date'] || "-";
     if (displayFlightDate !== "-") {
         if (String(displayFlightDate).includes('T')) {
@@ -127,8 +127,8 @@ function filterTable() {
   const airlineSearch = document.getElementById("airlineSearch").value.toLowerCase();
   const flightNumberSearchInput = document.getElementById("flightNumberSearch");
   const flightNumberSearch = flightNumberSearchInput ? flightNumberSearchInput.value.toLowerCase() : '';
-  const fromDateInput = document.getElementById("fromDate").value; // String Überblick-MM-DD
-  const toDateInput = document.getElementById("toDate").value;     // String Überblick-MM-DD
+  const fromDateInput = document.getElementById("fromDate").value; // String YYYY-MM-DD
+  const toDateInput = document.getElementById("toDate").value;     // String YYYY-MM-DD
 
   const showArchive = document.getElementById("archiveCheckbox") ? document.getElementById("archiveCheckbox").checked : false; // Archiv-Checkbox, falls vorhanden
 
@@ -228,7 +228,7 @@ function openModal(originalIndex) {
       
       // Felder, die IMMER schreibgeschützt sind
       const isAlwaysReadOnlyField = [
-          "Ref", "Created At", "Acceptance Timestamp", "Accepted By Name"
+          "Ref", "Created At", "Acceptance Timestamp"
       ].includes(key);
 
       let readOnlyAttr = '';
@@ -237,7 +237,7 @@ function openModal(originalIndex) {
       if (isAlwaysReadOnlyField) {
           readOnlyAttr = 'readonly';
           styleAttr = 'background-color:#eee; cursor: not-allowed;';
-      } else if (!isAdmin && (key === "Email Request" || ['Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables', 'Zusatzkosten'].includes(key))) {
+      } else if (!isAdmin && (key === "Email Request" || ['Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables', 'Zusatzkosten', 'Accepted By Name'].includes(key))) {
           // Felder, die für Nicht-Admins schreibgeschützt sind (oder gar nicht erst angezeigt werden)
           readOnlyAttr = 'readonly';
           styleAttr = 'background-color:#eee; cursor: not-allowed;';
@@ -245,11 +245,11 @@ function openModal(originalIndex) {
 
 
       if (key === "Flight Date") {
-        // Stellt sicher, dass das Datum im Überblick-MM-DD Format ist
+        // Stellt sicher, dass das Datum im YYYY-MM-DD Format ist
         if (String(value).includes('T')) {
             value = String(value).split('T')[0];
         } else if (!String(value).match(/^\d{4}-\d{2}-\d{2}$/)) {
-            // Wenn es kein ISO- oder Überblick-MM-DD-Format ist, versuchen Sie zu parsen
+            // Wenn es kein ISO- oder YYYY-MM-DD-Format ist, versuchen Sie zu parsen
             try {
                 const parsedDate = new Date(value);
                 if (!isNaN(parsedDate.getTime())) {
@@ -272,14 +272,15 @@ function openModal(originalIndex) {
         }
         return `<label>${label}:</label><input type="time" name="${key}" value="${value}" ${readOnlyAttr} style="${styleAttr}">`;
       } else if (key === "AGB Accepted" || key === "Service Description Accepted") { 
-          // Immer einen grünen Haken anzeigen, da der Kunde die AGB akzeptieren MUSS, um eine Anfrage zu senden.
-          const icon = '&#10004;'; // Grüner Haken
-          const color = 'green';
-          return `<label>${label}: <span style="color: ${color}; font-size: 1.2em; font-weight: bold;">${icon}</span></label>`;
+          // Diese Felder müssen als Checkboxen gerendert werden, um ihren Zustand erfassen zu können
+          const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
+          // Auch für Viewer können sie schreibgeschützt sein, aber weiterhin als Checkbox
+          const checkboxReadOnlyAttr = !isAdmin ? 'disabled style="background-color:#eee; cursor: not-allowed;"' : '';
+          return `<label><input type="checkbox" name="${key}" ${checked} ${checkboxReadOnlyAttr}> ${label}</label>`;
       } else if (key === "Vorfeldbegleitung" && type === "checkbox") { 
         const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
         return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}"> ${label}</label>`;
-      } else if (['Tonnage', 'Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables'].includes(key) || key === "Zusatzkosten" || key === "Email Request") {
+      } else if (['Tonnage', 'Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables'].includes(key) || key === "Zusatzkosten" || key === "Email Request" || key === "Accepted By Name") {
           // Behalte den Wert genau so bei, wie er aus den Daten kommt (als String)
           if (type === "textarea") {
               return `<label>${label}:</label><textarea name="${key}" style="height:80px" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
@@ -298,8 +299,8 @@ function openModal(originalIndex) {
     { label: "Tax Number", key: "Tax Number" },
     { label: "Contact Name Invoicing", key: "Contact Name Invoicing" },
     { label: "Contact E-Mail Invoicing", key: "Contact E-Mail Invoicing" },
-    { label: "AGB Accepted", key: "AGB Accepted" }, 
-    { label: "Service Description Accepted", key: "Service Description Accepted" }, 
+    { label: "AGB Accepted", key: "AGB Accepted", type: "checkbox" }, 
+    { label: "Service Description Accepted", key: "Service Description Accepted", type: "checkbox" }, 
     { label: "Accepted By Name", key: "Accepted By Name" }, 
     { label: "Acceptance Timestamp", key: "Acceptance Timestamp" }
   ];
@@ -397,7 +398,7 @@ async function deleteRowFromModal(ref) {
   const data = {
     Ref: ref,
     mode: "delete",
-    user: currentUser.name 
+    user: currentLoggedInUser 
   };
 
   try {
@@ -462,9 +463,38 @@ async function saveDetails() {
     }
   });
 
+  // Logik für "Accepted By Name" und "Acceptance Timestamp"
+  const agbAcceptedInput = document.querySelector("#modalBody input[name='AGB Accepted']");
+  const serviceAcceptedInput = document.querySelector("#modalBody input[name='Service Description Accepted']");
+  
+  // Hole den Wert von "Accepted By Name" aus dem Formularfeld, nicht aus `currentUser`
+  const acceptedByNameModalValue = document.querySelector("#modalBody input[name='Accepted By Name']") ? document.querySelector("#modalBody input[name='Accepted By Name']").value : '';
+  const acceptanceTimestampModalValue = document.querySelector("#modalBody input[name='Acceptance Timestamp']") ? document.querySelector("#modalBody input[name='Acceptance Timestamp']").value : '';
+
+  if (isAdmin && ((agbAcceptedInput && agbAcceptedInput.checked) || (serviceAcceptedInput && serviceAcceptedInput.checked))) {
+    // Wenn "Accepted By Name" im Modal leer ist, fülle es mit dem aktuell eingeloggten Benutzer
+    if (acceptedByNameModalValue.trim() === "") {
+        data['Accepted By Name'] = currentLoggedInUser;
+        data['Acceptance Timestamp'] = new Date().toISOString(); // Neuen Zeitstempel setzen
+    } else {
+        // Wenn bereits ein Name vorhanden ist, behalte ihn bei.
+        // Aktualisiere den Zeitstempel nur, wenn er noch leer ist
+        data['Accepted By Name'] = acceptedByNameModalValue;
+        if (acceptanceTimestampModalValue.trim() === "") {
+            data['Acceptance Timestamp'] = new Date().toISOString();
+        } else {
+            data['Acceptance Timestamp'] = acceptanceTimestampModalValue; // Vorhandenen Zeitstempel beibehalten
+        }
+    }
+  } else {
+    // Wenn nicht Admin, oder Checkboxen nicht angehakt: Werte aus dem Modal beibehalten
+    data['Accepted By Name'] = acceptedByNameModalValue;
+    data['Acceptance Timestamp'] = acceptanceTimestampModalValue;
+  }
+
   const refValue = document.querySelector("#modalBody input[name='Ref']").value;
   data.mode = "write"; 
-  data.user = currentUser.name; 
+  data.user = currentLoggedInUser; // Sende den aktuell eingeloggten Benutzernamen für das Audit-Log
 
   console.log('Payload for saving:', data); 
   try {
@@ -505,7 +535,7 @@ async function deleteRow(btn) {
   const data = {
     Ref: ref,
     mode: "delete",
-    user: currentUser.name 
+    user: currentLoggedInUser 
   };
 
   try {
@@ -559,7 +589,7 @@ function openCalendarDayFlights(year, month, day) {
   const clickedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   
   const flightsOnThisDay = requestData.filter(r => {
-    let flightDateFromData = r['Flight Date']; // Dies ist bereits Überblick-MM-DD vom Backend
+    let flightDateFromData = r['Flight Date']; // Dies ist bereits YYYY-MM-DD vom Backend
     
     // Einfacher String-Vergleich
     const isMatch = flightDateFromData === clickedDateStr;
@@ -582,27 +612,33 @@ function openCalendarDayFlights(year, month, day) {
       console.warn("Konnte den Originalindex des Fluges nicht finden:", firstFlight);
     }
   } else {
-      console.log("Keine Flüge für diesen Tag gefunden."); 
+      console.log("Keine Flüge für diesen Tag gefunden. Erstelle neue Anfrage mit diesem Datum."); 
+      createNewRequest(year, month, day); // Neue Anfrage mit Vorbelegung
   }
 }
 
 
-function createNewRequest(year, month, day) {
-  const prefilledDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+// Eine einzige createNewRequest Funktion für alle Aufrufe
+function createNewRequest(year = null, month = null, day = null) {
+  let prefilledDate = "";
+  if (year !== null && month !== null && day !== null) {
+    prefilledDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+
   const newRequestData = {
     Ref: generateReference(),
     'Created At': new Date().toLocaleString('de-DE'), 
     'Billing Company': "", 'Billing Address': "", 'Tax Number': "",
     'Contact Name Invoicing': "", 'Contact E-Mail Invoicing': "",
     'Airline': "", 'Aircraft Type': "", 'Flugnummer': "",
-    'Flight Date': prefilledDate, // Datum vorbelegen
+    'Flight Date': prefilledDate, // Datum vorbelegen, wenn vorhanden
     'Abflugzeit': "", 'Tonnage': "",
     'Vorfeldbegleitung': "Nein",
     'Rate': "", 'Security charges': "", "Dangerous Goods": "Nein",
     '10ft consumables': "", '20ft consumables': "",
     'Zusatzkosten': "", 'Email Request': "",
-    'AGB Accepted': "Ja",
-    'Service Description Accepted': "Ja",
+    'AGB Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
+    'Service Description Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
     'Accepted By Name': "", 
     'Acceptance Timestamp': "" 
   };
@@ -728,10 +764,6 @@ function updateClock() {
   const now = new Date();
   document.getElementById('currentDate').textContent = "Date: " + now.toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' }); 
   document.getElementById('clock').textContent = "Time: " + now.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
-}
-
-function createNewRequest() {
-  openModal(-1);
 }
 
 let feedbackTimeout;
