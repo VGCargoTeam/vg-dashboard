@@ -14,6 +14,43 @@ today.setHours(0, 0, 0, 0); // Setzt die Zeit auf Mitternacht für den Vergleich
 // NEU: Globaler Variable für den eingeloggten Benutzer
 let currentLoggedInUser = "Unbekannt"; 
 
+
+// --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
+// Diese Zuweisungen müssen am Anfang des Skripts stehen, damit HTML-onclick-Attribute funktionieren.
+window.openProfileModal = openProfileModal;
+window.closeProfileModal = closeProfileModal;
+window.changePassword = changePassword;
+window.logoutUser = logoutUser;
+window.fetchData = fetchData;
+window.renderTable = renderTable;
+window.filterTable = filterTable;
+window.openModal = openModal;
+window.deleteRowFromModal = deleteRowFromModal;
+window.closeModal = closeModal;
+window.saveDetails = saveDetails;
+window.deleteRow = deleteRow;
+window.shiftCalendar = shiftCalendar;
+window.renderCalendars = renderCalendars;
+window.openCalendarDayFlights = openCalendarDayFlights;
+window.generateCalendarHTML = generateCalendarHTML;
+window.createNewRequest = createNewRequest;
+window.showSaveFeedback = showSaveFeedback;
+window.showHistory = showHistory;
+window.closeHistoryModal = closeHistoryModal;
+
+// Initialisiere Auth-Status, sobald das DOM geladen ist.
+document.addEventListener('DOMContentLoaded', () => {
+  getAdminStatusFromLocalStorage(); 
+  updateClock();
+  setInterval(updateClock, 1000);
+  
+  const archiveCheckbox = document.getElementById("archiveCheckbox");
+  if (archiveCheckbox) {
+      archiveCheckbox.addEventListener('change', filterTable);
+  }
+});
+
+
 // NEUE FUNKTION: Admin-Status aus localStorage lesen
 function getAdminStatusFromLocalStorage() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
@@ -87,7 +124,7 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
     // WICHTIG: originalIndex muss auf das ungefilterte requestData zugreifen
     const originalIndex = requestData.findIndex(item => item.Ref === r.Ref); 
 
-    // Datum für die Anzeige in der Tabelle formatieren (Stellt sicher, dass es YYYY-MM-DD ist)
+    // Datum für die Anzeige in der Tabelle formatieren (Stellt sicher, dass es Überblick-MM-DD ist)
     let displayFlightDate = r['Flight Date'] || "-";
     if (displayFlightDate !== "-") {
         if (String(displayFlightDate).includes('T')) {
@@ -127,8 +164,8 @@ function filterTable() {
   const airlineSearch = document.getElementById("airlineSearch").value.toLowerCase();
   const flightNumberSearchInput = document.getElementById("flightNumberSearch");
   const flightNumberSearch = flightNumberSearchInput ? flightNumberSearchInput.value.toLowerCase() : '';
-  const fromDateInput = document.getElementById("fromDate").value; // String YYYY-MM-DD
-  const toDateInput = document.getElementById("toDate").value;     // String YYYY-MM-DD
+  const fromDateInput = document.getElementById("fromDate").value; // String Überblick-MM-DD
+  const toDateInput = document.getElementById("toDate").value;     // String Überblick-MM-DD
 
   const showArchive = document.getElementById("archiveCheckbox") ? document.getElementById("archiveCheckbox").checked : false; // Archiv-Checkbox, falls vorhanden
 
@@ -176,7 +213,7 @@ function filterTable() {
     // Die Logik für showArchive ist hier wichtig
     const passesArchiveFilter = showArchive || !isPastOrTodayAndGoneFlight;
 
-    return matchesRef && matchesAirline && matchesFlightNumber && matchesDateRange && passesArchiveFilter;
+    return matchesRef && matchesAirline && matchesFlightNumber && matchesDateRange && passesPastFlightFilter;
   });
   renderTable(filtered); // Übergibt die gefilterten Daten an renderTable
   renderCalendars(); // Rendert die Kalender immer neu, auch wenn nur gefiltert wurde (oder keine Filter aktiv)
@@ -245,11 +282,11 @@ function openModal(originalIndex) {
 
 
       if (key === "Flight Date") {
-        // Stellt sicher, dass das Datum im YYYY-MM-DD Format ist
+        // Stellt sicher, dass das Datum im Überblick-MM-DD Format ist
         if (String(value).includes('T')) {
             value = String(value).split('T')[0];
         } else if (!String(value).match(/^\d{4}-\d{2}-\d{2}$/)) {
-            // Wenn es kein ISO- oder YYYY-MM-DD-Format ist, versuchen Sie zu parsen
+            // Wenn es kein ISO- oder Überblick-MM-DD-Format ist, versuchen Sie zu parsen
             try {
                 const parsedDate = new Date(value);
                 if (!isNaN(parsedDate.getTime())) {
@@ -468,29 +505,32 @@ async function saveDetails() {
   const serviceAcceptedInput = document.querySelector("#modalBody input[name='Service Description Accepted']");
   
   // Hole den Wert von "Accepted By Name" aus dem Formularfeld, nicht aus `currentUser`
-  const acceptedByNameModalValue = document.querySelector("#modalBody input[name='Accepted By Name']") ? document.querySelector("#modalBody input[name='Accepted By Name']").value : '';
-  const acceptanceTimestampModalValue = document.querySelector("#modalBody input[name='Acceptance Timestamp']") ? document.querySelector("#modalBody input[name='Acceptance Timestamp']").value : '';
+  let acceptedByNameModalValue = document.querySelector("#modalBody input[name='Accepted By Name']") ? document.querySelector("#modalBody input[name='Accepted By Name']").value : '';
+  let acceptanceTimestampModalValue = document.querySelector("#modalBody input[name='Acceptance Timestamp']") ? document.querySelector("#modalBody input[name='Acceptance Timestamp']").value : '';
 
-  if (isAdmin && ((agbAcceptedInput && agbAcceptedInput.checked) || (serviceAcceptedInput && serviceAcceptedInput.checked))) {
-    // Wenn "Accepted By Name" im Modal leer ist, fülle es mit dem aktuell eingeloggten Benutzer
-    if (acceptedByNameModalValue.trim() === "") {
-        data['Accepted By Name'] = currentLoggedInUser;
-        data['Acceptance Timestamp'] = new Date().toISOString(); // Neuen Zeitstempel setzen
-    } else {
-        // Wenn bereits ein Name vorhanden ist, behalte ihn bei.
-        // Aktualisiere den Zeitstempel nur, wenn er noch leer ist
-        data['Accepted By Name'] = acceptedByNameModalValue;
-        if (acceptanceTimestampModalValue.trim() === "") {
-            data['Acceptance Timestamp'] = new Date().toISOString();
+  if (isAdmin) { // Nur Admins können diese Felder beeinflussen
+      if ((agbAcceptedInput && agbAcceptedInput.checked) || (serviceAcceptedInput && serviceAcceptedInput.checked)) {
+        if (acceptedByNameModalValue.trim() === "") {
+            data['Accepted By Name'] = currentLoggedInUser;
+            data['Acceptance Timestamp'] = new Date().toISOString(); 
         } else {
-            data['Acceptance Timestamp'] = acceptanceTimestampModalValue; // Vorhandenen Zeitstempel beibehalten
+            data['Accepted By Name'] = acceptedByNameModalValue;
+            if (acceptanceTimestampModalValue.trim() === "") {
+                data['Acceptance Timestamp'] = new Date().toISOString();
+            } else {
+                data['Acceptance Timestamp'] = acceptanceTimestampModalValue; 
+            }
         }
-    }
+      } else { // Wenn Checkboxen nicht angehakt, leere die Felder für Accepted By Name und Timestamp
+          data['Accepted By Name'] = "";
+          data['Acceptance Timestamp'] = "";
+      }
   } else {
-    // Wenn nicht Admin, oder Checkboxen nicht angehakt: Werte aus dem Modal beibehalten
-    data['Accepted By Name'] = acceptedByNameModalValue;
-    data['Acceptance Timestamp'] = acceptanceTimestampModalValue;
+      // Wenn nicht Admin, übernehme die vorhandenen (schreibgeschützten) Werte direkt
+      data['Accepted By Name'] = acceptedByNameModalValue;
+      data['Acceptance Timestamp'] = acceptanceTimestampModalValue;
   }
+
 
   const refValue = document.querySelector("#modalBody input[name='Ref']").value;
   data.mode = "write"; 
@@ -589,7 +629,7 @@ function openCalendarDayFlights(year, month, day) {
   const clickedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   
   const flightsOnThisDay = requestData.filter(r => {
-    let flightDateFromData = r['Flight Date']; // Dies ist bereits YYYY-MM-DD vom Backend
+    let flightDateFromData = r['Flight Date']; // Dies ist bereits Überblick-MM-DD vom Backend
     
     // Einfacher String-Vergleich
     const isMatch = flightDateFromData === clickedDateStr;
@@ -749,17 +789,6 @@ function generateCalendarHTML(year, month) {
   return calendarHTML;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  getAdminStatusFromLocalStorage(); 
-  updateClock();
-  setInterval(updateClock, 1000);
-  
-  const archiveCheckbox = document.getElementById("archiveCheckbox");
-  if (archiveCheckbox) {
-      archiveCheckbox.addEventListener('change', filterTable);
-  }
-});
-
 function updateClock() {
   const now = new Date();
   document.getElementById('currentDate').textContent = "Date: " + now.toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' }); 
@@ -855,26 +884,3 @@ async function showHistory(ref) {
 function closeHistoryModal() {
   document.getElementById("historyModal").style.display = "none";
 }
-
-window.openProfileModal = openProfileModal;
-window.closeProfileModal = closeProfileModal;
-window.changePassword = changePassword;
-window.logoutUser = logoutUser;
-window.fetchData = fetchData;
-window.renderTable = renderTable;
-window.filterTable = filterTable;
-window.openModal = openModal;
-window.deleteRowFromModal = deleteRowFromModal;
-window.closeModal = closeModal;
-window.saveDetails = saveDetails;
-window.deleteRow = deleteRow;
-window.shiftCalendar = shiftCalendar;
-window.renderCalendars = renderCalendars;
-window.openCalendarDayFlights = openCalendarDayFlights;
-window.generateCalendarHTML = generateCalendarHTML;
-window.createNewRequest = createNewRequest;
-window.showSaveFeedback = showSaveFeedback;
-window.showHistory = showHistory;
-window.closeHistoryModal = closeHistoryModal;
-
-document.addEventListener('DOMContentLoaded', getAdminStatusFromLocalStorage);
