@@ -763,7 +763,7 @@ function generateCalendarHTML(year, month) {
               `Ref: ${f.Ref || '-'}` +
               `\nAirline: ${f.Airline || '-'}` +
               `\nFlugnummer: ${f.Flugnummer || '-'}` + 
-              `\nAbflugzeit: ${f['Abflugzeit'] || '-'}` +
+              `\nAbflugzeit: ${f['Abflugzeit'] || '-'}` + // Abflugzeit direkt übernehmen
               `\nTonnage: ${tonnageValue.toLocaleString('de-DE')} kg` 
             );
             if (f['Vorfeldbegleitung'] && String(f['Vorfeldbegleitung']).toLowerCase() === 'ja') {
