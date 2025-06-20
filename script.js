@@ -14,43 +14,6 @@ today.setHours(0, 0, 0, 0); // Setzt die Zeit auf Mitternacht für den Vergleich
 // NEU: Globaler Variable für den eingeloggten Benutzer
 let currentLoggedInUser = "Unbekannt"; 
 
-
-// --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
-// Diese Zuweisungen müssen am Anfang des Skripts stehen, damit HTML-onclick-Attribute funktionieren.
-window.openProfileModal = openProfileModal;
-window.closeProfileModal = closeProfileModal;
-window.changePassword = changePassword;
-window.logoutUser = logoutUser;
-window.fetchData = fetchData;
-window.renderTable = renderTable;
-window.filterTable = filterTable;
-window.openModal = openModal;
-window.deleteRowFromModal = deleteRowFromModal;
-window.closeModal = closeModal;
-window.saveDetails = saveDetails;
-window.deleteRow = deleteRow;
-window.shiftCalendar = shiftCalendar;
-window.renderCalendars = renderCalendars;
-window.openCalendarDayFlights = openCalendarDayFlights;
-window.generateCalendarHTML = generateCalendarHTML;
-window.createNewRequest = createNewRequest;
-window.showSaveFeedback = showSaveFeedback;
-window.showHistory = showHistory;
-window.closeHistoryModal = closeHistoryModal;
-
-// Initialisiere Auth-Status, sobald das DOM geladen ist.
-document.addEventListener('DOMContentLoaded', () => {
-  getAdminStatusFromLocalStorage(); 
-  updateClock();
-  setInterval(updateClock, 1000);
-  
-  const archiveCheckbox = document.getElementById("archiveCheckbox");
-  if (archiveCheckbox) {
-      archiveCheckbox.addEventListener('change', filterTable);
-  }
-});
-
-
 // NEUE FUNKTION: Admin-Status aus localStorage lesen
 function getAdminStatusFromLocalStorage() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
@@ -74,13 +37,6 @@ function getAdminStatusFromLocalStorage() {
 
 function updateUIBasedOnAdminStatus() {
   const adminElements = document.querySelectorAll(".admin-only");
-  const loggedInUsernameSpan = document.getElementById('loggedInUsername');
-  const loggedInUserRoleSpan = document.getElementById('loggedInUserRole');
-
-  const currentUser = JSON.parse(localStorage.getItem("currentUser")); // Holt den aktuellen Benutzer erneut, um sicherzustellen
-  if (loggedInUsernameSpan && currentUser) loggedInUsernameSpan.textContent = currentUser.name;
-  if (loggedInUserRoleSpan && currentUser) loggedInUserRoleSpan.textContent = currentUser.role;
-
   if (isAdmin) {
     adminElements.forEach(el => el.style.display = ""); // Standardanzeige wiederherstellen (block, inline-block etc.)
   } else {
@@ -98,8 +54,6 @@ function fetchData() {
       return r.json();
     })
     .then(d => {
-      // KORREKTUR HIER: Greife auf den 'data'-Schlüssel des Objekts zu
-      // Da dein Google Apps Script jetzt ein Objekt der Form {status: "success", data: [...]} zurückgibt
       requestData = d.data; // Speichert das Array der Daten
       filterTable(); // Ruft filterTable auf, um sowohl Tabelle als auch Kalender zu aktualisieren
     })
@@ -117,14 +71,14 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
 
   dataToRender.forEach((r) => { // dataToRender verwenden
     const row = document.createElement("tr");
-    // const ton = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0; // Alte Logik
-    const tonDisplay = String(r.Tonnage || "-"); // Direkter String-Wert für Anzeige
+    // Sicherstellen, dass Tonnage als Zahl mit Punkt gelesen und korrekt formatiert wird
+    const ton = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0; 
     
     // Finde den ursprünglichen Index im requestData Array
     // WICHTIG: originalIndex muss auf das ungefilterte requestData zugreifen
     const originalIndex = requestData.findIndex(item => item.Ref === r.Ref); 
 
-    // Datum für die Anzeige in der Tabelle formatieren (Stellt sicher, dass es Überblick-MM-DD ist)
+    // Datum für die Anzeige in der Tabelle formatieren (Stellt sicher, dass es YYYY-MM-DD ist)
     let displayFlightDate = r['Flight Date'] || "-";
     if (displayFlightDate !== "-") {
         if (String(displayFlightDate).includes('T')) {
@@ -140,19 +94,18 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
       <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})">${r.Ref}</a></td>
       <td>${displayFlightDate}</td>
       <td>${r.Airline || "-"}</td>
-      <td>${tonDisplay} kg</td> <td>
+      <td>${ton.toLocaleString('de-DE')}</td> <td>
         <button class="btn btn-view" onclick="openModal(${originalIndex})">View</button> 
         ${deleteButtonHTML}
       </td>
     `;
     tbody.appendChild(row);
     totalFlights++;
-    // Add tonnage to totalWeight (as number, if possible, for actual sum, but display as string)
-    totalWeight += parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0;
+    totalWeight += ton;
   });
 
   document.getElementById("summaryInfo").textContent =
-    `Total Flights: ${totalFlights} | Total Tonnage: ${totalWeight.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} kg`; 
+    `Total Flights: ${totalFlights} | Total Tonnage: ${totalWeight.toLocaleString('de-DE')} kg`; // 'de-DE' für Anzeige
   
   // UI nach dem Rendern der Tabelle basierend auf Admin-Status aktualisieren
   updateUIBasedOnAdminStatus();
@@ -162,17 +115,12 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
 function filterTable() {
   const refSearch = document.getElementById("refSearch").value.toLowerCase();
   const airlineSearch = document.getElementById("airlineSearch").value.toLowerCase();
-  const flightNumberSearchInput = document.getElementById("flightNumberSearch");
-  const flightNumberSearch = flightNumberSearchInput ? flightNumberSearchInput.value.toLowerCase() : '';
-  const fromDateInput = document.getElementById("fromDate").value; // String Überblick-MM-DD
-  const toDateInput = document.getElementById("toDate").value;     // String Überblick-MM-DD
-
-  const showArchive = document.getElementById("archiveCheckbox") ? document.getElementById("archiveCheckbox").checked : false; // Archiv-Checkbox, falls vorhanden
+  const fromDateInput = document.getElementById("fromDate").value; // String YYYY-MM-DD
+  const toDateInput = document.getElementById("toDate").value;     // String YYYY-MM-DD
 
   const filtered = requestData.filter(r => {
     const matchesRef = (r.Ref || '').toLowerCase().includes(refSearch);
     const matchesAirline = (r.Airline || '').toLowerCase().includes(airlineSearch);
-    const matchesFlightNumber = (r.Flugnummer || '').toLowerCase().includes(flightNumberSearch); 
 
     let matchesDateRange = true; // Ob das Datum im From/To-Bereich liegt
     let isPastOrTodayAndGoneFlight = false;    // Ob der Flug in der Vergangenheit liegt oder heute und bereits abgeflogen ist
@@ -210,25 +158,21 @@ function filterTable() {
       if (toDateInput && flightDateFromData > toDateInput) matchesDateRange = false;
     }
 
-    // Die Logik für showArchive ist hier wichtig
-    const passesArchiveFilter = showArchive || !isPastOrTodayAndGoneFlight;
+    const isExplicitlyFiltered = refSearch || airlineSearch || fromDateInput || toDateInput;
 
-    return matchesRef && matchesAirline && matchesFlightNumber && matchesDateRange && passesPastFlightFilter;
+    if (!isExplicitlyFiltered) {
+        // Wenn keine Filter aktiv sind, zeige nur zukünftige Flüge an
+        return matchesRef && matchesAirline && !isPastOrTodayAndGoneFlight;
+    } else {
+        // Wenn Filter aktiv sind, zeige alle Flüge, die den Filtern entsprechen, unabhängig vom Datum
+        return matchesRef && matchesAirline && matchesDateRange;
+    }
   });
   renderTable(filtered); // Übergibt die gefilterten Daten an renderTable
   renderCalendars(); // Rendert die Kalender immer neu, auch wenn nur gefiltert wurde (oder keine Filter aktiv)
 }
 
 // === MODAL FUNKTIONEN ===
-function generateReference() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const random = String(Math.floor(Math.random() * 9000) + 1000); // 4-stellige Zufallszahl
-  return `REQ-${year}${month}${day}-${random}`;
-}
-
 function openModal(originalIndex) {
   const r = originalIndex === -1 ? {
     Ref: generateReference(),
@@ -263,30 +207,31 @@ function openModal(originalIndex) {
       let value = r[key];
       if (value === undefined || value === null) value = "";
       
-      // Felder, die IMMER schreibgeschützt sind
+      // Felder, die nur für Admins bearbeitbar sein sollen (Preis-bezogen)
+      const isPriceRelatedField = [
+        'Rate', 'Security charges', 'Dangerous Goods', 
+        '10ft consumables', '20ft consumables', 'Zusatzkosten', 'Email Request'
+      ].includes(key);
+
+      // Felder, die IMMER readonly sein sollen, unabhängig vom Admin-Status
       const isAlwaysReadOnlyField = [
-          "Ref", "Created At", "Acceptance Timestamp"
+          "Ref", "Created At", "Acceptance Timestamp", "Accepted By Name" // Hinzugefügt "Accepted By Name"
       ].includes(key);
 
       let readOnlyAttr = '';
-      let styleAttr = '';
-
       if (isAlwaysReadOnlyField) {
-          readOnlyAttr = 'readonly';
-          styleAttr = 'background-color:#eee; cursor: not-allowed;';
-      } else if (!isAdmin && (key === "Email Request" || ['Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables', 'Zusatzkosten', 'Accepted By Name'].includes(key))) {
-          // Felder, die für Nicht-Admins schreibgeschützt sind (oder gar nicht erst angezeigt werden)
-          readOnlyAttr = 'readonly';
-          styleAttr = 'background-color:#eee; cursor: not-allowed;';
+          readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
+      } else if (isPriceRelatedField && !isAdmin) { // Admin-Felder sind readonly, wenn kein Admin
+          readOnlyAttr = 'readonly style="background-color:#eee; cursor: not-allowed;"';
       }
 
 
       if (key === "Flight Date") {
-        // Stellt sicher, dass das Datum im Überblick-MM-DD Format ist
+        // Stellt sicher, dass das Datum im YYYY-MM-DD Format ist
         if (String(value).includes('T')) {
             value = String(value).split('T')[0];
         } else if (!String(value).match(/^\d{4}-\d{2}-\d{2}$/)) {
-            // Wenn es kein ISO- oder Überblick-MM-DD-Format ist, versuchen Sie zu parsen
+            // Wenn es kein ISO- oder YYYY-MM-DD-Format ist, versuchen Sie zu parsen
             try {
                 const parsedDate = new Date(value);
                 if (!isNaN(parsedDate.getTime())) {
@@ -298,7 +243,7 @@ function openModal(originalIndex) {
                 value = "";
             }
         }
-        return `<label>${label}</label><input type="date" name="${key}" value="${value}" ${readOnlyAttr} style="${styleAttr}">`;
+        return `<label>${label}</label><input type="date" name="${key}" value="${value}" ${readOnlyAttr}>`;
       } else if (key === "Abflugzeit") {
         // Stellt sicher, dass die Abflugzeit im HH:MM Format ist
         if (String(value).includes('T')) {
@@ -307,24 +252,21 @@ function openModal(originalIndex) {
         } else if (!(String(value).length === 5 && String(value).includes(':'))) {
             value = ""; // Wenn nicht HH:MM, leeren
         }
-        return `<label>${label}:</label><input type="time" name="${key}" value="${value}" ${readOnlyAttr} style="${styleAttr}">`;
-      } else if (key === "AGB Accepted" || key === "Service Description Accepted") { 
-          // Diese Felder müssen als Checkboxen gerendert werden, um ihren Zustand erfassen zu können
-          const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
-          // Auch für Viewer können sie schreibgeschützt sein, aber weiterhin als Checkbox
-          const checkboxReadOnlyAttr = !isAdmin ? 'disabled style="background-color:#eee; cursor: not-allowed;"' : '';
-          return `<label><input type="checkbox" name="${key}" ${checked} ${checkboxReadOnlyAttr}> ${label}</label>`;
-      } else if (key === "Vorfeldbegleitung" && type === "checkbox") { 
+        return `<label>${label}</label><input type="time" name="${key}" value="${value}" ${readOnlyAttr}>`;
+      } else if (key === "AGB Accepted" || key === "Service Description Accepted") { // NEU: Spezifische Behandlung für AGB/Service
+          const isAccepted = String(value).toLowerCase() === "ja";
+          const icon = isAccepted ? '&#10004;' : '&#10008;'; // Grüner Haken oder rotes X
+          const color = isAccepted ? 'green' : 'red';
+          return `<label>${label}: <span style="color: ${color}; font-size: 1.2em; font-weight: bold;">${icon}</span></label>`;
+      } else if (key === "Vorfeldbegleitung" && type === "checkbox") { // Vorfeldbegleitung bleibt Checkbox
         const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
-        return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}"> ${label}</label>`;
-      } else if (['Tonnage', 'Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables'].includes(key) || key === "Zusatzkosten" || key === "Email Request" || key === "Accepted By Name") {
-          // Behalte den Wert genau so bei, wie er aus den Daten kommt (als String)
-          if (type === "textarea") {
-              return `<label>${label}:</label><textarea name="${key}" style="height:80px" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
-          }
-          return `<label>${label}:</label><input type="text" name="${key}" value="${value}" ${readOnlyAttr} style="${styleAttr}" />`;
+        return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr}> ${label}</label>`;
+      } else if (key === "Tonnage" || key === "Rate" || key === "Security charges" || key === "Dangerous Goods" || key === "10ft consumables" || key === "20ft consumables") {
+          // Für numerische Felder: Formatiere Punkt zu Komma für die Anzeige im Modal
+          const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
+          return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" ${readOnlyAttr} />`;
       }
-      return `<label>${label}:</label><input type="text" name="${key}" value="${value}" ${readOnlyAttr} style="${styleAttr}" />`;
+      return `<label>${label}:</label><input type="text" name="${key}" value="${value}" ${readOnlyAttr} />`;
     }).join("");
   };
 
@@ -336,9 +278,9 @@ function openModal(originalIndex) {
     { label: "Tax Number", key: "Tax Number" },
     { label: "Contact Name Invoicing", key: "Contact Name Invoicing" },
     { label: "Contact E-Mail Invoicing", key: "Contact E-Mail Invoicing" },
-    { label: "AGB Accepted", key: "AGB Accepted", type: "checkbox" }, 
-    { label: "Service Description Accepted", key: "Service Description Accepted", type: "checkbox" }, 
-    { label: "Accepted By Name", key: "Accepted By Name" }, 
+    { label: "AGB Accepted", key: "AGB Accepted" }, // Typ hier entfernt, wird in renderFields speziell behandelt
+    { label: "Service Description Accepted", key: "Service Description Accepted" }, // Typ hier entfernt
+    { label: "Accepted By Name", key: "Accepted By Name" }, // Wird jetzt in isAlwaysReadOnlyField behandelt
     { label: "Acceptance Timestamp", key: "Acceptance Timestamp" }
   ];
 
@@ -349,8 +291,7 @@ function openModal(originalIndex) {
     { label: "Flight Date", key: "Flight Date" },
     { label: "Abflugzeit", key: "Abflugzeit" },
     { label: "Tonnage", key: "Tonnage" },
-    { label: "Vorfeldbegleitung", key: "Vorfeldbegleitung", type: "checkbox" },
-    { label: "E-Mail Request", key: "Email Request", type: "textarea" } // Email Request hier hinzufügen, als textarea
+    { label: "Vorfeldbegleitung", key: "Vorfeldbegleitung", type: "checkbox" }
   ];
 
   const priceFields = [
@@ -358,45 +299,52 @@ function openModal(originalIndex) {
     { label: "Security charges (X-Ray, ETD, EDD)", key: "Security charges" },
     { label: "Dangerous Goods", key: "Dangerous Goods" },
     { label: "10ft consumables", key: "10ft consumables" },
-    { label: "20ft consumables", key: "20ft consumables" },
-    { label: "Zusatzkosten", key: "Zusatzkosten", type: "textarea" } 
+    { label: "20ft consumables", key: "20ft consumables" }
   ];
+
+  const priceExtra = `
+    <label>Zusatzkosten:</label>
+    <textarea name="Zusatzkosten" placeholder="Labeln, Fotos" style="height:80px" ${!isAdmin ? 'readonly style="background-color:#eee; cursor: not-allowed;"' : ''}>${r["Zusatzkosten"] || ""}</textarea>
+    <label>E-Mail Request:</label>
+    <textarea name="Email Request" style="height:150px" ${!isAdmin ? 'readonly style="background-color:#eee; cursor: not-allowed;"' : ''}>${r["Email Request"] || ""}</textarea>
+  `;
 
   modalBody.appendChild(section("Kundendetails", renderFields(customerFields)));
   modalBody.appendChild(section("Flugdetails", renderFields(flightFields)));
   
-  // Preisdetails nur für Admins anzeigen
-  if (isAdmin) { 
-    modalBody.appendChild(section("Preisdetails", renderFields(priceFields)));
+  // Hier wird der Preisdetails-Bereich nur für Admins sichtbar
+  if (isAdmin) {
+    modalBody.appendChild(section("Preisdetails", renderFields(priceFields) + priceExtra));
+  } else {
+    // Optional: Wenn kein Admin, zeige eine Meldung an
+    // modalBody.appendChild(section("Preisdetails", "<p>Keine Berechtigung zur Ansicht dieser Details.</p>"));
   }
 
   const buttonContainer = document.createElement("div");
   buttonContainer.style.width = "100%";
   buttonContainer.style.display = "flex";
-  buttonContainer.style.justifyContent = "center"; 
-  buttonContainer.style.gap = "10px"; 
+  buttonContainer.style.justifyContent = "center"; // Buttons zentrieren
+  buttonContainer.style.gap = "10px"; // Abstand zwischen den Buttons
   buttonContainer.style.marginTop = "20px";
 
-  // Speichern-Button ist für alle eingeloggten Benutzer verfügbar
-  if (currentUser) {
-    const saveButton = document.createElement("button");
-    saveButton.textContent = "Speichern";
-    saveButton.onclick = saveDetails;
-    saveButton.style.padding = "10px 20px";
-    saveButton.style.fontWeight = "bold";
-    saveButton.style.backgroundColor = "#28a745";
-    saveButton.style.color = "white";
-    saveButton.style.border = "none";
-    saveButton.style.borderRadius = "6px";
-    saveButton.style.cursor = "pointer";
-    buttonContainer.appendChild(saveButton);
-  }
+  const saveButton = document.createElement("button");
+  saveButton.textContent = "Speichern";
+  saveButton.onclick = saveDetails;
+  saveButton.style.padding = "10px 20px";
+  saveButton.style.fontWeight = "bold";
+  saveButton.style.backgroundColor = "#28a745";
+  saveButton.style.color = "white";
+  saveButton.style.border = "none";
+  saveButton.style.borderRadius = "6px";
+  saveButton.style.cursor = "pointer";
+  buttonContainer.appendChild(saveButton);
 
+  // NEU: History Button im Modal
   const historyButton = document.createElement("button");
   historyButton.textContent = "History";
   historyButton.style.padding = "10px 20px";
   historyButton.style.fontWeight = "bold";
-  historyButton.style.backgroundColor = "#17a2b8"; 
+  historyButton.style.backgroundColor = "#17a2b8"; // Eine eigene Farbe für den History-Button
   historyButton.style.color = "white";
   historyButton.style.border = "none";
   historyButton.style.borderRadius = "6px";
@@ -404,6 +352,7 @@ function openModal(originalIndex) {
   historyButton.onclick = () => showHistory(r.Ref); 
   buttonContainer.appendChild(historyButton);
 
+  // Lösch-Button im Modal: Nur für Admins und nur bei bestehenden Einträgen
   if (isAdmin && originalIndex !== -1) { 
     const deleteButtonModal = document.createElement("button");
     deleteButtonModal.textContent = "Eintrag löschen";
@@ -419,36 +368,34 @@ function openModal(originalIndex) {
     buttonContainer.appendChild(deleteButtonModal);
   }
   
-  modalBody.appendChild(buttonContainer); 
+  modalBody.appendChild(buttonContainer); // Button-Container hinzufügen
 
   modal.style.display = "flex";
 }
 
 // Neue Funktion, die vom Modal aus den Löschvorgang startet und dann das Modal schließt
 async function deleteRowFromModal(ref) {
-  // Statt alert() eine benutzerdefinierte Bestätigung verwenden, da alert() in iframes nicht gut funktioniert
-  const isConfirmed = confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`);
-  if (!isConfirmed) {
+  if (!confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
     return;
   }
 
   const data = {
     Ref: ref,
     mode: "delete",
-    user: currentLoggedInUser 
+    user: currentLoggedInUser // Aktuellen Benutzer senden
   };
 
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, 
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
       body: new URLSearchParams(data)
     });
 
     if (!response.ok) {
       throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
-    const responseData = await response.json(); 
+    const responseData = await response.json(); // Muss response.json() sein
 
     if (responseData && responseData.status === "success") { 
       showSaveFeedback("Eintrag gelöscht!", true);
@@ -456,8 +403,8 @@ async function deleteRowFromModal(ref) {
       showSaveFeedback(`Fehler beim Löschen des Eintrags! ${responseData.message || ''}`, false);
       console.error("Löschen fehlgeschlagen:", responseData);
     }
-    closeModal(); 
-    fetchData(); 
+    closeModal(); // Modal schließen nach dem Löschen
+    fetchData(); // Daten neu laden
   } catch (err) {
     showSaveFeedback("Fehler beim Löschen!", false);
     console.error(err);
@@ -471,27 +418,28 @@ function closeModal() {
 document.addEventListener('keydown', (e) => {
   if (e.key === "Escape") {
     closeModal();
-    closeHistoryModal(); 
-    closeProfileModal(); 
+    closeHistoryModal(); // Auch History Modal schließen
   }
 });
 
 async function saveDetails() {
-  // Statt alert() eine benutzerdefinierte Bestätigung verwenden
-  const isConfirmed = confirm('Sind Sie sicher, dass Sie diese Änderungen speichern möchten?');
-  if (!isConfirmed) {
+  const confirmSave = confirm('Sind Sie sicher, dass Sie diese Änderungen speichern möchten?');
+  if (!confirmSave) {
     return;
   }
 
   const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled])");
   const data = {};
   inputs.forEach(i => {
+    // Sicherstellen, dass readonly Felder trotzdem gesendet werden, da sie nicht disabled sind
     if (i.name === "Flight Date") {
         data[i.name] = i.value; 
-    } else if (['Tonnage', 'Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables'].includes(i.name)) {
-        // Tonnage und Preis-Felder: Kommas durch Punkte ersetzen
+    } else if (i.name === "Tonnage" || i.name === "Rate" || i.name === "Security charges" || i.name === "Dangerous Goods" || i.name === "10ft consumables" || i.name === "20ft consumables") {
+        // Ersetze Komma durch Punkt für das Backend, falls es numerische Werte erwartet
         data[i.name] = i.value.replace(/,/g, '.') || "";
-    } else { // Wichtig: Für 'Zusatzkosten' (textarea) kommt der Wert einfach als String.
+    } else {
+        // Für AGB Accepted und Service Description Accepted, die jetzt Icons sind,
+        // und für das Vorfeldbegleitung-Checkbox: Stelle sicher, dass der Wert korrekt erfasst wird
         if (i.type === "checkbox") {
             data[i.name] = i.checked ? "Ja" : "Nein";
         } else {
@@ -500,43 +448,12 @@ async function saveDetails() {
     }
   });
 
-  // Logik für "Accepted By Name" und "Acceptance Timestamp"
-  const agbAcceptedInput = document.querySelector("#modalBody input[name='AGB Accepted']");
-  const serviceAcceptedInput = document.querySelector("#modalBody input[name='Service Description Accepted']");
-  
-  // Hole den Wert von "Accepted By Name" aus dem Formularfeld, nicht aus `currentUser`
-  let acceptedByNameModalValue = document.querySelector("#modalBody input[name='Accepted By Name']") ? document.querySelector("#modalBody input[name='Accepted By Name']").value : '';
-  let acceptanceTimestampModalValue = document.querySelector("#modalBody input[name='Acceptance Timestamp']") ? document.querySelector("#modalBody input[name='Acceptance Timestamp']").value : '';
-
-  if (isAdmin) { // Nur Admins können diese Felder beeinflussen
-      if ((agbAcceptedInput && agbAcceptedInput.checked) || (serviceAcceptedInput && serviceAcceptedInput.checked)) {
-        if (acceptedByNameModalValue.trim() === "") {
-            data['Accepted By Name'] = currentLoggedInUser;
-            data['Acceptance Timestamp'] = new Date().toISOString(); 
-        } else {
-            data['Accepted By Name'] = acceptedByNameModalValue;
-            if (acceptanceTimestampModalValue.trim() === "") {
-                data['Acceptance Timestamp'] = new Date().toISOString();
-            } else {
-                data['Acceptance Timestamp'] = acceptanceTimestampModalValue; 
-            }
-        }
-      } else { // Wenn Checkboxen nicht angehakt, leere die Felder für Accepted By Name und Timestamp
-          data['Accepted By Name'] = "";
-          data['Acceptance Timestamp'] = "";
-      }
-  } else {
-      // Wenn nicht Admin, übernehme die vorhandenen (schreibgeschützten) Werte direkt
-      data['Accepted By Name'] = acceptedByNameModalValue;
-      data['Acceptance Timestamp'] = acceptanceTimestampModalValue;
-  }
-
-
   const refValue = document.querySelector("#modalBody input[name='Ref']").value;
-  data.mode = "write"; 
-  data.user = currentLoggedInUser; // Sende den aktuell eingeloggten Benutzernamen für das Audit-Log
+  // Der Modus wird im Backend anhand der Existenz der Ref entschieden (Update vs. Create)
+  // Wir müssen hier nur den 'write' Modus senden.
+  data.mode = "write"; // Muss "write" sein, damit doPost den create/update-Pfad nimmt
+  data.user = currentLoggedInUser; // Aktuellen Benutzer senden
 
-  console.log('Payload for saving:', data); 
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
@@ -556,7 +473,7 @@ async function saveDetails() {
       console.error("Speichern fehlgeschlagen:", responseData);
     }
     closeModal();
-    fetchData(); 
+    fetchData(); // Daten neu laden, um Änderungen anzuzeigen
   } catch (err) {
     showSaveFeedback("Fehler beim Speichern!", false);
     console.error(err);
@@ -566,16 +483,14 @@ async function saveDetails() {
 async function deleteRow(btn) {
   const ref = btn.closest("tr").querySelector("a").textContent;
 
-  // Statt alert() eine benutzerdefinierte Bestätigung verwenden
-  const isConfirmed = confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`);
-  if (!isConfirmed) {
+  if (!confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
     return;
   }
 
   const data = {
     Ref: ref,
     mode: "delete",
-    user: currentLoggedInUser 
+    user: currentLoggedInUser // Aktuellen Benutzer senden
   };
 
   try {
@@ -586,7 +501,7 @@ async function deleteRow(btn) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
     const responseData = await response.json();
 
@@ -596,7 +511,7 @@ async function deleteRow(btn) {
       showSaveFeedback(`Fehler beim Löschen des Eintrags! ${responseData.message || ''}`, false);
       console.error("Löschen fehlgeschlagen:", responseData);
     }
-    fetchData(); 
+    fetchData(); // Daten neu laden, um die gelöschte Zeile zu entfernen
   } catch (err) {
     showSaveFeedback("Fehler beim Löschen!", false);
     console.error(err);
@@ -617,177 +532,113 @@ function renderCalendars() {
   for (let i = 0; i < 2; i++) {
     const m = baseMonth + i;
     const y = baseYear + Math.floor(m / 12);
-    const month = (m % 12 + 12) % 12; 
+    const month = (m % 12 + 12) % 12; // Normalisiere den Monat auf 0-11
     container.innerHTML += generateCalendarHTML(y, month);
   }
 }
 
 function openCalendarDayFlights(year, month, day) {
-  console.log(`Clicked on calendar day: Jahr ${year}, Monat ${month + 1}, Tag ${day}`); 
-
-  // Erstelle das Vergleichsdatum als String (YYYY-MM-DD)
-  const clickedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   
   const flightsOnThisDay = requestData.filter(r => {
-    let flightDateFromData = r['Flight Date']; // Dies ist bereits Überblick-MM-DD vom Backend
-    
-    // Einfacher String-Vergleich
-    const isMatch = flightDateFromData === clickedDateStr;
-    console.log(`  Vergleich: Flugdatum "${flightDateFromData}" vs. geklicktes Datum "${clickedDateStr}" -> Match: ${isMatch}`);
-    return isMatch;
+    const flightDateFromData = r['Flight Date'] ? (String(r['Flight Date']).includes('T') ? String(r['Flight Date']).split('T')[0] : String(r['Flight Date'])) : '';
+    return flightDateFromData === dateStr;
   });
 
-  console.log(`Gefundene Flüge für diesen Tag (${clickedDateStr}):`, flightsOnThisDay); 
-
   if (flightsOnThisDay.length > 0) {
-    // Wenn mehrere Flüge am selben Tag, öffne den ersten gefundenen.
-    // Optimal wäre eine Liste oder Auswahl, aber für den Anfang öffnen wir den ersten.
     const firstFlight = flightsOnThisDay[0];
-    const originalIndex = requestData.findIndex(item => item.Ref === firstFlight.Ref); 
-    console.log(`Erster Flug Ref: ${firstFlight.Ref}, Original Index: ${originalIndex}`); 
-
+    const originalIndex = requestData.indexOf(firstFlight);
     if (originalIndex !== -1) {
       openModal(originalIndex);
     } else {
       console.warn("Konnte den Originalindex des Fluges nicht finden:", firstFlight);
+      openModal(requestData.indexOf(firstFlight)); 
     }
-  } else {
-      console.log("Keine Flüge für diesen Tag gefunden. Erstelle neue Anfrage mit diesem Datum."); 
-      createNewRequest(year, month, day); // Neue Anfrage mit Vorbelegung
   }
 }
-
-
-// Eine einzige createNewRequest Funktion für alle Aufrufe
-function createNewRequest(year = null, month = null, day = null) {
-  let prefilledDate = "";
-  if (year !== null && month !== null && day !== null) {
-    prefilledDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  }
-
-  const newRequestData = {
-    Ref: generateReference(),
-    'Created At': new Date().toLocaleString('de-DE'), 
-    'Billing Company': "", 'Billing Address': "", 'Tax Number': "",
-    'Contact Name Invoicing': "", 'Contact E-Mail Invoicing': "",
-    'Airline': "", 'Aircraft Type': "", 'Flugnummer': "",
-    'Flight Date': prefilledDate, // Datum vorbelegen, wenn vorhanden
-    'Abflugzeit': "", 'Tonnage': "",
-    'Vorfeldbegleitung': "Nein",
-    'Rate': "", 'Security charges': "", "Dangerous Goods": "Nein",
-    '10ft consumables': "", '20ft consumables': "",
-    'Zusatzkosten': "", 'Email Request': "",
-    'AGB Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
-    'Service Description Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
-    'Accepted By Name': "", 
-    'Acceptance Timestamp': "" 
-  };
-  requestData.unshift(newRequestData); 
-  openModal(0); 
-}
-
 
 function generateCalendarHTML(year, month) {
-  const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
-  const date = new Date(year, month, 1);
-  const firstDay = date.getDay(); 
+  const firstDayOfMonthWeekday = (new Date(year, month, 1).getDay() + 6) % 7; 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const monthName = new Date(year, month).toLocaleString('de-DE', { month: 'long' }); 
+  let html = `<div class="calendar-block"><h3>${monthName} ${year}</h3><table><thead><tr><th>Mo</th><th>Di</th><th>Mi</th><th>Do</th><th>Fr</th><th>Sa</th><th>So</th></tr></thead><tbody>`;
+  let day = 1;
 
-  let calendarHTML = `
-    <div class="calendar-block">
-      <h3>${monthNames[month]} ${year}</h3>
-      <table>
-        <thead>
-          <tr><th>Mo</th><th>Di</th><th>Mi</th><th>Do</th><th>Fr</th><th>Sa</th><th>So</th></tr>
-        </thead>
-        <tbody>
-  `;
-
-  let startDayOffset = (firstDay === 0) ? 6 : firstDay - 1; 
-
-  for (let i = 0; i < startDayOffset; i++) {
-    calendarHTML += `<td class='empty'></td>`;
-  }
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    const currentCalendarDayForCell = new Date(year, month, day); 
-    currentCalendarDayForCell.setHours(0,0,0,0); 
-
-    const flightsForDay = requestData.filter(r => {
-      let flightDate = r['Flight Date']; 
-      if (typeof flightDate === 'string' && flightDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const [fYear, fMonth, fDay] = flightDate.split('-').map(Number);
-        if (fYear === year && (fMonth - 1) === month && fDay === day) { 
-            return true;
+  const flightsByDay = new Map(); 
+  requestData.forEach((r) => {
+    const flightDate = r['Flight Date']; 
+    if (flightDate) {
+      const datePart = String(flightDate).includes('T') ? String(flightDate).split('T')[0] : String(flightDate);
+      const [fYear, fMonth, fDay] = datePart.split('-').map(Number);
+      if (fYear === year && fMonth === (month + 1)) { 
+        if (!flightsByDay.has(fDay)) { 
+          flightsByDay.set(fDay, []); 
         }
+        flightsByDay.get(fDay).push(r); 
       }
-      return false;
-    });
-
-    let cellClasses = ['calendar-day'];
-    let tooltipContentArray = []; 
-    let simpleTitleContent = ''; 
-    let dayHasVorfeldbegleitung = false; 
-
-    if (currentCalendarDayForCell.getTime() === today.getTime()) {
-        cellClasses.push('today-border'); // Korrigierte Klasse, um CSS-Stil zu nutzen
     }
+  });
 
-    if (flightsForDay.length > 0) {
-      cellClasses.push('has-flights'); 
-      
-      flightsForDay.forEach(f => {
-        const tonnageValue = parseFloat(String(f.Tonnage).replace(',', '.') || "0") || 0;
-        
-        let formattedAbflugzeit = f['Abflugzeit'] || '-';
-        if (typeof formattedAbflugzeit === 'string' && formattedAbflugzeit.match(/^\d{2}:\d{2}$/)) { 
-            // Already HH:MM
-        } else if (formattedAbflugzeit instanceof Date) { 
-            formattedAbflugzeit = formattedAbflugzeit.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-        } else if (typeof formattedAbflugzeit === 'string' && formattedAbflugzeit.includes('T')) { 
-            try {
-                const timeObj = new Date(formattedAbflugzeit);
-                if (!isNaN(timeObj.getTime())) {
-                    formattedAbflugzeit = timeObj.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-                }
-            } catch (e) {
-                console.error("Fehler beim Formatieren der Abflugzeit für Tooltip:", formattedAbflugzeit, e);
+  for (let i = 0; i < 6; i++) { // Max 6 Zeilen für Wochen
+    html += "<tr>";
+    for (let j = 0; j < 7; j++) { // 7 Tage pro Woche
+      if ((i === 0 && j < firstDayOfMonthWeekday) || day > daysInMonth) {
+        html += "<td class='empty'></td>";
+      } else {
+        const flightsForDay = flightsByDay.get(day) || []; 
+        let cellClasses = ['calendar-day'];
+        let tooltipContentArray = []; 
+        let simpleTitleContent = ''; 
+        let dayHasVorfeldbegleitung = false; 
+
+        // Überprüfe, ob der aktuelle Tag der heutige Tag ist
+        const currentCalendarDay = new Date(year, month, day);
+        currentCalendarDay.setHours(0,0,0,0);
+        if (currentCalendarDay.getTime() === today.getTime()) {
+            cellClasses.push('today');
+        }
+
+        if (flightsForDay.length > 0) {
+          cellClasses.push('has-flights'); 
+          
+          flightsForDay.forEach(f => {
+            const tonnageValue = parseFloat(String(f.Tonnage).replace(',', '.') || "0") || 0;
+            tooltipContentArray.push(
+              `Ref: ${f.Ref || '-'}` +
+              `\nAirline: ${f.Airline || '-'}` +
+              `\nFlugnummer: ${f.Flugnummer || '-'}` + 
+              `\nAbflugzeit: ${f['Abflugzeit'] || '-'}` +
+              `\nTonnage: ${tonnageValue.toLocaleString('de-DE')} kg` 
+            );
+            if (f['Vorfeldbegleitung'] && String(f['Vorfeldbegleitung']).toLowerCase() === 'ja') {
+              dayHasVorfeldbegleitung = true; 
             }
+          });
+          simpleTitleContent = `Flüge: ${flightsForDay.length}`; 
         }
 
+        // Sicherstellen, dass data-tooltip HTML-Entities korrekt escapen
+        const dataTooltipContent = tooltipContentArray.join('\n\n').replace(/'/g, '&apos;').replace(/"/g, '&quot;'); 
+        const flightIcon = dayHasVorfeldbegleitung ? ' <span class="flight-icon">&#9992;</span>' : '';
 
-        tooltipContentArray.push(
-          `Ref: ${f.Ref || '-'}` +
-          `\nAirline: ${f.Airline || '-'}` +
-          `\nFlugnummer: ${f.Flugnummer || '-'}` + 
-          `\nAbflugzeit: ${formattedAbflugzeit}` + 
-          `\nTonnage: ${tonnageValue.toLocaleString('de-DE')} kg` 
-        );
-        if (f['Vorfeldbegleitung'] && String(f['Vorfeldbegleitung']).toLowerCase() === 'ja') {
-          dayHasVorfeldbegleitung = true; 
-        }
-      });
-      simpleTitleContent = `Flüge: ${flightsForDay.length}`; 
+        html += `<td class='${cellClasses.join(' ')}' title='${simpleTitleContent}' data-tooltip='${dataTooltipContent}' onclick="openCalendarDayFlights(${year}, ${month}, ${day})">${day}${flightIcon}</td>`;
+        day++;
+      }
     }
-
-    const dataTooltipContent = tooltipContentArray.join('\n\n').replace(/'/g, '&apos;').replace(/"/g, '&quot;'); 
-    const flightIcon = dayHasVorfeldbegleitung ? ' <span class="flight-icon">&#9992;</span>' : '';
-
-    calendarHTML += `<td class='${cellClasses.join(' ')}' title='${simpleTitleContent}' data-tooltip='${dataTooltipContent}' onclick="openCalendarDayFlights(${year}, ${month}, ${day})">${day}${flightIcon}</td>`;
+    html += "</tr>";
+    if (day > daysInMonth) break; 
   }
-
-  while ((startDayOffset + daysInMonth) % 7 !== 0) {
-    calendarHTML += `<td class='empty'></td>`;
-    daysInMonth++; 
-  }
-
-  calendarHTML += `
-        </tbody>
-      </table>
-    </div>
-  `;
-  return calendarHTML;
+  html += "</tbody></table></div>";
+  return html;
 }
+
+// === UHRZEIT UND DATUM ===
+document.addEventListener("DOMContentLoaded", () => {
+  getAdminStatusFromLocalStorage(); 
+  updateClock();
+  setInterval(updateClock, 1000);
+  fetchData(); 
+});
 
 function updateClock() {
   const now = new Date();
@@ -795,7 +646,19 @@ function updateClock() {
   document.getElementById('clock').textContent = "Time: " + now.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
 }
 
-let feedbackTimeout;
+// === NEUE ANFRAGE ERSTELLEN ===
+function generateReference() {
+  const now = new Date();
+  const timestamp = now.toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\./g, '').replace(/\//g, ''); 
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase(); 
+  return `CC-${timestamp}-${random}`;
+}
+
+function createNewRequest() {
+  openModal(-1);
+}
+
+// === FEEDBACK ANZEIGEN ===
 function showSaveFeedback(message, success) {
   const feedback = document.createElement("div");
   feedback.textContent = message;
@@ -812,13 +675,14 @@ function showSaveFeedback(message, success) {
   setTimeout(() => feedback.remove(), 3000);
 }
 
+// NEUE FUNKTIONEN FÜR HISTORY MODAL
 async function showHistory(ref) {
   const historyModal = document.getElementById("historyModal");
   const historyBody = document.getElementById("historyBody");
   const historyRefSpan = document.getElementById("historyRef");
 
   historyRefSpan.textContent = ref;
-  historyBody.innerHTML = '<p style="text-align: center;">Lade Verlauf...</p>';
+  historyBody.innerHTML = '<p style="text-align: center;">Loading history...</p>';
   historyModal.style.display = "flex";
 
   try {
@@ -826,40 +690,28 @@ async function showHistory(ref) {
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
-    const auditResult = await response.json(); 
+    const auditResult = await response.json(); // Muss response.json() sein
 
+    // KORREKTUR HIER: Greife auf den 'data'-Schlüssel des Audit-Objekts zu
     const filteredLogs = auditResult.data.filter(log => log.Reference === ref);
 
     if (filteredLogs.length === 0) {
-      historyBody.innerHTML = '<p style="text-align: center;">Kein Verlauf für diese Referenz gefunden.</p>';
+      historyBody.innerHTML = '<p style="text-align: center;">No history found for this reference.</p>';
       return;
     }
 
     let historyHTML = '<ul style="list-style-type: none; padding: 0;">';
     filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp)).forEach(log => {
-      let detailsContent = String(log.Details || '-'); 
-      
-      if (!isAdmin && typeof detailsContent === 'string') { 
-        const sensitiveFields = [
-          'Rate:', 'Security charges:', 'Dangerous Goods:', 
-          '10ft consumables:', '20ft consumables:', 'Zusatzkosten:', 
-          'Email Request:' 
-        ];
-        
-        let filteredDetails = detailsContent;
-        sensitiveFields.forEach(field => {
-          const regex = new RegExp(`(${field}\\s*[^;\\n]*)`, 'g'); 
-          filteredDetails = filteredDetails.replace(regex, `${field} [GESCHWÄRZT]`); 
-        });
-        detailsContent = filteredDetails;
-      }
-      
+      // Versuch, JSON-Strings in Details zu formatieren, falls vorhanden
+      let detailsContent = log.Details || '-';
       try {
+          // Prüfen, ob Details ein JSON-String von einem gelöschten Eintrag sein könnte
           const parsedDetails = JSON.parse(detailsContent);
           if (typeof parsedDetails === 'object' && parsedDetails !== null) {
               detailsContent = 'Gelöschte Daten: <pre>' + JSON.stringify(parsedDetails, null, 2) + '</pre>';
           }
       } catch (e) {
+          // Nichts tun, wenn es kein JSON ist
       }
 
 
@@ -876,8 +728,8 @@ async function showHistory(ref) {
     historyBody.innerHTML = historyHTML;
 
   } catch (error) {
-    console.error("Fehler beim Abrufen des Audit-Logs:", error);
-    historyBody.innerHTML = '<p style="color: red; text-align: center;">Fehler beim Laden des Verlaufs: ' + error.message + '</p>';
+    console.error("Error fetching audit log:", error);
+    historyBody.innerHTML = '<p style="color: red; text-align: center;">Error loading history: ' + error.message + '</p>';
   }
 }
 
