@@ -1,5 +1,4 @@
 // Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
-// KORREKTUR: Die API_URL ist jetzt ein einfacher String ohne Markdown-Formatierung.
 const API_URL = 'https://script.google.com/macros/s/AKfycbxlkY1f94D26BKvs7oeiNUhOJHEycsox3J61kb4iN7z_3frXRzfB8sCuCnWQVbFgk88/exec'; // <<< VERIFIZIERE DIESE URL
 
 // !!! WICHTIG: Die users.js-Importzeile wird entfernt, da die Benutzerdaten nun aus Google Sheets kommen. !!!
@@ -615,7 +614,7 @@ async function saveDetails() {
     } else if (['Tonnage', 'Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables'].includes(i.name)) {
         // Tonnage und Preis-Felder: Kommas durch Punkte ersetzen
         data[i.name] = i.value.replace(/,/g, '.') || "";
-    } else {
+    } else { // Wichtig: Für 'Zusatzkosten' (textarea) kommt der Wert einfach als String.
         if (i.type === "checkbox") {
             data[i.name] = i.checked ? "Ja" : "Nein";
         } else {
@@ -628,7 +627,7 @@ async function saveDetails() {
   data.mode = "write"; 
   data.user = currentUser.name; 
 
-  console.log('Payload for saving:', data); // Hinzugefügter Log
+  console.log('Payload for saving:', data); 
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
@@ -715,44 +714,36 @@ function renderCalendars() {
 }
 
 function openCalendarDayFlights(year, month, day) {
-  const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  console.log(`Clicked on calendar day: ${dateStr}`); // Hinzugefügter Log
+  console.log(`Clicked on calendar day: Jahr ${year}, Monat ${month + 1}, Tag ${day}`); 
+
+  // Erstelle das Vergleichsdatum als String (YYYY-MM-DD)
+  const clickedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   
   const flightsOnThisDay = requestData.filter(r => {
-    let flightDateFromData = r['Flight Date'] || '';
-    let parsedDate = null;
-
-    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
-        const parts = flightDateFromData.split('-');
-        parsedDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    } else if (flightDateFromData instanceof Date) { 
-        parsedDate = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
-    } else {
-        parsedDate = new Date('Invalid Date'); // Ungültiges Datum
-    }
-    parsedDate.setHours(0,0,0,0); // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist
+    let flightDateFromData = r['Flight Date']; // Dies ist bereits YYYY-MM-DD vom Backend
     
-    // Debugging date comparison
-    console.log(`  Comparing flight date "${flightDateFromData}" (parsed: ${parsedDate}) with clicked date "${dateStr}"`); // Hinzugefügter Log
-    return parsedDate && !isNaN(parsedDate.getTime()) && parsedDate.toISOString().split('T')[0] === dateStr;
+    // Einfacher String-Vergleich
+    const isMatch = flightDateFromData === clickedDateStr;
+    console.log(`  Vergleich: Flugdatum "${flightDateFromData}" vs. geklicktes Datum "${clickedDateStr}" -> Match: ${isMatch}`);
+    return isMatch;
   });
 
-  console.log(`Flights found for ${dateStr}:`, flightsOnThisDay); // Hinzugefügter Log
+  console.log(`Gefundene Flüge für diesen Tag (${clickedDateStr}):`, flightsOnThisDay); 
 
   if (flightsOnThisDay.length > 0) {
+    // Wenn mehrere Flüge am selben Tag, öffne den ersten gefundenen.
+    // Optimal wäre eine Liste oder Auswahl, aber für den Anfang öffnen wir den ersten.
     const firstFlight = flightsOnThisDay[0];
     const originalIndex = requestData.findIndex(item => item.Ref === firstFlight.Ref); 
-    console.log(`First flight Ref: ${firstFlight.Ref}, Original Index: ${originalIndex}`); // Hinzugefügter Log
+    console.log(`Erster Flug Ref: ${firstFlight.Ref}, Original Index: ${originalIndex}`); 
 
     if (originalIndex !== -1) {
       openModal(originalIndex);
     } else {
       console.warn("Konnte den Originalindex des Fluges nicht finden:", firstFlight);
-      // Fallback, falls Ref nicht gefunden, aber der Eintrag existiert. Sollte nicht passieren, wenn Ref eindeutig ist.
-      // openModal(requestData.indexOf(firstFlight)); 
     }
   } else {
-      console.log("No flights found for this day."); // Hinzugefügter Log
+      console.log("Keine Flüge für diesen Tag gefunden."); 
   }
 }
 
@@ -766,25 +757,17 @@ function generateCalendarHTML(year, month) {
   const flightsByDay = new Map(); 
   requestData.forEach((r) => {
     let flightDate = r['Flight Date']; 
-    // Sicherstellen, dass flightDate immer ein Date-Objekt ist und die Uhrzeit auf Mitternacht gesetzt ist
-    let currentFlightDateObj = null;
-    if (typeof flightDate === 'string' && flightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
-        const parts = flightDate.split('-');
-        currentFlightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    } else if (flightDate instanceof Date) {
-        currentFlightDateObj = new Date(flightDate.getFullYear(), flightDate.getMonth(), flightDate.getDate());
-    } else {
-        currentFlightDateObj = new Date('Invalid Date'); // Setzt auf Invalid Date, falls ungültig
-    }
-    currentFlightDateObj.setHours(0,0,0,0); // Wichtig für konsistente Vergleiche
-    console.log(`[generateCalendarHTML] Original: "${flightDate}", Geparsed (Lokal): ${currentFlightDateObj}`);
-
-    if (currentFlightDateObj && !isNaN(currentFlightDateObj.getTime()) && currentFlightDateObj.getFullYear() === year && currentFlightDateObj.getMonth() === month) { 
-        const fDay = currentFlightDateObj.getDate(); // KORREKTUR: Hier war der Fehler, sollte currentFlightDateObj.getDate() sein
-        if (!flightsByDay.has(fDay)) { 
-          flightsByDay.set(fDay, []); 
+    // Da das Backend 'Flight Date' als 'YYYY-MM-DD' String liefert, können wir es direkt verwenden.
+    // Kein Parsen zu Date-Objekten hier, um Konsistenz zu gewährleisten.
+    if (typeof flightDate === 'string' && flightDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [fYear, fMonth, fDay] = flightDate.split('-').map(Number);
+        // Prüfe, ob Jahr und Monat übereinstimmen
+        if (fYear === year && (fMonth - 1) === month) { // fMonth ist 1-indexed, month ist 0-indexed
+            if (!flightsByDay.has(fDay)) { 
+              flightsByDay.set(fDay, []); 
+            }
+            flightsByDay.get(fDay).push(r); 
         }
-        flightsByDay.get(fDay).push(r); 
     }
   });
 
@@ -939,8 +922,8 @@ async function showHistory(ref) {
       if (currentUser && currentUser.role === 'viewer' && typeof detailsContent === 'string') {
         const sensitiveFields = [
           'Rate:', 'Security charges:', 'Dangerous Goods:', 
-          '10ft consumables:', '20ft consumables:', 'Zusatzkosten:',
-          'Email Request:' // Auch Email Request in History schwärzen für Viewer
+          '10ft consumables:', '20ft consumables:', 'Zusatzkosten:', // Hinzugefügt für Schwärzung
+          'Email Request:' 
         ];
         
         let filteredDetails = detailsContent;
