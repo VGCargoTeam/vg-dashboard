@@ -185,8 +185,8 @@ function openModal(originalIndex) {
     'Rate': "", 'Security charges': "", 'Dangerous Goods': "",
     '10ft consumables': "", '20ft consumables': "",
     'Zusatzkosten': "", 'Email Request': "",
-    'AGB Accepted': "Nein", // NEU
-    'Service Description Accepted': "Nein", // NEU
+    'AGB Accepted': "Ja", // NEU
+    'Service Description Accepted': "Ja", // NEU
     'Accepted By Name': "", // NEU
     'Acceptance Timestamp': "" // NEU
   } : requestData[originalIndex]; // Hier requestData direkt verwenden
