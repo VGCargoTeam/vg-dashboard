@@ -399,7 +399,7 @@
                 return;
             }
 
-            pendingPayload.acceptedByName = acceptedName; // Name zum Payload hinzufügen
+            pendingPayload['Accepted By Name'] = acceptedName; // Name zum Payload hinzufügen
             nameConfirmModal.style.display = 'none'; // Modal schließen
             submitButton.disabled = true; // Submit Button deaktivieren, bis Anfrage fertig ist
             submitButton.textContent = 'Submitting...'; // Text ändern
