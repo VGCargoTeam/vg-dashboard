@@ -103,8 +103,7 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
       <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})">${r.Ref}</a></td>
       <td>${displayFlightDate}</td>
       <td>${r.Airline || "-"}</td>
-      <td>${tonDisplay} kg</td> <!-- Hier geändert: Direkter String-Wert von Tonnage -->
-      <td>
+      <td>${tonDisplay} kg</td> <td>
         <button class="btn btn-view" onclick="openModal(${originalIndex})">View</button> 
         ${deleteButtonHTML}
       </td>
@@ -184,6 +183,15 @@ function filterTable() {
 }
 
 // === MODAL FUNKTIONEN ===
+function generateReference() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const random = String(Math.floor(Math.random() * 9000) + 1000); // 4-stellige Zufallszahl
+  return `REQ-${year}${month}${day}-${random}`;
+}
+
 function openModal(originalIndex) {
   const r = originalIndex === -1 ? {
     Ref: generateReference(),
@@ -262,7 +270,7 @@ function openModal(originalIndex) {
         } else if (!(String(value).length === 5 && String(value).includes(':'))) {
             value = ""; // Wenn nicht HH:MM, leeren
         }
-        return `<label>${label}</label><input type="time" name="${key}" value="${value}" ${readOnlyAttr} style="${styleAttr}">`;
+        return `<label>${label}:</label><input type="time" name="${key}" value="${value}" ${readOnlyAttr} style="${styleAttr}">`;
       } else if (key === "AGB Accepted" || key === "Service Description Accepted") { 
           // Immer einen grünen Haken anzeigen, da der Kunde die AGB akzeptieren MUSS, um eine Anfrage zu senden.
           const icon = '&#10004;'; // Grüner Haken
@@ -551,7 +559,7 @@ function openCalendarDayFlights(year, month, day) {
   const clickedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   
   const flightsOnThisDay = requestData.filter(r => {
-    let flightDateFromData = r['Flight Date']; // Dies ist bereits YYYY-MM-DD vom Backend
+    let flightDateFromData = r['Flight Date']; // Dies ist bereits Überblick-MM-DD vom Backend
     
     // Einfacher String-Vergleich
     const isMatch = flightDateFromData === clickedDateStr;
@@ -578,14 +586,6 @@ function openCalendarDayFlights(year, month, day) {
   }
 }
 
-function generateReference() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const random = String(Math.floor(Math.random() * 9000) + 1000); // 4-stellige Zufallszahl
-  return `REQ-${year}${month}${day}-${random}`;
-}
 
 function createNewRequest(year, month, day) {
   const prefilledDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -697,8 +697,7 @@ function generateCalendarHTML(year, month) {
     const dataTooltipContent = tooltipContentArray.join('\n\n').replace(/'/g, '&apos;').replace(/"/g, '&quot;'); 
     const flightIcon = dayHasVorfeldbegleitung ? ' <span class="flight-icon">&#9992;</span>' : '';
 
-    html += `<td class='${cellClasses.join(' ')}' title='${simpleTitleContent}' data-tooltip='${dataTooltipContent}' onclick="openCalendarDayFlights(${year}, ${month}, ${day})">${day}${flightIcon}</td>`;
-    day++;
+    calendarHTML += `<td class='${cellClasses.join(' ')}' title='${simpleTitleContent}' data-tooltip='${dataTooltipContent}' onclick="openCalendarDayFlights(${year}, ${month}, ${day})">${day}${flightIcon}</td>`;
   }
 
   while ((startDayOffset + daysInMonth) % 7 !== 0) {
@@ -729,13 +728,6 @@ function updateClock() {
   const now = new Date();
   document.getElementById('currentDate').textContent = "Date: " + now.toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' }); 
   document.getElementById('clock').textContent = "Time: " + now.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
-}
-
-function generateReference() {
-  const now = new Date();
-  const timestamp = now.toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\./g, '').replace(/\//g, ''); 
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase(); 
-  return `CC-${timestamp}-${random}`;
 }
 
 function createNewRequest() {
