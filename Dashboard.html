@@ -75,15 +75,21 @@
       text-decoration: underline;
     }
     .filter-controls {
-      display: flex; /* Changed to flexbox */
-      align-items: center; /* Aligns items vertically in the center */
-      flex-wrap: wrap; /* Allows items to wrap to the next line on smaller screens */
-      gap: 10px; /* Spacing between items */
       margin-bottom: 20px;
       padding: 15px;
       background-color: #f0f8ff; /* Light blue background for filters */
       border-radius: 8px;
       border: 1px solid #e0f2ff;
+    }
+    .filter-row { /* Neue Klasse für die Zeilen in den Filtern */
+      display: flex; 
+      align-items: center;
+      flex-wrap: wrap; 
+      gap: 10px; 
+      margin-bottom: 10px; /* Abstand zwischen den Filterzeilen */
+    }
+    .filter-row:last-child {
+      margin-bottom: 0; /* Kein Abstand nach der letzten Zeile */
     }
     .filter-controls label {
       font-weight: 500;
@@ -457,12 +463,16 @@
     </div>
 
     <div class="filter-controls">
-      <label for="refSearch">Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
-      <label for="airlineSearch">Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
-      <label for="flightNumberSearch">Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" />
-      <label for="fromDate">From:</label> <input type="date" id="fromDate" onchange="filterTable()" />
-      <label for="toDate">To:</label> <input type="date" id="toDate" onchange="filterTable()" />
-      <label for="archiveCheckbox">Archiv anzeigen:</label> <input type="checkbox" id="archiveCheckbox" />
+      <div class="filter-row">
+        <label for="refSearch">Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
+        <label for="airlineSearch">Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
+        <label for="flightNumberSearch">Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" />
+      </div>
+      <div class="filter-row date-filters">
+        <label for="fromDate">From:</label> <input type="date" id="fromDate" onchange="filterTable()" />
+        <label for="toDate">To:</label> <input type="date" id="toDate" onchange="filterTable()" />
+        <label for="archiveCheckbox">Archiv anzeigen:</label> <input type="checkbox" id="archiveCheckbox" />
+      </div>
     </div>
 
     <div class="datetime-info" style="text-align: right; margin-bottom: 15px; color: #555;">
