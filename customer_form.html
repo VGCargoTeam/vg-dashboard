@@ -418,41 +418,18 @@
                 const result = await response.json();
 
                 if (response.ok && result.status === 'success') {
+                    const ref = pendingPayload.Ref || 'N/A'; 
+                    
                     form.reset();
                     termsAccepted.checked = false;
                     serviceAccepted.checked = false;
                     confirmNameInput.value = ''; // Modal-Eingabefeld zurücksetzen
                     
-                    successMessage.textContent = 'Your request has been submitted successfully!'; // Sicherstellen, dass der Text da ist
-                    successMessage.style.display = 'block'; // Erfolgsmeldung anzeigen
-                    errorMessage.style.display = 'none'; // Fehlermeldung ausblenden
-                    
+                    alert(`Thank you for your charter request!\n\nYour reference number is:\n${ref}\n\nWe will contact you shortly with the final charter confirmation.`);
+                                       
                     submitButton.disabled = false;
                     submitButton.textContent = 'Submit Request';
                     toggleSubmitButton();
-                    setTimeout(() => {
-                        successMessage.style.display = 'none';
-                    }, 5000); // Meldung nach 5 Sekunden ausblenden
-                } else {
-                    const message = result.message || 'Unknown error occurred.';
-                    errorMessage.textContent = 'Error submitting request: ' + message; // Fehlermeldung verwenden
-                    errorMessage.style.display = 'block';
-                    successMessage.style.display = 'none'; // Erfolgsmeldung ausblenden
-                    
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Submit Request';
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                errorMessage.textContent = 'An error occurred while submitting your request: ' + error.message + '. Please try again later.';
-                errorMessage.style.display = 'block';
-                successMessage.style.display = 'none'; // Erfolgsmeldung ausblenden
-                
-                submitButton.disabled = false;
-                submitButton.textContent = 'Submit Request';
-            } finally {
-                pendingPayload = null; // Payload zurücksetzen
-            }
         });
 
         // Event Listener für den Abbrechen-Button und den Schließen-Button im Modal
