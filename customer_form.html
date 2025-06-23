@@ -338,8 +338,15 @@
 
         // Function to toggle submit button based on checkbox and form validity
         function toggleSubmitButton() {
-            const isFormValid = form.checkValidity(); // Checks if all required fields are filled
-            submitButton.disabled = !(termsAccepted.checked && serviceAccepted.checked && isFormValid);
+            // Check form validity for all required fields
+            const allRequiredFilled = Array.from(form.querySelectorAll('[required]')).every(input => {
+                if (input.type === 'checkbox') {
+                    return input.checked;
+                }
+                return input.value.trim() !== '';
+            });
+
+            submitButton.disabled = !(termsAccepted.checked && serviceAccepted.checked && allRequiredFilled);
         }
 
         // Add event listeners to checkboxes and form inputs
@@ -358,9 +365,9 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // Wenn das Formular nicht gültig ist (z.B. required Felder nicht gefüllt),
-            // dann verhindern, dass das Modal geöffnet wird. Browser behandelt dies.
-            if (!form.checkValidity() || !(termsAccepted.checked && serviceAccepted.checked)) {
+            // Re-check validity before showing modal, just in case
+            if (!form.checkValidity() || !termsAccepted.checked || !serviceAccepted.checked) {
+                // The browser's built-in validation should prevent this, but good to have.
                 return; 
             }
 
@@ -427,9 +434,19 @@
                     
                     alert(`Thank you for your charter request!\n\nYour reference number is:\n${ref}\n\nWe will contact you shortly with the final charter confirmation.`);
                                        
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Submit Request';
-                    toggleSubmitButton();
+                } else { // THIS ELSE BLOCK WAS MISSING OR INCOMPLETE IN YOUR ORIGINAL CODE
+                    errorMessage.textContent = result.message || 'An error occurred while submitting your request. Please try again later.';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Submission Error:', error);
+                errorMessage.textContent = 'An error occurred during submission. Please try again later.';
+                errorMessage.style.display = 'block';
+            } finally { // Ensure button state is reset regardless of success/failure
+                submitButton.disabled = false;
+                submitButton.textContent = 'Submit Request';
+                toggleSubmitButton(); // Re-evaluate button state based on current form
+            }
         });
 
         // Event Listener für den Abbrechen-Button und den Schließen-Button im Modal
@@ -438,6 +455,7 @@
             confirmNameInput.value = ''; // Eingabefeld zurücksetzen
             submitButton.disabled = false; // Submit Button wieder aktivieren
             submitButton.textContent = 'Submit Request'; // Text zurücksetzen
+            toggleSubmitButton(); // Re-evaluate button state
         });
 
         closeNameModal.addEventListener('click', () => {
@@ -445,6 +463,7 @@
             confirmNameInput.value = ''; // Eingabefeld zurücksetzen
             submitButton.disabled = false; // Submit Button wieder aktivieren
             submitButton.textContent = 'Submit Request'; // Text zurücksetzen
+            toggleSubmitButton(); // Re-evaluate button state
         });
 
         // Schließe das Modal auch bei Klick außerhalb des Modal-Inhalts
@@ -454,6 +473,7 @@
                 confirmNameInput.value = ''; // Eingabefeld zurücksetzen
                 submitButton.disabled = false; // Submit Button wieder aktivieren
                 submitButton.textContent = 'Submit Request'; // Text zurücksetzen
+                toggleSubmitButton(); // Re-evaluate button state
             }
         });
 
@@ -464,6 +484,7 @@
                 confirmNameInput.value = ''; // Eingabefeld zurücksetzen
                 submitButton.disabled = false;
                 submitButton.textContent = 'Submit Request';
+                toggleSubmitButton(); // Re-evaluate button state
             }
         });
 
