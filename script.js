@@ -196,7 +196,7 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
         try {
             // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
             let dateObj;
-            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
+            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
                 const parts = displayFlightDate.split('-');
                 dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
             } else if (displayFlightDate instanceof Date) { // Falls es direkt ein Date-Objekt ist (selten, aber sicherheitshalber)
@@ -208,7 +208,7 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
             // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist, um Konsistenz zu gewährleisten
             dateObj.setHours(0, 0, 0, 0); 
             
-            console.log(`[renderTable] Original: "${r['Flight Date']}", Geparsed (Lokal): ${dateObj}`); // Log the original raw value too
+            console.log(`[renderTable] Original: "${r['Flight Date']}", Geparsed (Lokal): ${dateObj}`); // Zum Debuggen
 
             if (!isNaN(dateObj.getTime())) { 
                 displayFlightDate = dateObj.toLocaleDateString('de-DE'); 
@@ -262,7 +262,7 @@ function filterTable() {
     let flightDateObj;
 
     // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
-    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
+    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
         const parts = flightDateFromData.split('-');
         flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDateFromData instanceof Date) { // Falls es direkt ein Date-Objekt ist
@@ -400,10 +400,10 @@ function openModal(originalIndex) {
         if (value) {
             try {
                 // Parsen des Datums, um es im Input korrekt darzustellen (YYYY-MM-DD Format)
-                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
+                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
                     dateValue = value;
                 } else if (value instanceof Date) {
-                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu YYYY-MM-DD
+                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu竭-MM-DD
                 }
             } catch (e) {
                 console.error("Fehler beim Parsen des Flugdatums für Modal-Input:", value, e);
@@ -612,8 +612,8 @@ async function saveDetails() {
     if (i.name === "Flight Date") {
         data[i.name] = i.value; 
     } else if (['Tonnage', 'Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables'].includes(i.name)) {
-        // Tonnage und Preis-Felder: Kommas durch Punkte ersetzen
-        data[i.name] = i.value.replace(/,/g, '.') || "";
+        // Tonnage und Preis-Felder: Kommas durch Punkte ersetzen und Euro-Symbol sowie Leerzeichen entfernen
+        data[i.name] = i.value.replace(/,/g, '.').replace('€', '').trim() || "";
     } else { // Wichtig: Für 'Zusatzkosten' (textarea) kommt der Wert einfach als String.
         if (i.type === "checkbox") {
             data[i.name] = i.checked ? "Ja" : "Nein";
@@ -720,7 +720,7 @@ function openCalendarDayFlights(year, month, day) {
   const clickedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   
   const flightsOnThisDay = requestData.filter(r => {
-    let flightDateFromData = r['Flight Date']; // Dies ist bereits YYYY-MM-DD vom Backend
+    let flightDateFromData = r['Flight Date']; // Dies ist bereits竭-MM-DD vom Backend
     
     // Einfacher String-Vergleich
     const isMatch = flightDateFromData === clickedDateStr;
@@ -924,17 +924,24 @@ async function showHistory(ref) {
       if (currentUser && currentUser.role === 'viewer' && typeof detailsContent === 'string') {
         const sensitiveFields = [
           'Rate:', 'Security charges:', 'Dangerous Goods:', 
-          '10ft consumables:', '20ft consumables:', 'Zusatzkosten:', // Hinzugefügt für Schwärzung
+          '10ft consumables:', '20ft consumables:', 
           'Email Request:' 
         ];
         
         let filteredDetails = detailsContent;
+        
+        // Spezielle und aggressive Behandlung für 'Zusatzkosten'
+        // Passt die Zeile, die mit "Zusatzkosten:" beginnt, an und ersetzt deren Inhalt
+        filteredDetails = filteredDetails.replace(/^.*Zusatzkosten:.*$/gm, 'Zusatzkosten: [GESCHWÄRZT]');
+
+
         sensitiveFields.forEach(field => {
-          // Ersetze den Feldnamen und alles bis zum nächsten Semikolon oder Zeilenende
-          // Dadurch wird der Wert des Feldes geschwärzt
+          // Vorhandene Logik für andere Felder. Sicherstellen, dass der RegEx für ihr Format korrekt ist.
+          // Dieser RegEx ersetzt "Feld: Wert" durch "Feld: [GESCHWÄRZT]"
           const regex = new RegExp(`(${field}\\s*[^;\\n]*)`, 'g'); 
           filteredDetails = filteredDetails.replace(regex, `${field} [GESCHWÄRZT]`); 
         });
+        
         detailsContent = filteredDetails;
       }
       
