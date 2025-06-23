@@ -258,7 +258,7 @@ function filterTable() {
     let matchesDateRange = true; 
     let isPastOrTodayAndGoneFlight = false;    
 
-    let flightDateFromData = r['Flight Date'] || '';
+    let flightDateFromData = r['Flight Date'];
     let flightDateObj;
 
     // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
@@ -754,15 +754,15 @@ function generateCalendarHTML(year, month) {
   let html = `<div class="calendar-block"><h3>${monthName} ${year}</h3><table><thead><tr><th>Mo</th><th>Di</th><th>Mi</th><th>Do</th><th>Fr</th><th>Sa</th><th>So</th></tr></thead><tbody>`;
   let day = 1;
 
+  const today = new Date(); // Get today's date
+  today.setHours(0, 0, 0, 0); // Reset time for accurate date comparison
+
   const flightsByDay = new Map(); 
   requestData.forEach((r) => {
     let flightDate = r['Flight Date']; 
-    // Da das Backend 'Flight Date' als 'YYYY-MM-DD' String liefert, können wir es direkt verwenden.
-    // Kein Parsen zu Date-Objekten hier, um Konsistenz zu gewährleisten.
     if (typeof flightDate === 'string' && flightDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
         const [fYear, fMonth, fDay] = flightDate.split('-').map(Number);
-        // Prüfe, ob Jahr und Monat übereinstimmen
-        if (fYear === year && (fMonth - 1) === month) { // fMonth ist 1-indexed, month ist 0-indexed
+        if (fYear === year && (fMonth - 1) === month) {
             if (!flightsByDay.has(fDay)) { 
               flightsByDay.set(fDay, []); 
             }
@@ -777,8 +777,8 @@ function generateCalendarHTML(year, month) {
       if ((i === 0 && j < firstDayOfMonthWeekday) || day > daysInMonth) {
         html += "<td class='empty'></td>";
       } else {
-        const currentCalendarDayForCell = new Date(year, month, day); // Korrekte Initialisierung
-        currentCalendarDayForCell.setHours(0,0,0,0); // Zeit auf Mitternacht setzen
+        const currentCalendarDayForCell = new Date(year, month, day);
+        currentCalendarDayForCell.setHours(0,0,0,0);
 
         const flightsForDay = flightsByDay.get(day) || []; 
         let cellClasses = ['calendar-day'];
@@ -786,6 +786,7 @@ function generateCalendarHTML(year, month) {
         let simpleTitleContent = ''; 
         let dayHasVorfeldbegleitung = false; 
 
+        // Check if current day is today and add 'today' class
         if (currentCalendarDayForCell.getTime() === today.getTime()) {
             cellClasses.push('today');
         }
@@ -796,13 +797,11 @@ function generateCalendarHTML(year, month) {
           flightsForDay.forEach(f => {
             const tonnageValue = parseFloat(String(f.Tonnage).replace(',', '.') || "0") || 0;
             
-            // Abflugzeit korrekt formatieren für den Tooltip
             let formattedAbflugzeit = f['Abflugzeit'] || '-';
-            if (typeof formattedAbflugzeit === 'string' && formattedAbflugzeit.match(/^\d{2}:\d{2}$/)) { // Erwartet HH:MM vom Backend
-                // Keine Konvertierung nötig, da es bereits HH:MM ist
-            } else if (formattedAbflugzeit instanceof Date) { // Falls es direkt ein Date-Objekt ist
+            if (typeof formattedAbflugzeit === 'string' && formattedAbflugzeit.match(/^\d{2}:\d{2}$/)) {
+            } else if (formattedAbflugzeit instanceof Date) {
                 formattedAbflugzeit = formattedAbflugzeit.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-            } else if (typeof formattedAbflugzeit === 'string' && formattedAbflugzeit.includes('T')) { // falls ISO-String vom Backend
+            } else if (typeof formattedAbflugzeit === 'string' && formattedAbflugzeit.includes('T')) {
                 try {
                     const timeObj = new Date(formattedAbflugzeit);
                     if (!isNaN(timeObj.getTime())) {
@@ -831,7 +830,10 @@ function generateCalendarHTML(year, month) {
         const dataTooltipContent = tooltipContentArray.join('\n\n').replace(/'/g, '&apos;').replace(/"/g, '&quot;'); 
         const flightIcon = dayHasVorfeldbegleitung ? ' <span class="flight-icon">&#9992;</span>' : '';
 
-        html += `<td class='${cellClasses.join(' ')}' title='${simpleTitleContent}' data-tooltip='${dataTooltipContent}' onclick="openCalendarDayFlights(${year}, ${month}, ${day})">${day}${flightIcon}</td>`;
+        // Added styling for 'today' class here
+        const dayNumberClass = cellClasses.includes('today') ? 'font-bold text-lg' : '';
+
+        html += `<td class='${cellClasses.join(' ')}' title='${simpleTitleContent}' data-tooltip='${dataTooltipContent}' onclick="openCalendarDayFlights(${year}, ${month}, ${day})"><div class="${dayNumberClass}">${day}</div>${flightIcon}</td>`;
         day++;
       }
     }
