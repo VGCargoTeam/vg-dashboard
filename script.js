@@ -347,7 +347,9 @@ function openModal(originalIndex) {
     'AGB Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
     'Service Description Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
     'Accepted By Name': "", 
-    'Acceptance Timestamp': "" 
+    'Acceptance Timestamp': "",
+    'Export': "Nein", // Initialwert für Export
+    'Import': "Nein"  // Initialwert für Import
   } : requestData[originalIndex]; 
 
   const modal = document.getElementById("detailModal");
@@ -424,7 +426,7 @@ function openModal(originalIndex) {
           const icon = '&#10004;'; // Grüner Haken
           const color = 'green';
           return `<label>${label}: <span style="color: ${color}; font-size: 1.2em; font-weight: bold;">${icon}</span></label>`;
-      } else if (key === "Vorfeldbegleitung" && type === "checkbox") { 
+      } else if ( (key === "Vorfeldbegleitung" || key === "Export" || key === "Import") && type === "checkbox") { // Hier Export/Import als Checkboxen behandeln
         const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
         return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}"> ${label}</label>`;
       } else if (['Tonnage'].includes(key)) { // Tonnage darf Viewer sehen und bearbeiten
@@ -461,7 +463,9 @@ function openModal(originalIndex) {
     { label: "Abflugzeit", key: "Abflugzeit" },
     { label: "Tonnage", key: "Tonnage" },
     { label: "Vorfeldbegleitung", key: "Vorfeldbegleitung", type: "checkbox" },
-    { label: "E-Mail Request", key: "Email Request" } // Email Request hier hinzufügen, da es ein normales Feld ist
+    { label: "E-Mail Request", key: "Email Request" },
+    { label: "Export", key: "Export", type: "checkbox" }, // NEU: Export-Checkbox
+    { label: "Import", key: "Import", type: "checkbox" }  // NEU: Import-Checkbox
   ];
 
   // Preisbezogene Felder, die nur für Admins sichtbar sind
@@ -617,7 +621,7 @@ async function saveDetails() {
     } else if (['Tonnage', 'Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables'].includes(i.name)) {
         // Tonnage und Preis-Felder: Kommas durch Punkte ersetzen und Euro-Symbol sowie Leerzeichen entfernen
         data[i.name] = i.value.replace(/,/g, '.').replace('€', '').trim() || "";
-    } else { // Wichtig: Für 'Zusatzkosten' (textarea) kommt der Wert einfach als String.
+    } else { // Wichtig: Für 'Zusatzkosten', 'Export', 'Import' (textarea/checkbox) kommt der Wert einfach als String.
         if (i.type === "checkbox") {
             data[i.name] = i.checked ? "Ja" : "Nein";
         } else {
@@ -788,6 +792,8 @@ function generateCalendarHTML(year, month) {
         let tooltipContentArray = []; 
         let simpleTitleContent = ''; 
         let dayHasVorfeldbegleitung = false; 
+        let dayHasExport = false; // NEU: Flag für Export
+        let dayHasImport = false; // NEU: Flag für Import
 
         // Check if current day is today and add 'today' class
         if (currentCalendarDayForCell.getTime() === today.getTime()) {
@@ -826,8 +832,23 @@ function generateCalendarHTML(year, month) {
             if (f['Vorfeldbegleitung'] && String(f['Vorfeldbegleitung']).toLowerCase() === 'ja') {
               dayHasVorfeldbegleitung = true; 
             }
+            // NEU: Export/Import Flags setzen
+            if (f['Export'] && String(f['Export']).toLowerCase() === 'ja') {
+                dayHasExport = true;
+            }
+            if (f['Import'] && String(f['Import']).toLowerCase() === 'ja') {
+                dayHasImport = true;
+            }
           });
           simpleTitleContent = `Flüge: ${flightsForDay.length}`; 
+        }
+        
+        // NEU: Klassen für Kalenderfarben hinzufügen
+        if (dayHasExport) {
+            cellClasses.push('calendar-export');
+        }
+        if (dayHasImport) {
+            cellClasses.push('calendar-import');
         }
 
         const dataTooltipContent = tooltipContentArray.join('\n\n').replace(/'/g, '&apos;').replace(/"/g, '&quot;'); 
