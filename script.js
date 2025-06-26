@@ -924,36 +924,44 @@ async function showHistory(ref) {
     filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp)).forEach(log => {
       let detailsContent = log.Details || '-';
       
+      // Nur für Viewer-Rolle sensible Informationen schwärzen
       if (currentUser && currentUser.role === 'viewer' && typeof detailsContent === 'string') {
-        const sensitiveFields = [
+        const sensitiveFieldPrefixes = [
           'Rate:', 
           'Security charges:', 
           'Dangerous Goods:', 
           '10ft consumables:', 
           '20ft consumables:',
-          'Zusatzkosten:' // Hinzugefügt in die sensitiveFields Liste
+          'Zusatzkosten:' // Dieses Feld wird nun auch durch die Schleife verarbeitet
         ];
         
-        let filteredDetails = detailsContent;
-        
-        // Die spezielle Behandlung für 'Zusatzkosten' wurde entfernt, da sie jetzt durch sensitiveFields abgedeckt ist.
+        let processedDetailsParts = [];
+        // Teilen Sie den Details-String in einzelne Änderungen auf (basierend auf Semikolon als Trennzeichen)
+        const detailParts = detailsContent.split(';').map(part => part.trim()).filter(part => part !== '');
 
-        sensitiveFields.forEach(field => {
-          // Dieser RegEx ersetzt "Feld: Wert" durch "Feld: [GESCHWÄRZT]"
-          // Es wird alles nach dem Feldnamen bis zum nächsten Semikolon oder Zeilenumbruch geschwärzt.
-          const regex = new RegExp(`(${field}\\s*[^;\\n]*)`, 'g'); 
-          filteredDetails = filteredDetails.replace(regex, `${field} [GESCHWÄRZT]`); 
+        detailParts.forEach(part => {
+            let redactedPart = part;
+            for (const prefix of sensitiveFieldPrefixes) {
+                if (part.startsWith(prefix)) {
+                    // Ersetze alles nach dem Präfix in diesem spezifischen Teil mit '[GESCHWÄRZT]'
+                    redactedPart = `${prefix} [GESCHWÄRZT]`;
+                    break; // Präfix gefunden und geschwärzt, gehe zum nächsten Teil
+                }
+            }
+            processedDetailsParts.push(redactedPart);
         });
-        
-        detailsContent = filteredDetails;
+        // Füge die verarbeiteten Teile wieder zusammen
+        detailsContent = processedDetailsParts.join('; ');
       }
       
       try {
+          // Versuchen, gelöschte Daten zu parsen, wenn es ein JSON-String ist
           const parsedDetails = JSON.parse(detailsContent);
           if (typeof parsedDetails === 'object' && parsedDetails !== null) {
               detailsContent = 'Gelöschte Daten: <pre>' + JSON.stringify(parsedDetails, null, 2) + '</pre>';
           }
       } catch (e) {
+          // Nicht-JSON-Strings werden direkt als Details angezeigt
       }
 
 
