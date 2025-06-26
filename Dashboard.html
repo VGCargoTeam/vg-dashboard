@@ -225,6 +225,24 @@
       font-size: 1.2em;
       color: #007BFF;
     }
+    .calendar-day.calendar-export {
+      background-color: #ffedd5; /* Helles Orange für Export */
+      border: 1px solid #f97316; /* Oranger Rand */
+  }
+  .calendar-day.calendar-import {
+      background-color: #dbeafe; /* Helles Blau für Import */
+      border: 1px solid #3b82f6; /* Blauer Rand */
+  }
+  /* Wenn ein Tag beides hat: Überlappung oder Mischung */
+  .calendar-day.calendar-export.calendar-import {
+      background: linear-gradient(to bottom right, #ffedd5, #dbeafe); /* Orange zu Blau Gradient */
+      border: 1px solid #a855f7; /* Lila Rand für beides */
+  }
+  /* Sicherstellen, dass der Text auf den farbigen Hintergründen lesbar bleibt */
+  .calendar-day.calendar-export div,
+  .calendar-day.calendar-import div {
+      color: #333; /* Dunklerer Text */
+  }
 
     /* TOOLTIP-STILE */
     [data-tooltip] {
