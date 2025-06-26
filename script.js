@@ -341,7 +341,6 @@ function openModal(originalIndex) {
     'Contact Name Invoicing': "", 'Contact E-Mail Invoicing': "",
     'Airline': "", 'Aircraft Type': "", 'Flugnummer': "",
     'Flight Date': "", 'Abflugzeit': "", 'Tonnage': "",
-    'Vorfeldbegleitung': "Nein",
     'Rate': "", 'Security charges': "", "Dangerous Goods": "Nein", // Standardwert "Nein"
     '10ft consumables': "", '20ft consumables': "",
     'Zusatzkosten': "", 'Email Request': "",
@@ -386,7 +385,7 @@ function openModal(originalIndex) {
       // Spezielle Handhabung für Price-related fields, damit sie für Viewer nicht angezeigt werden
       const isPriceRelatedField = [ 
         'Rate', 'Security charges', 'Dangerous Goods', 
-        '10ft consumables', '20ft consumables', 'Zusatzkosten' // 'Zusatzkosten' ist hier enthalten
+        '10ft consumables', '20ft consumables', 'Zusatzkosten' 
       ].includes(key);
 
       // Überspringe das Rendern dieser Felder für Viewer
@@ -424,13 +423,15 @@ function openModal(originalIndex) {
           // Immer einen grünen Haken anzeigen, da der Kunde die AGB akzeptieren MUSS, um eine Anfrage zu senden.
           const icon = '&#10004;'; // Grüner Haken
           const color = 'green';
-          return `<label>${label}: <span style="color: ${color}; font-size: 1.2em; font-weight: bold;">${icon}</span></label`;
+          return `<label>${label}: <span style="color: ${color}; font-size: 1.2em; font-weight: bold;">${icon}</span></label>`;
       } else if (key === "Vorfeldbegleitung" && type === "checkbox") { 
         const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
         return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}"> ${label}</label>`;
       } else if (['Tonnage'].includes(key)) { // Tonnage darf Viewer sehen und bearbeiten
           const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
           return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" ${readOnlyAttr} style="${styleAttr}" />`;
+      } else if (key === "Zusatzkosten") { // Spezialbehandlung für Zusatzkosten in der Detailansicht
+            return `<label>${label}:</label><textarea name="${key}" rows="5" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
       } else if (key === "Email Request") { // HIER DIE ÄNDERUNG FÜR E-MAIL REQUEST
           return `<label>${label}:</label><textarea name="${key}" rows="5" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
       }
