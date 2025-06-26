@@ -220,6 +220,54 @@
         .modal-buttons .cancel-button:hover {
             background-color: #c82333;
         }
+
+        /* NEW: Success Modal Specific Styles */
+        #successPopupModal .modal-content {
+            max-width: 500px;
+            padding: 40px;
+            background: linear-gradient(135deg, #e0f2f7 0%, #ffffff 100%); /* Light gradient background */
+            border: 1px solid #b3e5fc;
+            color: #333;
+        }
+        #successPopupModal h3 {
+            color: #007bff;
+            font-size: 2em; /* Larger title */
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        #successPopupModal p {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        #successPopupModal .reference-number {
+            font-size: 1.8em; /* Highlight reference number */
+            font-weight: 900;
+            color: #28a745; /* Success green */
+            background-color: #e6ffe6; /* Light green background */
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 15px;
+            margin-bottom: 25px;
+            border: 1px solid #28a745;
+            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.2);
+        }
+        #successPopupModal .ok-button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+        }
+        #successPopupModal .ok-button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -316,6 +364,20 @@
         </div>
     </div>
 
+    <!-- NEW: Modern Success Pop-up Modal -->
+    <div id="successPopupModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeSuccessPopup">&times;</span>
+            <h3>Thank You!</h3>
+            <p>Your charter request has been submitted successfully.</p>
+            <p>Your reference number is:</p>
+            <div class="reference-number" id="displayReferenceNumber"></div>
+            <p>We will contact you shortly with the final charter confirmation.</p>
+            <button class="ok-button" id="okSuccessButton">OK</button>
+        </div>
+    </div>
+
+
     <script>
         // API_URL aus deinen letzten Uploads - BITTE BESTÄTIGE DIESE URL ERNEUT VOR DEM HOCHLADEN AUF VERCEL!
         const API_URL = 'https://script.google.com/macros/s/AKfycbxlkY1f94D26BKvs7oeiNUhOJHEycsox3J61kb4iN7z_3frXRzfB8sCuCnWQVbFgk88/exec'; 
@@ -327,12 +389,19 @@
         const successMessage = document.getElementById('successMessage');
         const errorMessage = document.getElementById('errorMessage');
 
-        // Modal Elemente
+        // Modal Elemente für Namensbestätigung
         const nameConfirmModal = document.getElementById('nameConfirmModal');
         const confirmNameInput = document.getElementById('confirmNameInput');
         const modalConfirmBtn = document.getElementById('modalConfirmBtn');
         const modalCancelBtn = document.getElementById('modalCancelBtn');
         const closeNameModal = document.getElementById('closeNameModal');
+
+        // NEU: Modal Elemente für Erfolgs-Popup
+        const successPopupModal = document.getElementById('successPopupModal');
+        const displayReferenceNumber = document.getElementById('displayReferenceNumber');
+        const okSuccessButton = document.getElementById('okSuccessButton');
+        const closeSuccessPopup = document.getElementById('closeSuccessPopup');
+
 
         let pendingPayload = null; // Speichert das Payload, bis der Name bestätigt wurde
 
@@ -402,7 +471,13 @@
             const acceptedName = confirmNameInput.value.trim();
             if (acceptedName === '') {
                 // Eine bessere UX wäre ein Inline-Fehler oder eine schönere Warnung statt alert()
-                alert('Bitte geben Sie Ihren Namen ein, um die Bedingungen zu bestätigen.'); 
+                // Statt alert, eine temporäre Fehlermeldung im Modal anzeigen
+                const nameModalMessage = document.createElement('p');
+                nameModalMessage.textContent = 'Bitte geben Sie Ihren Namen ein.';
+                nameModalMessage.style.color = 'red';
+                nameModalMessage.style.marginTop = '10px';
+                nameConfirmModal.querySelector('.modal-content').appendChild(nameModalMessage);
+                setTimeout(() => nameModalMessage.remove(), 3000); // Nachricht nach 3 Sekunden entfernen
                 return;
             }
 
@@ -432,9 +507,11 @@
                     serviceAccepted.checked = false;
                     confirmNameInput.value = ''; // Modal-Eingabefeld zurücksetzen
                     
-                    alert(`Thank you for your charter request!\n\nYour reference number is:\n${ref}\n\nWe will contact you shortly with the final charter confirmation.`);
+                    // NEU: Erfolgs-Popup anzeigen
+                    displayReferenceNumber.textContent = ref;
+                    successPopupModal.style.display = 'flex'; // Popup anzeigen
                                        
-                } else { // THIS ELSE BLOCK WAS MISSING OR INCOMPLETE IN YOUR ORIGINAL CODE
+                } else { 
                     errorMessage.textContent = result.message || 'An error occurred while submitting your request. Please try again later.';
                     errorMessage.style.display = 'block';
                 }
@@ -442,14 +519,14 @@
                 console.error('Submission Error:', error);
                 errorMessage.textContent = 'An error occurred during submission. Please try again later.';
                 errorMessage.style.display = 'block';
-            } finally { // Ensure button state is reset regardless of success/failure
+            } finally { 
                 submitButton.disabled = false;
                 submitButton.textContent = 'Submit Request';
-                toggleSubmitButton(); // Re-evaluate button state based on current form
+                toggleSubmitButton(); 
             }
         });
 
-        // Event Listener für den Abbrechen-Button und den Schließen-Button im Modal
+        // Event Listener für den Abbrechen-Button und den Schließen-Button im Namens-Modal
         modalCancelBtn.addEventListener('click', () => {
             nameConfirmModal.style.display = 'none';
             confirmNameInput.value = ''; // Eingabefeld zurücksetzen
@@ -466,7 +543,17 @@
             toggleSubmitButton(); // Re-evaluate button state
         });
 
-        // Schließe das Modal auch bei Klick außerhalb des Modal-Inhalts
+        // Event Listener für den OK-Button und den Schließen-Button im Erfolgs-Popup
+        okSuccessButton.addEventListener('click', () => {
+            successPopupModal.style.display = 'none';
+        });
+
+        closeSuccessPopup.addEventListener('click', () => {
+            successPopupModal.style.display = 'none';
+        });
+
+
+        // Schließe die Modals auch bei Klick außerhalb des Modal-Inhalts
         window.addEventListener('click', (event) => {
             if (event.target === nameConfirmModal) {
                 nameConfirmModal.style.display = 'none';
@@ -474,17 +561,23 @@
                 submitButton.disabled = false; // Submit Button wieder aktivieren
                 submitButton.textContent = 'Submit Request'; // Text zurücksetzen
                 toggleSubmitButton(); // Re-evaluate button state
+            } else if (event.target === successPopupModal) {
+                successPopupModal.style.display = 'none';
             }
         });
 
-        // Schließe das Modal bei ESC-Taste
+        // Schließe die Modals bei ESC-Taste
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && nameConfirmModal.style.display === 'flex') {
-                nameConfirmModal.style.display = 'none';
-                confirmNameInput.value = ''; // Eingabefeld zurücksetzen
-                submitButton.disabled = false;
-                submitButton.textContent = 'Submit Request';
-                toggleSubmitButton(); // Re-evaluate button state
+            if (e.key === 'Escape') {
+                if (nameConfirmModal.style.display === 'flex') {
+                    nameConfirmModal.style.display = 'none';
+                    confirmNameInput.value = ''; // Eingabefeld zurücksetzen
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Submit Request';
+                    toggleSubmitButton();
+                } else if (successPopupModal.style.display === 'flex') {
+                    successPopupModal.style.display = 'none';
+                }
             }
         });
 
