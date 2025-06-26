@@ -277,8 +277,8 @@
         border-collapse: separate; /* Allow border-radius on cells */
     }
     #dataTable thead {
-        background-color: #007BFF; /* Dunkelblauer Header */
-        color: white;
+        /* Hintergrundfarbe für die Header angepasst auf einen dezenteren Grau-Ton */
+        background-color: #e2e8f0; 
     }
     #dataTable th {
         padding: 12px 15px;
@@ -287,6 +287,8 @@
         text-transform: uppercase;
         letter-spacing: 0.05em;
         border: none; /* Remove individual cell borders in header */
+        /* Textfarbe für die Header angepasst auf ein dunkleres Grau */
+        color: #4a5568; 
     }
     #dataTable th:first-child { border-top-left-radius: 8px; }
     #dataTable th:last-child { border-top-right-radius: 8px; }
@@ -320,16 +322,15 @@
         background-color: #e0f8ff; /* Angepasster Hover für gerade Zeilen */
     }
 
-    /* Stylen der Ref-Links */
+    /* Stylen der Ref-Links - immer unterstrichen */
     #dataTable tbody td a {
-        color: #007BFF; /* Helles Blau */
-        text-decoration: none; /* Standardmäßig keine Unterstreichung */
+        color: #007BFF; /* Helles Blau beibehalten */
+        text-decoration: underline; /* Immer unterstrichen */
         font-weight: 600;
-        transition: color 0.2s ease, text-decoration 0.2s ease;
+        transition: color 0.2s ease;
     }
     #dataTable tbody td a:hover {
         color: #0056b3; /* Dunkleres Blau beim Hover */
-        text-decoration: underline; /* Unterstreichung beim Hover */
     }
 
     /* Stylen der View/Delete Buttons */
@@ -368,12 +369,12 @@
 
     /* Larger Summary Info */
     #summaryInfo {
-        font-size: 1.25rem; /* Größere Schrift */
+        font-size: 1.75rem; /* Noch größere Schrift */
         font-weight: 700; /* Dickere Schrift */
         color: #333; /* Dunklerer Text */
         text-align: right;
         margin-top: 15px;
-        padding: 8px 15px;
+        padding: 10px 20px; /* Mehr Padding */
         background-color: #e2e8f0; /* Heller grauer Hintergrund */
         border-radius: 8px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
@@ -479,11 +480,11 @@
             <table id="dataTable" class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ref</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flight Date</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Airline</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tonnage (kg)</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Ref</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Flight Date</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Airline</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Tonnage (kg)</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
