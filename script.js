@@ -368,7 +368,7 @@ function openModal(originalIndex) {
       if (value === undefined || value === null) value = "";
       
       const isAlwaysReadOnlyField = [
-          "Ref", "Created At", "Acceptance Timestamp", "Accepted By Name", "Email Request" // HIER WURDE 'Email Request' HINZUGEFÜGT
+          "Ref", "Created At", "Acceptance Timestamp", "Accepted By Name", "Email Request"
       ].includes(key);
 
       let readOnlyAttr = '';
@@ -386,7 +386,7 @@ function openModal(originalIndex) {
       // Spezielle Handhabung für Price-related fields, damit sie für Viewer nicht angezeigt werden
       const isPriceRelatedField = [ 
         'Rate', 'Security charges', 'Dangerous Goods', 
-        '10ft consumables', '20ft consumables', 'Zusatzkosten'
+        '10ft consumables', '20ft consumables', 'Zusatzkosten' // 'Zusatzkosten' ist hier enthalten
       ].includes(key);
 
       // Überspringe das Rendern dieser Felder für Viewer
@@ -929,17 +929,17 @@ async function showHistory(ref) {
           'Security charges:', 
           'Dangerous Goods:', 
           '10ft consumables:', 
-          '20ft consumables:' 
-          // 'Email Request:' wurde aus dieser Liste entfernt, damit es nicht geschwärzt wird
+          '20ft consumables:',
+          'Zusatzkosten:' // Hinzugefügt in die sensitiveFields Liste
         ];
         
         let filteredDetails = detailsContent;
         
-        // Spezielle und aggressive Behandlung für 'Zusatzkosten'
-        filteredDetails = filteredDetails.replace(/^.*Zusatzkosten:.*$/gm, 'Zusatzkosten: [GESCHWÄRZT]');
-
+        // Die spezielle Behandlung für 'Zusatzkosten' wurde entfernt, da sie jetzt durch sensitiveFields abgedeckt ist.
 
         sensitiveFields.forEach(field => {
+          // Dieser RegEx ersetzt "Feld: Wert" durch "Feld: [GESCHWÄRZT]"
+          // Es wird alles nach dem Feldnamen bis zum nächsten Semikolon oder Zeilenumbruch geschwärzt.
           const regex = new RegExp(`(${field}\\s*[^;\\n]*)`, 'g'); 
           filteredDetails = filteredDetails.replace(regex, `${field} [GESCHWÄRZT]`); 
         });
