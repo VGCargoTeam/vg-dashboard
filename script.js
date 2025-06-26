@@ -196,7 +196,7 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
         try {
             // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
             let dateObj;
-            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
+            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
                 const parts = displayFlightDate.split('-');
                 dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
             } else if (displayFlightDate instanceof Date) { // Falls es direkt ein Date-Objekt ist (selten, aber sicherheitshalber)
@@ -262,7 +262,7 @@ function filterTable() {
     let flightDateObj;
 
     // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
-    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
+    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
         const parts = flightDateFromData.split('-');
         flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDateFromData instanceof Date) { // Falls es direkt ein Date-Objekt ist
@@ -368,8 +368,8 @@ function openModal(originalIndex) {
       if (value === undefined || value === null) value = "";
       
       const isAlwaysReadOnlyField = [
-          "Ref", "Created At", "Acceptance Timestamp", "Accepted By Name"
-      ].includes(key); // 'Email Request' wurde hier entfernt
+          "Ref", "Created At", "Acceptance Timestamp", "Accepted By Name", "Email Request" // HIER WURDE 'Email Request' HINZUGEFÜGT
+      ].includes(key);
 
       let readOnlyAttr = '';
       let styleAttr = '';
@@ -400,10 +400,10 @@ function openModal(originalIndex) {
         if (value) {
             try {
                 // Parsen des Datums, um es im Input korrekt darzustellen (YYYY-MM-DD Format)
-                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
+                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
                     dateValue = value;
                 } else if (value instanceof Date) {
-                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu YYYY-MM-DD
+                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu竭-MM-DD
                 }
             } catch (e) {
                 console.error("Fehler beim Parsen des Flugdatums für Modal-Input:", value, e);
@@ -424,7 +424,7 @@ function openModal(originalIndex) {
           // Immer einen grünen Haken anzeigen, da der Kunde die AGB akzeptieren MUSS, um eine Anfrage zu senden.
           const icon = '&#10004;'; // Grüner Haken
           const color = 'green';
-          return `<label>${label}: <span style="color: ${color}; font-size: 1.2em; font-weight: bold;">${icon}</span></label>`;
+          return `<label>${label}: <span style="color: ${color}; font-size: 1.2em; font-weight: bold;">${icon}</span></label`;
       } else if (key === "Vorfeldbegleitung" && type === "checkbox") { 
         const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
         return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}"> ${label}</label>`;
@@ -722,7 +722,7 @@ function openCalendarDayFlights(year, month, day) {
   const clickedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   
   const flightsOnThisDay = requestData.filter(r => {
-    let flightDateFromData = r['Flight Date']; // Dies ist bereits YYYY-MM-DD vom Backend
+    let flightDateFromData = r['Flight Date']; // Dies ist bereits竭-MM-DD vom Backend
     
     // Einfacher String-Vergleich
     const isMatch = flightDateFromData === clickedDateStr;
@@ -925,21 +925,21 @@ async function showHistory(ref) {
       
       if (currentUser && currentUser.role === 'viewer' && typeof detailsContent === 'string') {
         const sensitiveFields = [
-          'Rate:', 'Security charges:', 'Dangerous Goods:', 
-          '10ft consumables:', '20ft consumables:', 
-          'Email Request:' 
+          'Rate:', 
+          'Security charges:', 
+          'Dangerous Goods:', 
+          '10ft consumables:', 
+          '20ft consumables:' 
+          // 'Email Request:' wurde aus dieser Liste entfernt, damit es nicht geschwärzt wird
         ];
         
         let filteredDetails = detailsContent;
         
         // Spezielle und aggressive Behandlung für 'Zusatzkosten'
-        // Passt die Zeile, die mit "Zusatzkosten:" beginnt, an und ersetzt deren Inhalt
         filteredDetails = filteredDetails.replace(/^.*Zusatzkosten:.*$/gm, 'Zusatzkosten: [GESCHWÄRZT]');
 
 
         sensitiveFields.forEach(field => {
-          // Vorhandene Logik für andere Felder. Sicherstellen, dass der RegEx für ihr Format korrekt ist.
-          // Dieser RegEx ersetzt "Feld: Wert" durch "Feld: [GESCHWÄRZT]"
           const regex = new RegExp(`(${field}\\s*[^;\\n]*)`, 'g'); 
           filteredDetails = filteredDetails.replace(regex, `${field} [GESCHWÄRZT]`); 
         });
