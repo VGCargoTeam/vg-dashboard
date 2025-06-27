@@ -148,7 +148,7 @@ async function changePassword() {
   } catch (error) {
       console.error('Passwortänderungsfehler:', error);
       messageElem.textContent = 'Ein Fehler ist beim Ändern des Passworts aufgetreten. Bitte versuchen Sie es später erneut.';
-      messageElem.style.color = 'red';
+      messageElem.style.display = 'block'; // Make sure the message is visible
   }
 }
 
@@ -186,7 +186,8 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
 
   dataToRender.forEach((r) => { // dataToRender verwenden
     const row = document.createElement("tr");
-    const ton = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0; 
+    // Remove VAL: prefix and then replace comma with dot for parseFloat
+    const ton = parseFloat(String(r.Tonnage).replace('VAL:', '').replace(',', '.') || "0") || 0; 
     
     const originalIndex = requestData.findIndex(item => item.Ref === r.Ref); 
 
@@ -265,11 +266,11 @@ function filterTable() {
     // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
     if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
         const parts = flightDateFromData.split('-');
-        flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDateFromData instanceof Date) { // Falls es direkt ein Date-Objekt ist
-        flightDateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
+        dateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
     } else {
-        flightDateObj = new Date('Invalid Date'); // Ungültiges Datum
+        dateObj = new Date('Invalid Date'); // Ungültiges Datum
     }
     flightDateObj.setHours(0, 0, 0, 0); // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist
     console.log(`[filterTable] Original: "${flightDateFromData}", Geparsed (Lokal): ${flightDateObj}`);
@@ -368,7 +369,14 @@ function openModal(originalIndex) {
     // Helper function to format numbers for display
     const formatNumberForDisplay = (num, minFractionDigits = 0, maxFractionDigits = 0) => {
       // Ensure num is a valid number, default to 0 if not
-      const numericVal = parseFloat(String(num).replace(',', '.') || "0") || 0;
+      // NEU: Zuerst das 'VAL:'-Präfix entfernen, wenn vorhanden
+      let valueToParse = String(num);
+      if (valueToParse.startsWith('VAL:')) {
+          valueToParse = valueToParse.substring(4);
+      }
+      // Dann Komma durch Punkt ersetzen und parsen
+      const numericVal = parseFloat(valueToParse.replace(',', '.') || "0") || 0;
+      // Dann für die Anzeige im deutschen Format (Komma als Dezimaltrennzeichen) formatieren
       return numericVal.toLocaleString('de-DE', {
         minimumFractionDigits: minFractionDigits,
         maximumFractionDigits: maxFractionDigits
@@ -1006,7 +1014,11 @@ async function showHistory(ref) {
             let redactedPart = part;
             for (const prefix of sensitiveFieldPrefixes) {
                 if (part.startsWith(prefix)) {
-                    // Ersetze alles nach dem Präfix in diesem spezifischen Teil mit '[GESCHWÄRZT]'
+                    // NEU: Präfix 'VAL:' entfernen, bevor es geschwärzt wird (falls im Audit-Log noch vorhanden)
+                    let displayValue = part.substring(prefix.length).trim();
+                    if (displayValue.startsWith('VAL:')) {
+                        displayValue = displayValue.substring(4);
+                    }
                     redactedPart = `${prefix} [GESCHWÄRZT]`;
                     break; // Präfix gefunden und geschwärzt, gehe zum nächsten Teil
                 }
@@ -1021,7 +1033,16 @@ async function showHistory(ref) {
           // Versuchen, gelöschte Daten zu parsen, wenn es ein JSON-String ist
           const parsedDetails = JSON.parse(detailsContent);
           if (typeof parsedDetails === 'object' && parsedDetails !== null) {
-              detailsContent = 'Gelöschte Daten: <pre>' + JSON.stringify(parsedDetails, null, 2) + '</pre>';
+              // NEU: Im gelöschten JSON-Detail ebenfalls VAL: entfernen
+              const cleanedParsedDetails = {};
+              for (const key in parsedDetails) {
+                  let val = parsedDetails[key];
+                  if (typeof val === 'string' && val.startsWith('VAL:')) {
+                      val = val.substring(4);
+                  }
+                  cleanedParsedDetails[key] = val;
+              }
+              detailsContent = 'Gelöschte Daten: <pre>' + JSON.stringify(cleanedParsedDetails, null, 2) + '</pre>';
           }
       } catch (e) {
           // Nicht-JSON-Strings werden direkt als Details angezeigt
