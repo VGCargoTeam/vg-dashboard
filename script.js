@@ -448,6 +448,15 @@ function openModal(originalIndex) {
       } else if (['Rate', 'Security charges', '10ft consumables', '20ft consumables'].includes(key)) {
           // Rate und andere Verbrauchsmaterialien: 2 Dezimalstellen
           return `<label>${label}:</label><input type="text" name="${key}" value="${formatNumberForDisplay(value, 2, 2)}" ${readOnlyAttr} style="${styleAttr}" />`;
+      } else if (key === "Dangerous Goods") { // Separate handling for Dangerous Goods
+          const options = ["Ja", "Nein"];
+          let selectHTML = `<label>${label}:</label><select name="${key}" ${readOnlyAttr} style="${styleAttr}">`;
+          options.forEach(option => {
+              const selected = (value === option) ? "selected" : "";
+              selectHTML += `<option value="${option}" ${selected}>${option}</option>`;
+          });
+          selectHTML += `</select>`;
+          return selectHTML;
       } else if (key === "Zusatzkosten") { // Spezialbehandlung für Zusatzkosten in der Detailansicht
             return `<label>${label}:</label><textarea name="${key}" rows="5" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
       } else if (key === "Email Request") { // HIER DIE ÄNDERUNG FÜR E-MAIL REQUEST
@@ -505,8 +514,17 @@ function openModal(originalIndex) {
         if (key === "Zusatzkosten") {
             // Sicherstellen, dass die textarea für Zusatzkosten korrekt gerendert wird
             return `<label>${label}:</label><textarea name="${key}" placeholder="Labeln, Fotos" style="height:80px">${value}</textarea>`;
+        } else if (key === "Dangerous Goods") { // Handle Dangerous Goods as a select dropdown
+            const options = ["Ja", "Nein"];
+            let selectHTML = `<label>${label}:</label><select name="${key}">`;
+            options.forEach(option => {
+                const selected = (value === option) ? "selected" : "";
+                selectHTML += `<option value="${option}" ${selected}>${option}</option>`;
+            });
+            selectHTML += `</select>`;
+            return selectHTML;
         } else {
-            // Verwenden Sie formatNumberForDisplay für Preis-Felder hier
+            // Verwenden Sie formatNumberForDisplay für Rate und andere Verbrauchsmaterialien
             return `<label>${label}:</label><input type="text" name="${key}" value="${formatNumberForDisplay(value, 2, 2)}" />`;
         }
     }).join("");
@@ -629,12 +647,12 @@ async function saveDetails() {
     return;
   }
 
-  const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled])");
+  const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled]), #modalBody select[name]:not([disabled])"); // Add select to query
   const data = {};
   inputs.forEach(i => {
     if (i.name === "Flight Date") {
         data[i.name] = i.value; 
-    } else if (['Tonnage', 'Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables'].includes(i.name)) {
+    } else if (['Tonnage', 'Rate', 'Security charges', '10ft consumables', '20ft consumables'].includes(i.name)) { // Remove Dangerous Goods from this list
         // Tonnage und Preis-Felder: Kommas durch Punkte ersetzen und Euro-Symbol sowie Leerzeichen entfernen
         // Hier wird der Wert für das Senden an die API vorbereitet.
         // `replace(/,/g, '.')` stellt sicher, dass Dezimalpunkte verwendet werden.
@@ -647,6 +665,12 @@ async function saveDetails() {
         }
     }
   });
+
+  // Specifically handle Dangerous Goods dropdown, its value is directly its string
+  const dangerousGoodsSelect = document.querySelector("#modalBody select[name='Dangerous Goods']");
+  if (dangerousGoodsSelect) {
+      data['Dangerous Goods'] = dangerousGoodsSelect.value;
+  }
 
   const refValue = document.querySelector("#modalBody input[name='Ref']").value;
   data.mode = "write"; 
