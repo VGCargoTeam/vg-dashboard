@@ -211,6 +211,25 @@
       font-weight: bold;
       color: #333;
     }
+        .calendar-day.calendar-export {
+        background-color: #FFFF00; /* Gold (ein klares Gelb) */
+        border: 2px solid #FFC107; /* Deutlicheres Gelb/Orange für den Rand */
+        color: #333; /* Dunklerer Text */
+        text-shadow: 0 0 3px rgba(255,255,255,0.8); /* Deutlicherer Schatten für Lesbarkeit */
+    }
+    .calendar-day.calendar-import {
+        background-color: #00FF00; /* Kräftiges Blau (Blue 500) */
+        border: 2px solid #1976D2; /* Dunkleres Blau für den Rand */
+        color: #333; /* Dunklerer Text */
+        text-shadow: 0 0 3px rgba(255,255,255,0.8); /* Deutlicherer Schatten für Lesbarkeit */
+    }
+    /* Wenn ein Tag beides hat: Überlappung oder Mischung */
+    .calendar-day.calendar-export.calendar-import {
+        background: linear-gradient(to bottom right, #FFFF00, #00FF00); /* Gelb zu Blau Gradient */
+        border: 2px solid #673AB7; /* Lila Rand für beides (Deep Purple 500) */
+        color: #333;
+        text-shadow: 0 0 3px rgba(255,255,255,0.8);
+    }
     .calendar-day.has-flights:hover {
       background-color: #e0a800;
     }
