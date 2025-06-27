@@ -365,6 +365,16 @@ function openModal(originalIndex) {
   };
 
   const renderFields = (fields) => {
+    // Helper function to format numbers for display
+    const formatNumberForDisplay = (num, minFractionDigits = 0, maxFractionDigits = 0) => {
+      // Ensure num is a valid number, default to 0 if not
+      const numericVal = parseFloat(String(num).replace(',', '.') || "0") || 0;
+      return numericVal.toLocaleString('de-DE', {
+        minimumFractionDigits: minFractionDigits,
+        maximumFractionDigits: maxFractionDigits
+      });
+    };
+
     return fields.map(({ label, key, type }) => {
       let value = r[key];
       if (value === undefined || value === null) value = "";
@@ -381,6 +391,8 @@ function openModal(originalIndex) {
           styleAttr = 'background-color:#eee; cursor: not-allowed;';
       } else if (currentUser && currentUser.role === 'viewer') {
           // Viewer dürfen alles außer den immer schreibgeschützten Feldern bearbeiten
+          // Hier können Sie entscheiden, ob Viewer die Eingabefelder sehen, aber nicht bearbeiten dürfen
+          // Wenn sie gar nicht angezeigt werden sollen, geschieht das in der Bedingung weiter unten.
           readOnlyAttr = ''; 
           styleAttr = ''; 
       }
@@ -430,9 +442,12 @@ function openModal(originalIndex) {
       } else if ( (key === "Vorfeldbegleitung" || key === "Export" || key === "Import") && type === "checkbox") { // Hier Export/Import als Checkboxen behandeln
         const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
         return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}"> ${label}</label>`;
-      } else if (['Tonnage'].includes(key)) { // Tonnage darf Viewer sehen und bearbeiten
-          const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
-          return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toFixed(0)}" ${readOnlyAttr} style="${styleAttr}" />`;
+      } else if (key === 'Tonnage') { // Tonnage darf Viewer sehen und bearbeiten
+          // Tonnage: keine Dezimalstellen
+          return `<label>${label}:</label><input type="text" name="${key}" value="${formatNumberForDisplay(value, 0, 0)}" ${readOnlyAttr} style="${styleAttr}" />`;
+      } else if (['Rate', 'Security charges', '10ft consumables', '20ft consumables'].includes(key)) {
+          // Rate und andere Verbrauchsmaterialien: 2 Dezimalstellen
+          return `<label>${label}:</label><input type="text" name="${key}" value="${formatNumberForDisplay(value, 2, 2)}" ${readOnlyAttr} style="${styleAttr}" />`;
       } else if (key === "Zusatzkosten") { // Spezialbehandlung für Zusatzkosten in der Detailansicht
             return `<label>${label}:</label><textarea name="${key}" rows="5" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
       } else if (key === "Email Request") { // HIER DIE ÄNDERUNG FÜR E-MAIL REQUEST
@@ -491,8 +506,8 @@ function openModal(originalIndex) {
             // Sicherstellen, dass die textarea für Zusatzkosten korrekt gerendert wird
             return `<label>${label}:</label><textarea name="${key}" placeholder="Labeln, Fotos" style="height:80px">${value}</textarea>`;
         } else {
-            const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
-            return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toFixed(0)}" />`;
+            // Verwenden Sie formatNumberForDisplay für Preis-Felder hier
+            return `<label>${label}:</label><input type="text" name="${key}" value="${formatNumberForDisplay(value, 2, 2)}" />`;
         }
     }).join("");
     
@@ -621,6 +636,8 @@ async function saveDetails() {
         data[i.name] = i.value; 
     } else if (['Tonnage', 'Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables'].includes(i.name)) {
         // Tonnage und Preis-Felder: Kommas durch Punkte ersetzen und Euro-Symbol sowie Leerzeichen entfernen
+        // Hier wird der Wert für das Senden an die API vorbereitet.
+        // `replace(/,/g, '.')` stellt sicher, dass Dezimalpunkte verwendet werden.
         data[i.name] = i.value.replace(/,/g, '.').replace('€', '').trim() || "";
     } else { // Wichtig: Für 'Zusatzkosten', 'Export', 'Import' (textarea/checkbox) kommt der Wert einfach als String.
         if (i.type === "checkbox") {
