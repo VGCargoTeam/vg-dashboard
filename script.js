@@ -222,10 +222,10 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
     const deleteButtonHTML = (currentUser && currentUser.role === 'admin') ? `<button class="btn btn-delete admin-only" onclick="deleteRow(this)">Delete</button>` : '';
 
     row.innerHTML = `
-      <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})">${r.Ref}</a></td>
+      <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})" class="text-blue-600 hover:text-blue-800 hover:underline font-semibold">${r.Ref}</a></td>
       <td>${displayFlightDate}</td>
       <td>${r.Airline || "-"}</td>
-      <td>${ton.toLocaleString('de-DE')}</td> <td>
+      <td>${ton.toString()}</td> <td>
         <button class="btn btn-view" onclick="openModal(${originalIndex})">View</button> 
         ${deleteButtonHTML}
       </td>
@@ -235,8 +235,9 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
     totalWeight += ton;
   });
 
+  // Tonnage in der Zusammenfassung ohne Tausender-Trennzeichen anzeigen
   document.getElementById("summaryInfo").textContent =
-    `Total Flights: ${totalFlights} | Total Tonnage: ${totalWeight.toLocaleString('de-DE')} kg`; 
+    `Total Flights: ${totalFlights} | Total Tonnage: ${totalWeight.toFixed(0)} kg`; 
   
   updateUIBasedOnUserRole();
 }
@@ -431,7 +432,7 @@ function openModal(originalIndex) {
         return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}"> ${label}</label>`;
       } else if (['Tonnage'].includes(key)) { // Tonnage darf Viewer sehen und bearbeiten
           const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
-          return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" ${readOnlyAttr} style="${styleAttr}" />`;
+          return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toFixed(0)}" ${readOnlyAttr} style="${styleAttr}" />`;
       } else if (key === "Zusatzkosten") { // Spezialbehandlung für Zusatzkosten in der Detailansicht
             return `<label>${label}:</label><textarea name="${key}" rows="5" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
       } else if (key === "Email Request") { // HIER DIE ÄNDERUNG FÜR E-MAIL REQUEST
@@ -491,7 +492,7 @@ function openModal(originalIndex) {
             return `<label>${label}:</label><textarea name="${key}" placeholder="Labeln, Fotos" style="height:80px">${value}</textarea>`;
         } else {
             const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
-            return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" />`;
+            return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toFixed(0)}" />`;
         }
     }).join("");
     
@@ -792,8 +793,8 @@ function generateCalendarHTML(year, month) {
         let tooltipContentArray = []; 
         let simpleTitleContent = ''; 
         let dayHasVorfeldbegleitung = false; 
-        let dayHasExport = false; // NEU: Flag für Export
-        let dayHasImport = false; // NEU: Flag für Import
+        let dayHasExport = false; // Flag für Export
+        let dayHasImport = false; // Flag für Import
 
         // Check if current day is today and add 'today' class
         if (currentCalendarDayForCell.getTime() === today.getTime()) {
@@ -827,12 +828,12 @@ function generateCalendarHTML(year, month) {
               `\nAirline: ${f.Airline || '-'}` +
               `\nFlugnummer: ${f.Flugnummer || '-'}` + 
               `\nAbflugzeit: ${formattedAbflugzeit}` + 
-              `\nTonnage: ${tonnageValue.toLocaleString('de-DE')} kg` 
+              `\nTonnage: ${tonnageValue.toFixed(0)} kg` // Tonnage hier auch ohne Tausender-Trennzeichen
             );
             if (f['Vorfeldbegleitung'] && String(f['Vorfeldbegleitung']).toLowerCase() === 'ja') {
               dayHasVorfeldbegleitung = true; 
             }
-            // NEU: Export/Import Flags setzen
+            // Export/Import Flags setzen
             if (f['Export'] && String(f['Export']).toLowerCase() === 'ja') {
                 dayHasExport = true;
             }
@@ -843,7 +844,7 @@ function generateCalendarHTML(year, month) {
           simpleTitleContent = `Flüge: ${flightsForDay.length}`; 
         }
         
-        // NEU: Klassen für Kalenderfarben hinzufügen
+        // Klassen für Kalenderfarben hinzufügen
         if (dayHasExport) {
             cellClasses.push('calendar-export');
         }
