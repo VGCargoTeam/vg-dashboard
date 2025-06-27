@@ -148,7 +148,7 @@ async function changePassword() {
   } catch (error) {
       console.error('Passwortänderungsfehler:', error);
       messageElem.textContent = 'Ein Fehler ist beim Ändern des Passworts aufgetreten. Bitte versuchen Sie es später erneut.';
-      messageElem.style.color = 'red';
+      messageElem.style.display = 'block'; // Make sure the message is visible
   }
 }
 
@@ -186,7 +186,8 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
 
   dataToRender.forEach((r) => { // dataToRender verwenden
     const row = document.createElement("tr");
-    const ton = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0; 
+    // Remove VAL: prefix and then replace comma with dot for parseFloat
+    const ton = parseFloat(String(r.Tonnage).replace('VAL:', '').replace(',', '.') || "0") || 0; 
     
     const originalIndex = requestData.findIndex(item => item.Ref === r.Ref); 
 
@@ -222,10 +223,10 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
     const deleteButtonHTML = (currentUser && currentUser.role === 'admin') ? `<button class="btn btn-delete admin-only" onclick="deleteRow(this)">Delete</button>` : '';
 
     row.innerHTML = `
-      <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})">${r.Ref}</a></td>
+      <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})" class="text-blue-600 hover:text-blue-800 hover:underline font-semibold">${r.Ref}</a></td>
       <td>${displayFlightDate}</td>
       <td>${r.Airline || "-"}</td>
-      <td>${ton.toLocaleString('de-DE')}</td> <td>
+      <td>${ton.toString()}</td> <td>
         <button class="btn btn-view" onclick="openModal(${originalIndex})">View</button> 
         ${deleteButtonHTML}
       </td>
@@ -235,8 +236,9 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
     totalWeight += ton;
   });
 
+  // Tonnage in der Zusammenfassung ohne Tausender-Trennzeichen anzeigen
   document.getElementById("summaryInfo").textContent =
-    `Total Flights: ${totalFlights} | Total Tonnage: ${totalWeight.toLocaleString('de-DE')} kg`; 
+    `Total Flights: ${totalFlights} | Total Tonnage: ${totalWeight.toFixed(0)} kg`; 
   
   updateUIBasedOnUserRole();
 }
@@ -264,11 +266,11 @@ function filterTable() {
     // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
     if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
         const parts = flightDateFromData.split('-');
-        flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDateFromData instanceof Date) { // Falls es direkt ein Date-Objekt ist
-        flightDateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
+        dateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
     } else {
-        flightDateObj = new Date('Invalid Date'); // Ungültiges Datum
+        dateObj = new Date('Invalid Date'); // Ungültiges Datum
     }
     flightDateObj.setHours(0, 0, 0, 0); // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist
     console.log(`[filterTable] Original: "${flightDateFromData}", Geparsed (Lokal): ${flightDateObj}`);
@@ -347,7 +349,9 @@ function openModal(originalIndex) {
     'AGB Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
     'Service Description Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
     'Accepted By Name': "", 
-    'Acceptance Timestamp': "" 
+    'Acceptance Timestamp': "",
+    'Export': "Nein", // Initialwert für Export
+    'Import': "Nein"  // Initialwert für Import
   } : requestData[originalIndex]; 
 
   const modal = document.getElementById("detailModal");
@@ -362,6 +366,23 @@ function openModal(originalIndex) {
   };
 
   const renderFields = (fields) => {
+    // Helper function to format numbers for display
+    const formatNumberForDisplay = (num, minFractionDigits = 0, maxFractionDigits = 0) => {
+      // Ensure num is a valid number, default to 0 if not
+      // NEU: Zuerst das 'VAL:'-Präfix entfernen, wenn vorhanden
+      let valueToParse = String(num);
+      if (valueToParse.startsWith('VAL:')) {
+          valueToParse = valueToParse.substring(4);
+      }
+      // Dann Komma durch Punkt ersetzen und parsen
+      const numericVal = parseFloat(valueToParse.replace(',', '.') || "0") || 0;
+      // Dann für die Anzeige im deutschen Format (Komma als Dezimaltrennzeichen) formatieren
+      return numericVal.toLocaleString('de-DE', {
+        minimumFractionDigits: minFractionDigits,
+        maximumFractionDigits: maxFractionDigits
+      });
+    };
+
     return fields.map(({ label, key, type }) => {
       let value = r[key];
       if (value === undefined || value === null) value = "";
@@ -378,6 +399,8 @@ function openModal(originalIndex) {
           styleAttr = 'background-color:#eee; cursor: not-allowed;';
       } else if (currentUser && currentUser.role === 'viewer') {
           // Viewer dürfen alles außer den immer schreibgeschützten Feldern bearbeiten
+          // Hier können Sie entscheiden, ob Viewer die Eingabefelder sehen, aber nicht bearbeiten dürfen
+          // Wenn sie gar nicht angezeigt werden sollen, geschieht das in der Bedingung weiter unten.
           readOnlyAttr = ''; 
           styleAttr = ''; 
       }
@@ -424,12 +447,24 @@ function openModal(originalIndex) {
           const icon = '&#10004;'; // Grüner Haken
           const color = 'green';
           return `<label>${label}: <span style="color: ${color}; font-size: 1.2em; font-weight: bold;">${icon}</span></label>`;
-      } else if (key === "Vorfeldbegleitung" && type === "checkbox") { 
+      } else if ( (key === "Vorfeldbegleitung" || key === "Export" || key === "Import") && type === "checkbox") { // Hier Export/Import als Checkboxen behandeln
         const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
         return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}"> ${label}</label>`;
-      } else if (['Tonnage'].includes(key)) { // Tonnage darf Viewer sehen und bearbeiten
-          const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
-          return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" ${readOnlyAttr} style="${styleAttr}" />`;
+      } else if (key === 'Tonnage') { // Tonnage darf Viewer sehen und bearbeiten
+          // Tonnage: keine Dezimalstellen
+          return `<label>${label}:</label><input type="text" name="${key}" value="${formatNumberForDisplay(value, 0, 0)}" ${readOnlyAttr} style="${styleAttr}" />`;
+      } else if (['Rate', 'Security charges', '10ft consumables', '20ft consumables'].includes(key)) {
+          // Rate und andere Verbrauchsmaterialien: 2 Dezimalstellen
+          return `<label>${label}:</label><input type="text" name="${key}" value="${formatNumberForDisplay(value, 2, 2)}" ${readOnlyAttr} style="${styleAttr}" />`;
+      } else if (key === "Dangerous Goods") { // Separate handling for Dangerous Goods
+          const options = ["Ja", "Nein"];
+          let selectHTML = `<label>${label}:</label><select name="${key}" ${readOnlyAttr} style="${styleAttr}">`;
+          options.forEach(option => {
+              const selected = (value === option) ? "selected" : "";
+              selectHTML += `<option value="${option}" ${selected}>${option}</option>`;
+          });
+          selectHTML += `</select>`;
+          return selectHTML;
       } else if (key === "Zusatzkosten") { // Spezialbehandlung für Zusatzkosten in der Detailansicht
             return `<label>${label}:</label><textarea name="${key}" rows="5" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
       } else if (key === "Email Request") { // HIER DIE ÄNDERUNG FÜR E-MAIL REQUEST
@@ -461,7 +496,9 @@ function openModal(originalIndex) {
     { label: "Abflugzeit", key: "Abflugzeit" },
     { label: "Tonnage", key: "Tonnage" },
     { label: "Vorfeldbegleitung", key: "Vorfeldbegleitung", type: "checkbox" },
-    { label: "E-Mail Request", key: "Email Request" } // Email Request hier hinzufügen, da es ein normales Feld ist
+    { label: "E-Mail Request", key: "Email Request" },
+    { label: "Export", key: "Export", type: "checkbox" }, // NEU: Export-Checkbox
+    { label: "Import", key: "Import", type: "checkbox" }  // NEU: Import-Checkbox
   ];
 
   // Preisbezogene Felder, die nur für Admins sichtbar sind
@@ -485,9 +522,18 @@ function openModal(originalIndex) {
         if (key === "Zusatzkosten") {
             // Sicherstellen, dass die textarea für Zusatzkosten korrekt gerendert wird
             return `<label>${label}:</label><textarea name="${key}" placeholder="Labeln, Fotos" style="height:80px">${value}</textarea>`;
+        } else if (key === "Dangerous Goods") { // Handle Dangerous Goods as a select dropdown
+            const options = ["Ja", "Nein"];
+            let selectHTML = `<label>${label}:</label><select name="${key}">`;
+            options.forEach(option => {
+                const selected = (value === option) ? "selected" : "";
+                selectHTML += `<option value="${option}" ${selected}>${option}</option>`;
+            });
+            selectHTML += `</select>`;
+            return selectHTML;
         } else {
-            const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
-            return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" />`;
+            // Verwenden Sie formatNumberForDisplay für Rate und andere Verbrauchsmaterialien
+            return `<label>${label}:</label><input type="text" name="${key}" value="${formatNumberForDisplay(value, 2, 2)}" />`;
         }
     }).join("");
     
@@ -609,15 +655,17 @@ async function saveDetails() {
     return;
   }
 
-  const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled])");
+  const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled]), #modalBody select[name]:not([disabled])"); // Add select to query
   const data = {};
   inputs.forEach(i => {
     if (i.name === "Flight Date") {
         data[i.name] = i.value; 
-    } else if (['Tonnage', 'Rate', 'Security charges', 'Dangerous Goods', '10ft consumables', '20ft consumables'].includes(i.name)) {
+    } else if (['Tonnage', 'Rate', 'Security charges', '10ft consumables', '20ft consumables'].includes(i.name)) { // Remove Dangerous Goods from this list
         // Tonnage und Preis-Felder: Kommas durch Punkte ersetzen und Euro-Symbol sowie Leerzeichen entfernen
+        // Hier wird der Wert für das Senden an die API vorbereitet.
+        // `replace(/,/g, '.')` stellt sicher, dass Dezimalpunkte verwendet werden.
         data[i.name] = i.value.replace(/,/g, '.').replace('€', '').trim() || "";
-    } else { // Wichtig: Für 'Zusatzkosten' (textarea) kommt der Wert einfach als String.
+    } else { // Wichtig: Für 'Zusatzkosten', 'Export', 'Import' (textarea/checkbox) kommt der Wert einfach als String.
         if (i.type === "checkbox") {
             data[i.name] = i.checked ? "Ja" : "Nein";
         } else {
@@ -625,6 +673,12 @@ async function saveDetails() {
         }
     }
   });
+
+  // Specifically handle Dangerous Goods dropdown, its value is directly its string
+  const dangerousGoodsSelect = document.querySelector("#modalBody select[name='Dangerous Goods']");
+  if (dangerousGoodsSelect) {
+      data['Dangerous Goods'] = dangerousGoodsSelect.value;
+  }
 
   const refValue = document.querySelector("#modalBody input[name='Ref']").value;
   data.mode = "write"; 
@@ -788,6 +842,8 @@ function generateCalendarHTML(year, month) {
         let tooltipContentArray = []; 
         let simpleTitleContent = ''; 
         let dayHasVorfeldbegleitung = false; 
+        let dayHasExport = false; // Flag für Export
+        let dayHasImport = false; // Flag für Import
 
         // Check if current day is today and add 'today' class
         if (currentCalendarDayForCell.getTime() === today.getTime()) {
@@ -821,13 +877,28 @@ function generateCalendarHTML(year, month) {
               `\nAirline: ${f.Airline || '-'}` +
               `\nFlugnummer: ${f.Flugnummer || '-'}` + 
               `\nAbflugzeit: ${formattedAbflugzeit}` + 
-              `\nTonnage: ${tonnageValue.toLocaleString('de-DE')} kg` 
+              `\nTonnage: ${tonnageValue.toFixed(0)} kg` // Tonnage hier auch ohne Tausender-Trennzeichen
             );
             if (f['Vorfeldbegleitung'] && String(f['Vorfeldbegleitung']).toLowerCase() === 'ja') {
               dayHasVorfeldbegleitung = true; 
             }
+            // Export/Import Flags setzen
+            if (f['Export'] && String(f['Export']).toLowerCase() === 'ja') {
+                dayHasExport = true;
+            }
+            if (f['Import'] && String(f['Import']).toLowerCase() === 'ja') {
+                dayHasImport = true;
+            }
           });
           simpleTitleContent = `Flüge: ${flightsForDay.length}`; 
+        }
+        
+        // Klassen für Kalenderfarben hinzufügen
+        if (dayHasExport) {
+            cellClasses.push('calendar-export');
+        }
+        if (dayHasImport) {
+            cellClasses.push('calendar-import');
         }
 
         const dataTooltipContent = tooltipContentArray.join('\n\n').replace(/'/g, '&apos;').replace(/"/g, '&quot;'); 
@@ -943,7 +1014,11 @@ async function showHistory(ref) {
             let redactedPart = part;
             for (const prefix of sensitiveFieldPrefixes) {
                 if (part.startsWith(prefix)) {
-                    // Ersetze alles nach dem Präfix in diesem spezifischen Teil mit '[GESCHWÄRZT]'
+                    // NEU: Präfix 'VAL:' entfernen, bevor es geschwärzt wird (falls im Audit-Log noch vorhanden)
+                    let displayValue = part.substring(prefix.length).trim();
+                    if (displayValue.startsWith('VAL:')) {
+                        displayValue = displayValue.substring(4);
+                    }
                     redactedPart = `${prefix} [GESCHWÄRZT]`;
                     break; // Präfix gefunden und geschwärzt, gehe zum nächsten Teil
                 }
@@ -958,7 +1033,16 @@ async function showHistory(ref) {
           // Versuchen, gelöschte Daten zu parsen, wenn es ein JSON-String ist
           const parsedDetails = JSON.parse(detailsContent);
           if (typeof parsedDetails === 'object' && parsedDetails !== null) {
-              detailsContent = 'Gelöschte Daten: <pre>' + JSON.stringify(parsedDetails, null, 2) + '</pre>';
+              // NEU: Im gelöschten JSON-Detail ebenfalls VAL: entfernen
+              const cleanedParsedDetails = {};
+              for (const key in parsedDetails) {
+                  let val = parsedDetails[key];
+                  if (typeof val === 'string' && val.startsWith('VAL:')) {
+                      val = val.substring(4);
+                  }
+                  cleanedParsedDetails[key] = val;
+              }
+              detailsContent = 'Gelöschte Daten: <pre>' + JSON.stringify(cleanedParsedDetails, null, 2) + '</pre>';
           }
       } catch (e) {
           // Nicht-JSON-Strings werden direkt als Details angezeigt
