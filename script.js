@@ -269,7 +269,7 @@ function filterTable() {
     // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
     if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
         const parts = flightDateFromData.split('-');
-        dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])); // KORREKTUR: 'dateObj' zu 'flightDateObj' geändert
     } else if (flightDateFromData instanceof Date) { // Falls es direkt ein Date-Objekt ist
         flightDateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
     } else {
@@ -425,7 +425,7 @@ function openModal(originalIndex) {
         if (value) {
             if (typeof value === 'string' && value.match(/^\d{2}:\d{2}$/)) { // Erwartet HH:MM vom Backend
                 timeValue = value;
-            } else if (value instanceof Date) // Falls Date-Objekt
+            } else if (value instanceof Date) { // KORREKTUR: Fehlende Klammern für den else if-Block hinzugefügt
                 timeValue = value.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
             }
         }
@@ -665,7 +665,7 @@ async function saveDetails() {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
     const responseData = await response.json();
 
@@ -706,7 +706,7 @@ async function deleteRow(btn) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
     const responseData = await response.json();
 
