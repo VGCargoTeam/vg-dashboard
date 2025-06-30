@@ -950,7 +950,7 @@ async function showHistory(ref) {
     filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp)).forEach(log => {
       let detailsContent = log.Details || '-';
 
-      // Nur für Viewer-Rolle sensible Informationen schwärzen
+      // Nur für Viewer-Rolle sensible Informationen schwärzen (dieser Teil bleibt, da es um History geht)
       if (currentUser && currentUser.role === 'viewer' && typeof detailsContent === 'string') {
         const sensitiveFieldPrefixes = [
           'Rate:',
@@ -958,30 +958,26 @@ async function showHistory(ref) {
           'Dangerous Goods:',
           '10ft consumables:',
           '20ft consumables:',
-          'Zusatzkosten:' // Dieses Feld wird nun auch durch die Schleife verarbeitet
+          'Zusatzkosten:'
         ];
 
         let processedDetailsParts = [];
-        // Teilen Sie den Details-String in einzelne Änderungen auf (basierend auf Semikolon als Trennzeichen)
         const detailParts = detailsContent.split(';').map(part => part.trim()).filter(part => part !== '');
 
         detailParts.forEach(part => {
             let redactedPart = part;
             for (const prefix of sensitiveFieldPrefixes) {
                 if (part.startsWith(prefix)) {
-                    // Ersetze alles nach dem Präfix in diesem spezifischen Teil mit '[GESCHWÄRZT]'
                     redactedPart = `${prefix} [GESCHWÄRZT]`;
-                    break; // Präfix gefunden und geschwärzt, gehe zum nächsten Teil
+                    break;
                 }
             }
             processedDetailsParts.push(redactedPart);
         });
-        // Füge die verarbeiteten Teile wieder zusammen
         detailsContent = processedDetailsParts.join('; ');
       }
 
       try {
-          // Versuchen, gelöschte Daten zu parsen, wenn es ein JSON-String ist
           const parsedDetails = JSON.parse(detailsContent);
           if (typeof parsedDetails === 'object' && parsedDetails !== null) {
               detailsContent = 'Gelöschte Daten: <pre>' + JSON.stringify(parsedDetails, null, 2) + '</pre>';
@@ -1057,8 +1053,16 @@ function generateStatistics() {
     const statisticsBody = document.getElementById('statisticsBody');
 
     // Entferne alte nicht-Diagramm-Inhalte, um Platz für neue Statistiken zu schaffen
-    const oldNonChartContent = Array.from(statisticsBody.children).filter(el => !el.classList.contains('chart-container'));
-    oldNonChartContent.forEach(el => el.remove());
+    // ACHTUNG: Hier werden nur die dynamisch hinzugefügten Elemente entfernt.
+    // Die statischen Chart-Container bleiben bestehen.
+    const elementsToRemove = statisticsBody.querySelectorAll('h4, p, ul, table');
+    elementsToRemove.forEach(el => {
+        // Stelle sicher, dass nur die von generateStatistics hinzugefügten Elemente entfernt werden
+        // und nicht die statischen Chart-Container
+        if (!el.classList.contains('chart-container') && el.tagName !== 'CANVAS') {
+            el.remove();
+        }
+    });
 
 
     if (!statFromDateInput || !statToDateInput) {
@@ -1091,29 +1095,32 @@ function generateStatistics() {
     // Statistiken initialisieren
     let totalFlights = filteredData.length;
     let totalTonnage = 0;
-    let totalRate = 0;
-    let totalSecurityCharges = 0;
-    let total10ftConsumables = 0;
-    let total20ftConsumables = 0;
+    // Finanzstatistiken entfernt:
+    // let totalRate = 0;
+    // let totalSecurityCharges = 0;
+    // let total10ftConsumables = 0;
+    // let total20ftConsumables = 0;
     const dangerousGoodsCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
     const VorfeldbegleitungCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
-    const airlineStats = {}; // { AirlineName: { totalTonnage: X, totalFlights: Y, totalRevenue: Z } }
+    const airlineStats = {}; // { AirlineName: { totalTonnage: X, totalFlights: Y } } - totalRevenue entfernt
     const tonnagePerMonth = {}; // { "YYYY-MM": totalTonnage }
     const tonnagePerCustomer = {}; // { CustomerName: totalTonnage }
 
 
     filteredData.forEach(item => {
         const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
-        const rate = parseFloat(String(item.Rate).replace(',', '.') || "0") || 0;
-        const securityCharges = parseFloat(String(item['Security charges']).replace(',', '.') || "0") || 0;
-        const ft10Consumables = parseFloat(String(item['10ft consumables']).replace(',', '.') || "0") || 0;
-        const ft20Consumables = parseFloat(String(item['20ft consumables']).replace(',', '.') || "0") || 0;
+        // Finanzstatistiken entfernt:
+        // const rate = parseFloat(String(item.Rate).replace(',', '.') || "0") || 0;
+        // const securityCharges = parseFloat(String(item['Security charges']).replace(',', '.') || "0") || 0;
+        // const ft10Consumables = parseFloat(String(item['10ft consumables']).replace(',', '.') || "0") || 0;
+        // const ft20Consumables = parseFloat(String(item['20ft consumables']).replace(',', '.') || "0") || 0;
 
         totalTonnage += tonnage;
-        totalRate += rate;
-        totalSecurityCharges += securityCharges;
-        total10ftConsumables += ft10Consumables;
-        total20ftConsumables += ft20Consumables;
+        // Finanzstatistiken entfernt:
+        // totalRate += rate;
+        // totalSecurityCharges += securityCharges;
+        // total10ftConsumables += ft10Consumables;
+        // total20ftConsumables += ft20Consumables;
 
         // Dangerous Goods Statistik
         // Sicherstellen, dass item['Dangerous Goods'] immer ein String ist, bevor toLowerCase aufgerufen wird
@@ -1127,12 +1134,12 @@ function generateStatistics() {
         // Airline-spezifische Statistik
         const airlineName = item.Airline || 'Unbekannt';
         if (!airlineStats[airlineName]) {
-            airlineStats[airlineName] = { totalTonnage: 0, totalFlights: 0, totalRevenue: 0 };
+            airlineStats[airlineName] = { totalTonnage: 0, totalFlights: 0 }; // totalRevenue entfernt
         }
         airlineStats[airlineName].totalTonnage += tonnage;
         airlineStats[airlineName].totalFlights++;
-        // Berechne den geschätzten Umsatz (Rate + Security Charges + Verbrauchsmaterialien)
-        airlineStats[airlineName].totalRevenue += (rate + securityCharges + ft10Consumables + ft20Consumables);
+        // Berechne den geschätzten Umsatz (Rate + Security Charges + Verbrauchsmaterialien) - ENTFALLEN
+        // airlineStats[airlineName].totalRevenue += (rate + securityCharges + ft10Consumables + ft20Consumables);
 
         // Tonnage pro Monat Statistik
         const flightDate = item['Flight Date'];
@@ -1152,12 +1159,13 @@ function generateStatistics() {
     statsHTML += `<p>Gesamtzahl Flüge: <strong>${totalFlights}</strong></p>`;
     statsHTML += `<p>Gesamte Tonnage: <strong>${totalTonnage.toLocaleString('de-DE', { maximumFractionDigits: 2 })} kg</strong></p>`;
 
-    if (currentUser && currentUser.role === 'admin') {
-        statsHTML += `<p>Gesamte Rate (ohne DG/Zusatzkosten): <strong>${totalRate.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}</strong></p>`;
-        statsHTML += `<p>Gesamte Security Charges: <strong>${totalSecurityCharges.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}</strong></p>`;
-        statsHTML += `<p>Gesamte 10ft Consumables: <strong>${total10ftConsumables.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}</strong></p>`;
-        statsHTML += `<p>Gesamte 20ft Consumables: <strong>${total20ftConsumables.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}</strong></p>`;
-    }
+    // Finanzstatistiken entfernt
+    // if (currentUser && currentUser.role === 'admin') {
+    //     statsHTML += `<p>Gesamte Rate (ohne DG/Zusatzkosten): <strong>${totalRate.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}</strong></p>`;
+    //     statsHTML += `<p>Gesamte Security Charges: <strong>${totalSecurityCharges.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}</strong></p>`;
+    //     statsHTML += `<p>Gesamte 10ft Consumables: <strong>${total10ftConsumables.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}</strong></p>`;
+    //     statsHTML += `<p>Gesamte 20ft Consumables: <strong>${total20ftConsumables.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}</strong></p>`;
+    // }
 
 
     statsHTML += '<h4>Dangerous Goods Statistik</h4>';
@@ -1182,9 +1190,10 @@ function generateStatistics() {
     statsHTML += '<h4>Statistik nach Airline</h4>';
     if (Object.keys(airlineStats).length > 0) {
         statsHTML += `<table><thead><tr><th>Airline</th><th>Flüge</th><th>Tonnage (kg)</th>`;
-        if (currentUser && currentUser.role === 'admin') {
-            statsHTML += `<th>Geschätzter Umsatz</th>`;
-        }
+        // Geschätzter Umsatz Header entfernt
+        // if (currentUser && currentUser.role === 'admin') {
+        //     statsHTML += `<th>Geschätzter Umsatz</th>`;
+        // }
         statsHTML += `</tr></thead><tbody>`;
 
         // Sortiere Airlines nach Gesamtflügen absteigend
@@ -1195,9 +1204,10 @@ function generateStatistics() {
             statsHTML += `<td>${airlineName}</td>`;
             statsHTML += `<td>${stats.totalFlights}</td>`;
             statsHTML += `<td>${stats.totalTonnage.toLocaleString('de-DE', { maximumFractionDigits: 2 })}</td>`;
-            if (currentUser && currentUser.role === 'admin') {
-                statsHTML += `<td>${stats.totalRevenue.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}</td>`;
-            }
+            // Geschätzter Umsatz Zelle entfernt
+            // if (currentUser && currentUser.role === 'admin') {
+            //     statsHTML += `<td>${stats.totalRevenue.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}</td>`;
+            // }
             statsHTML += `</tr>`;
         });
         statsHTML += `</tbody></table>`;
@@ -1206,7 +1216,14 @@ function generateStatistics() {
     }
 
     // Füge die textbasierten Statistiken vor den Diagrammen ein
-    document.getElementById('statisticsBody').insertAdjacentHTML('beforeend', statsHTML);
+    // Finden Sie das erste Chart-Container-Element und fügen Sie die Statistiken davor ein.
+    // Wenn keine Chart-Container gefunden werden (was nicht passieren sollte, aber als Fallback), fügen Sie sie ans Ende.
+    const firstChartContainer = statisticsBody.querySelector('.chart-container');
+    if (firstChartContainer) {
+        firstChartContainer.insertAdjacentHTML('beforebegin', statsHTML);
+    } else {
+        statisticsBody.insertAdjacentHTML('beforeend', statsHTML);
+    }
 
     // --- DIAGRAMME RENDERN ---
     renderTonnagePerMonthChart(tonnagePerMonth);
@@ -1390,35 +1407,39 @@ function downloadStatisticsToCSV() {
     // --- Gesamtübersicht Statistik ---
     let totalFlights = filteredData.length;
     let totalTonnage = 0;
-    let totalRate = 0;
-    let totalSecurityCharges = 0;
-    let total10ftConsumables = 0;
-    let total20ftConsumables = 0;
+    // Finanzstatistiken entfernt:
+    // let totalRate = 0;
+    // let totalSecurityCharges = 0;
+    // let total10ftConsumables = 0;
+    // let total20ftConsumables = 0;
 
     filteredData.forEach(item => {
         const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
-        const rate = parseFloat(String(item.Rate).replace(',', '.') || "0") || 0;
-        const securityCharges = parseFloat(String(item['Security charges']).replace(',', '.') || "0") || 0;
-        const ft10Consumables = parseFloat(String(item['10ft consumables']).replace(',', '.') || "0") || 0;
-        const ft20Consumables = parseFloat(String(item['20ft consumables']).replace(',', '.') || "0") || 0;
+        // Finanzstatistiken entfernt:
+        // const rate = parseFloat(String(item.Rate).replace(',', '.') || "0") || 0;
+        // const securityCharges = parseFloat(String(item['Security charges']).replace(',', '.') || "0") || 0;
+        // const ft10Consumables = parseFloat(String(item['10ft consumables']).replace(',', '.') || "0") || 0;
+        // const ft20Consumables = parseFloat(String(item['20ft consumables']).replace(',', '.') || "0") || 0;
 
         totalTonnage += tonnage;
-        totalRate += rate;
-        totalSecurityCharges += securityCharges;
-        total10ftConsumables += ft10Consumables;
-        total20ftConsumables += ft20Consumables;
+        // Finanzstatistiken entfernt:
+        // totalRate += rate;
+        // totalSecurityCharges += securityCharges;
+        // total10ftConsumables += ft10Consumables;
+        // total20ftConsumables += ft20Consumables;
     });
 
-    csvContent += "Gesamtübersicht\n";
-    csvContent += "Gesamtzahl Flüge," + totalFlights + "\n";
+    csvContent += "Gesamtuebersicht\n";
+    csvContent += "Gesamtzahl Fluege," + totalFlights + "\n";
     csvContent += "Gesamte Tonnage (kg)," + totalTonnage.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n"; // Nutze en-US für CSV-Konsistenz
 
-    if (currentUser && currentUser.role === 'admin') {
-        csvContent += "Gesamte Rate (EUR)," + totalRate.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n";
-        csvContent += "Gesamte Security Charges (EUR)," + totalSecurityCharges.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n";
-        csvContent += "Gesamte 10ft Consumables (EUR)," + total10ftConsumables.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n";
-        csvContent += "Gesamte 20ft Consumables (EUR)," + total20ftConsumables.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n";
-    }
+    // Finanzstatistiken entfernt:
+    // if (currentUser && currentUser.role === 'admin') {
+    //     csvContent += "Gesamte Rate (EUR)," + totalRate.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n";
+    //     csvContent += "Gesamte Security Charges (EUR)," + totalSecurityCharges.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n";
+    //     csvContent += "Gesamte 10ft Consumables (EUR)," + total10ftConsumables.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n";
+    //     csvContent += "Gesamte 20ft Consumables (EUR)," + total20ftConsumables.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n";
+    // }
     csvContent += "\n"; // Leere Zeile zur Trennung
 
     // --- Dangerous Goods Statistik ---
@@ -1489,31 +1510,35 @@ function downloadStatisticsToCSV() {
     filteredData.forEach(item => {
         const airlineName = item.Airline || 'Unbekannt';
         const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
-        const rate = parseFloat(String(item.Rate).replace(',', '.') || "0") || 0;
-        const securityCharges = parseFloat(String(item['Security charges']).replace(',', '.') || "0") || 0;
-        const ft10Consumables = parseFloat(String(item['10ft consumables']).replace(',', '.') || "0") || 0;
-        const ft20Consumables = parseFloat(String(item['20ft consumables']).replace(',', '.') || "0") || 0;
+        // Finanzstatistiken entfernt:
+        // const rate = parseFloat(String(item.Rate).replace(',', '.') || "0") || 0;
+        // const securityCharges = parseFloat(String(item['Security charges']).replace(',', '.') || "0") || 0;
+        // const ft10Consumables = parseFloat(String(item['10ft consumables']).replace(',', '.') || "0") || 0;
+        // const ft20Consumables = parseFloat(String(item['20ft consumables']).replace(',', '.') || "0") || 0;
 
         if (!airlineStats[airlineName]) {
-            airlineStats[airlineName] = { totalTonnage: 0, totalFlights: 0, totalRevenue: 0 };
+            airlineStats[airlineName] = { totalTonnage: 0, totalFlights: 0 }; // totalRevenue entfernt
         }
         airlineStats[airlineName].totalTonnage += tonnage;
         airlineStats[airlineName].totalFlights++;
-        airlineStats[airlineName].totalRevenue += (rate + securityCharges + ft10Consumables + ft20Consumables);
+        // Finanzstatistiken entfernt:
+        // airlineStats[airlineName].totalRevenue += (rate + securityCharges + ft10Consumables + ft20Consumables);
     });
 
     csvContent += "Statistik nach Airline\n";
-    let airlineHeader = "Airline,Flüge,Tonnage (kg)";
-    if (currentUser && currentUser.role === 'admin') {
-        airlineHeader += ",Geschätzter Umsatz (EUR)";
-    }
+    let airlineHeader = "Airline,Fluege,Tonnage (kg)";
+    // Geschätzter Umsatz Header entfernt:
+    // if (currentUser && currentUser.role === 'admin') {
+    //     airlineHeader += ",Geschaetzter Umsatz (EUR)";
+    // }
     csvContent += airlineHeader + "\n";
 
     Object.entries(airlineStats).sort(([, a], [, b]) => b.totalFlights - a.totalFlights).forEach(([airlineName, stats]) => {
         let row = `"${airlineName}",${stats.totalFlights},${stats.totalTonnage.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 })}`;
-        if (currentUser && currentUser.role === 'admin') {
-            row += `,${stats.totalRevenue.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 })}`;
-        }
+        // Geschätzter Umsatz Zelle entfernt:
+        // if (currentUser && currentUser.role === 'admin') {
+        //     row += `,${stats.totalRevenue.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 })}`;
+        // }
         csvContent += row + "\n";
     });
 
