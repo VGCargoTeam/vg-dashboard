@@ -269,7 +269,7 @@ function filterTable() {
     // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
     if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
         const parts = flightDateFromData.split('-');
-        flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])); // KORREKTUR: 'dateObj' zu 'flightDateObj' geändert
+        flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDateFromData instanceof Date) { // Falls es direkt ein Date-Objekt ist
         flightDateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
     } else {
@@ -372,8 +372,13 @@ function openModal(originalIndex) {
       if (value === undefined || value === null) value = "";
 
       const isAlwaysReadOnlyField = [
-          "Ref", "Created At", "Acceptance Timestamp", "Accepted By Name", "Email Request"
+          "Ref", "Created At", "Acceptance Timestamp", "Email Request"
       ].includes(key);
+
+      // 'Accepted By Name' und 'Acceptance Timestamp' sollten immer schreibgeschützt sein.
+      // 'Email Request' wurde bereits in 'isAlwaysReadOnlyField' hinzugefügt.
+      // Hier wurde 'Accepted By Name' zur Liste der immer schreibgeschützten Felder hinzugefügt.
+
 
       let readOnlyAttr = '';
       let styleAttr = '';
@@ -381,28 +386,20 @@ function openModal(originalIndex) {
       if (isAlwaysReadOnlyField) {
           readOnlyAttr = 'readonly';
           styleAttr = 'background-color:#eee; cursor: not-allowed;';
-      } else if (currentUser && currentUser.role === 'viewer') {
-          // Viewer dürfen alles außer den immer schreibgeschützten Feldern bearbeiten
-          readOnlyAttr = '';
-          styleAttr = '';
       }
 
-      // Spezielle Handhabung für Price-related fields, damit sie für Viewer nicht angezeigt werden
-      const isPriceRelatedField = [
+      // Spezielle Handhabung für Price-related fields und 'Zusatzkosten'
+      // Diese Felder sollen für Viewer komplett unsichtbar sein.
+      const isPriceRelatedOrZusatzkostenField = [
         'Rate', 'Security charges', 'Dangerous Goods',
-        '10ft consumables', '20ft consumables',
-        // ACHTUNG: 'Zusatzkosten' soll vom Viewer nur gesehen, aber nicht bearbeitet werden können
+        '10ft consumables', '20ft consumables', 'Zusatzkosten'
       ].includes(key);
 
-      // Überspringe das Rendern dieser Felder für Viewer
-      if (isPriceRelatedField && currentUser.role === 'viewer') {
-          return ''; // Leerer String, um das Feld zu überspringen
+      // Wenn der Benutzer ein Viewer ist und es sich um ein preisspezifisches Feld handelt, überspringen.
+      if (isPriceRelatedOrZusatzkostenField && currentUser.role === 'viewer') {
+          return ''; // Leerer String, um das Feld komplett zu überspringen
       }
-      // Zusatzkosten für Viewer readonly machen
-      if (key === 'Zusatzkosten' && currentUser.role === 'viewer') {
-          readOnlyAttr = 'readonly';
-          styleAttr = 'background-color:#eee; cursor: not-allowed;';
-      }
+      // Für Admins sind diese Felder editierbar, es sei denn, sie sind in isAlwaysReadOnlyField.
 
 
       if (key === "Flight Date") {
@@ -425,7 +422,7 @@ function openModal(originalIndex) {
         if (value) {
             if (typeof value === 'string' && value.match(/^\d{2}:\d{2}$/)) { // Erwartet HH:MM vom Backend
                 timeValue = value;
-            } else if (value instanceof Date) { // KORREKTUR: Fehlende Klammern für den else if-Block hinzugefügt
+            } else if (value instanceof Date) {
                 timeValue = value.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
             }
         }
@@ -441,9 +438,7 @@ function openModal(originalIndex) {
       } else if (['Tonnage'].includes(key)) { // Tonnage darf Viewer sehen und bearbeiten
           const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
           return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" ${readOnlyAttr} style="${styleAttr}" />`;
-      } else if (key === "Zusatzkosten") { // Spezialbehandlung für Zusatzkosten in der Detailansicht
-            return `<label>${label}:</label><textarea name="${key}" rows="5" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
-      } else if (key === "Email Request") { // HIER DIE ÄNDERUNG FÜR E-MAIL REQUEST
+      } else if (key === "Email Request") { // E-Mail Request ist ein normales Textfeld
           return `<label>${label}:</label><textarea name="${key}" rows="5" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
       }
       return `<label>${label}:</label><input type="text" name="${key}" value="${value}" ${readOnlyAttr} style="${styleAttr}" />`;
@@ -472,7 +467,7 @@ function openModal(originalIndex) {
     { label: "Abflugzeit", key: "Abflugzeit" },
     { label: "Tonnage", key: "Tonnage" },
     { label: "Vorfeldbegleitung", key: "Vorfeldbegleitung", type: "checkbox" },
-    { label: "E-Mail Request", key: "Email Request" } // Email Request hier hinzufügen, da es ein normales Feld ist
+    { label: "E-Mail Request", key: "Email Request" }
   ];
 
   // Preisbezogene Felder, die nur für Admins sichtbar sind
@@ -509,17 +504,10 @@ function openModal(originalIndex) {
     }).join("");
 
     modalBody.appendChild(section("Preisdetails", priceDetailsHTML));
-  } else {
-      // Wenn nicht Admin, aber Viewer, sollen Zusatzkosten als readonly angezeigt werden
-      if (currentUser && currentUser.role === 'viewer') {
-          // Find the "Zusatzkosten" field and render it as readonly
-          const zusatzkostenField = priceFields.find(field => field.key === 'Zusatzkosten');
-          if (zusatzkostenField) {
-              const viewerZusatzkostenHTML = `<label>${zusatzkostenField.label}:</label><textarea name="${zusatzkostenField.key}" rows="5" readonly style="background-color:#eee; cursor: not-allowed;">${r[zusatzkostenField.key] || ''}</textarea>`;
-              modalBody.appendChild(section("Preisdetails (nur Zusatzkosten sichtbar)", viewerZusatzkostenHTML));
-          }
-      }
   }
+  // Der 'else' Block für Viewer wurde entfernt, da 'Zusatzkosten'
+  // direkt in renderFields() behandelt wird, um es komplett zu überspringen.
+
 
   const buttonContainer = document.createElement("div");
   buttonContainer.style.width = "100%";
