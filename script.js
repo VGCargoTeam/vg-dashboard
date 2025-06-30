@@ -442,7 +442,7 @@ function openModal(originalIndex) {
           const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
           return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" ${readOnlyAttr} style="${styleAttr}" />`;
       } else if (key === "Zusatzkosten") { // Spezialbehandlung für Zusatzkosten in der Detailansicht
-            return `<label>${label}:</label><textarea name="${key}" rows="5" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`; // HIER WURDE DAS FEHLENDE SEMIKOLON BEHOBEN
+            return `<label>${label}:</label><textarea name="${key}" rows="5" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
       } else if (key === "Email Request") { // HIER DIE ÄNDERUNG FÜR E-MAIL REQUEST
           return `<label>${label}:</label><textarea name="${key}" rows="5" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
       }
@@ -1116,11 +1116,12 @@ function generateStatistics() {
         total20ftConsumables += ft20Consumables;
 
         // Dangerous Goods Statistik
-        const dgStatus = item['Dangerous Goods'] && item['Dangerous Goods'].toLowerCase() === 'ja' ? 'Ja' : (item['Dangerous Goods'] && item['Dangerous Goods'].toLowerCase() === 'nein' ? 'Nein' : 'N/A');
+        // Sicherstellen, dass item['Dangerous Goods'] immer ein String ist, bevor toLowerCase aufgerufen wird
+        const dgStatus = String(item['Dangerous Goods'] || '').toLowerCase() === 'ja' ? 'Ja' : (String(item['Dangerous Goods'] || '').toLowerCase() === 'nein' ? 'Nein' : 'N/A');
         dangerousGoodsCount[dgStatus]++;
 
         // Vorfeldbegleitung Statistik
-        const vbStatus = item['Vorfeldbegleitung'] && String(item['Vorfeldbegleitung']).toLowerCase() === 'ja' ? 'Ja' : (item['Vorfeldbegleitung'] && String(item['Vorfeldbegleitung']).toLowerCase() === 'nein' ? 'Nein' : 'N/A');
+        const vbStatus = String(item['Vorfeldbegleitung'] || '').toLowerCase() === 'ja' ? 'Ja' : (String(item['Vorfeldbegleitung'] || '').toLowerCase() === 'nein' ? 'Nein' : 'N/A');
         VorfeldbegleitungCount[vbStatus]++;
 
         // Airline-spezifische Statistik
@@ -1423,7 +1424,8 @@ function downloadStatisticsToCSV() {
     // --- Dangerous Goods Statistik ---
     const dangerousGoodsCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
     filteredData.forEach(item => {
-        const dgStatus = item['Dangerous Goods'] && item['Dangerous Goods'].toLowerCase() === 'ja' ? 'Ja' : (item['Dangerous Goods'] && item['Dangerous Goods'].toLowerCase() === 'nein' ? 'Nein' : 'N/A');
+        // Sicherstellen, dass item['Dangerous Goods'] immer ein String ist
+        const dgStatus = String(item['Dangerous Goods'] || '').toLowerCase() === 'ja' ? 'Ja' : (String(item['Dangerous Goods'] || '').toLowerCase() === 'nein' ? 'Nein' : 'N/A');
         dangerousGoodsCount[dgStatus]++;
     });
     csvContent += "Dangerous Goods Statistik\n";
@@ -1438,7 +1440,7 @@ function downloadStatisticsToCSV() {
     // --- Vorfeldbegleitung Statistik ---
     const VorfeldbegleitungCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
     filteredData.forEach(item => {
-        const vbStatus = item['Vorfeldbegleitung'] && String(item['Vorfeldbegleitung']).toLowerCase() === 'ja' ? 'Ja' : (item['Vorfeldbegleitung'] && String(item['Vorfeldbegleitung']).toLowerCase() === 'nein' ? 'Nein' : 'N/A');
+        const vbStatus = String(item['Vorfeldbegleitung'] || '').toLowerCase() === 'ja' ? 'Ja' : (String(item['Vorfeldbegleitung'] || '').toLowerCase() === 'nein' ? 'Nein' : 'N/A');
         VorfeldbegleitungCount[vbStatus]++;
     });
     csvContent += "Vorfeldbegleitung Statistik\n";
