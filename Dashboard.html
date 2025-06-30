@@ -151,7 +151,7 @@
     /* NEUE STILE FÜR STATISTIK MODAL */
     #statisticsModal .modal-content {
         max-width: 900px; /* Breiter für die Statistik */
-        flex-direction: column;
+        flex-direction: column; /* Stellt sicher, dass die Elemente vertikal gestapelt werden */
         align-items: flex-start;
     }
     #statisticsModal .modal-content h3 {
@@ -163,6 +163,10 @@
         width: 100%;
         max-height: 70vh;
         overflow-y: auto;
+        /* Sicherstellen, dass der Inhalt vertikal gestapelt wird */
+        display: flex;
+        flex-direction: column;
+        gap: 20px; /* Abstand zwischen den Statistikbereichen */
     }
     #statisticsBody table {
         width: 100%;
@@ -180,7 +184,6 @@
     /* NEUE STILE FÜR DIAGRAMME */
     .chart-container {
         width: 100%;
-        margin-top: 20px;
         background: #fff;
         padding: 15px;
         border-radius: 8px;
@@ -448,17 +451,20 @@
       <div class="modal-content">
         <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeStatisticsModal()">✖</span>
         <h3>Statistik</h3>
-        <div style="width:100%; display: flex; gap: 10px; margin-bottom: 15px;">
-            <label for="statFromDate">Von:</label>
-            <input type="date" id="statFromDate" onchange="generateStatistics()">
-            <label for="statToDate">Bis:</label>
-            <input type="date" id="statToDate" onchange="generateStatistics()">
-            <button onclick="downloadStatisticsToCSV()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                Statistik herunterladen
-            </button>
-        </div>
-        <div id="statisticsBody" style="width:100%; max-height: 70vh; overflow-y: auto;">
-          <!-- Diagramme werden hier gerendert -->
+        <div id="statisticsBody">
+          <!-- Datumsauswahl und Download-Button zuerst -->
+          <div style="width:100%; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 15px;">
+              <label for="statFromDate">Von:</label>
+              <input type="date" id="statFromDate" onchange="generateStatistics()">
+              <label for="statToDate">Bis:</label>
+              <input type="date" id="statToDate" onchange="generateStatistics()">
+              <button onclick="downloadStatisticsToCSV()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                  Statistik herunterladen
+              </button>
+          </div>
+          <!-- Diagramme und Tabellen werden hier dynamisch von generateStatistics() eingefügt -->
+          <!-- Siehe generateStatistics() in script.js für die genaue Reihenfolge -->
+
           <div class="chart-container">
               <h4>Tonnage pro Monat</h4>
               <canvas id="tonnagePerMonthChart"></canvas>
@@ -467,7 +473,6 @@
               <h4>Tonnage pro Kunde</h4>
               <canvas id="tonnagePerCustomerChart"></canvas>
           </div>
-          <!-- Statistik-Inhalt (Tabellen) wird hier geladen -->
         </div>
       </div>
     </div>
