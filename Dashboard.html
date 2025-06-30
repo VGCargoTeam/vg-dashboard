@@ -39,17 +39,17 @@
       position: relative;
     }
     .calendar {
-      width: 500px; 
+      width: 500px;
       background: rgba(255,255,255,0.85);
       backdrop-filter: blur(6px);
       padding: 20px;
       margin: 20px 20px 20px 0;
       border-radius: 12px;
       box-shadow: 0 0 20px rgba(0,0,0,0.3);
-      overflow: visible; 
+      overflow: visible;
     }
-    .calendar-wrapper { 
-        overflow: visible; 
+    .calendar-wrapper {
+        overflow: visible;
     }
     input[type="text"], input[type="date"] {
       padding: 6px 10px;
@@ -83,11 +83,11 @@
       cursor: pointer;
     }
     .nav button {
-      background-color: #28a745; 
+      background-color: #28a745;
       color: white;
     }
     .nav button:hover {
-      background-color: #218838; 
+      background-color: #218838;
     }
     .btn-view { background-color: #17a2b8; color: white; }
     .btn-delete { background-color: #dc3545; color: white; }
@@ -104,7 +104,7 @@
       background: rgba(0,0,0,0.6);
       justify-content: center;
       align-items: center;
-      z-index: 2000; 
+      z-index: 2000;
     }
     .modal-content {
       background: white;
@@ -115,8 +115,8 @@
       display: flex;
       flex-wrap: wrap;
       gap: 20px;
-      max-height: 90vh; 
-      overflow-y: auto; 
+      max-height: 90vh;
+      overflow-y: auto;
     }
     /* Stil für das History-Modal, damit es sich vom Detail-Modal unterscheidet */
     #historyModal .modal-content {
@@ -148,6 +148,50 @@
         font-size: 0.8em;
     }
 
+    /* NEUE STILE FÜR STATISTIK MODAL */
+    #statisticsModal .modal-content {
+        max-width: 900px; /* Breiter für die Statistik */
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    #statisticsModal .modal-content h3 {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    #statisticsBody {
+        width: 100%;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    #statisticsBody table {
+        width: 100%;
+        margin-top: 15px;
+    }
+    #statisticsBody th, #statisticsBody td {
+        padding: 10px;
+        border: 1px solid #ccc;
+        text-align: left;
+    }
+    #statisticsBody th {
+        background-color: #f2f2f2;
+    }
+
+    /* NEUE STILE FÜR DIAGRAMME */
+    .chart-container {
+        width: 100%;
+        margin-top: 20px;
+        background: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .chart-container canvas {
+        width: 100% !important; /* Wichtig für Responsivität von Chart.js */
+        height: 300px !important; /* Feste Höhe für die Diagramme */
+    }
+
+
     .modal-content p {
       flex: 1 1 45%;
       margin: 0;
@@ -172,7 +216,7 @@
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    
+
     .checkbox-label {
       display: flex;
       align-items: center;
@@ -192,10 +236,10 @@
     .calendar-block th, .calendar-block td {
       width: calc(100% / 7);
       padding: 10px 5px;
-      height: 50px; 
+      height: 50px;
       vertical-align: top;
       font-size: 14px;
-      position: relative; 
+      position: relative;
       overflow: visible; /* Wichtig für Tooltips/Icons */
     }
     .calendar-day {
@@ -207,7 +251,7 @@
       background-color: #d1d9e0;
     }
     .calendar-day.has-flights {
-      background-color: #ffc107; 
+      background-color: #ffc107;
       font-weight: bold;
       color: #333;
     }
@@ -228,31 +272,31 @@
 
     /* TOOLTIP-STILE */
     [data-tooltip] {
-      position: relative; 
-      z-index: 1; 
+      position: relative;
+      z-index: 1;
     }
 
     [data-tooltip]:hover::after {
       content: attr(data-tooltip);
       position: absolute;
-      bottom: calc(100% + 5px); 
+      bottom: calc(100% + 5px);
       left: 50%; /* Zentriert über dem Element */
       transform: translateX(-50%); /* Korrigiert die Zentrierung */
-      
-      background-color: rgba(0, 0, 0, 0.9); 
+
+      background-color: rgba(0, 0, 0, 0.9);
       color: #fff;
       padding: 8px 12px;
       border-radius: 6px;
       white-space: pre-wrap; /* Zeilenumbrüche im Tooltip erlauben */
-      z-index: 1000; 
-      min-width: 180px; 
+      z-index: 1000;
+      min-width: 180px;
       max-width: 300px; /* Breitere Tooltips erlauben */
       text-align: left;
       box-shadow: 0 4px 8px rgba(0,0,0,0.3);
       pointer-events: none; /* Tooltip soll Klicks nicht blockieren */
-      opacity: 0; 
-      visibility: hidden; 
-      transition: opacity 0.2s, visibility 0.2s; 
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
 
       /* Zusätzliche Anpassung, um sicherzustellen, dass es nicht den Bildschirmrand überlappt */
       /* Max-width und transform: translateX(-50%) sollten die meisten Fälle abdecken */
@@ -266,8 +310,8 @@
       transform: translateX(-50%) translateY(5px); /* Positioniert den Pfeil */
       border-width: 5px;
       border-style: solid;
-      border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent; 
-      z-index: 1001; 
+      border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
+      z-index: 1001;
       pointer-events: none;
       opacity: 0;
       visibility: hidden;
@@ -330,9 +374,15 @@
       </button>
     </div>
 
-    <button onclick="createNewRequest()" style="margin: 10px 0 20px; padding: 10px 16px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
-      Charter Anfrage erstellen
-    </button>
+    <div style="display: flex; gap: 10px; margin: 10px 0 20px;">
+        <button onclick="createNewRequest()" style="padding: 10px 16px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+          Charter Anfrage erstellen
+        </button>
+        <button onclick="openStatisticsModal()" style="padding: 10px 16px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            Statistik anzeigen
+        </button>
+    </div>
+
 
     <div style="text-align: center; font-size: 16px; color: #e63244;">
       <span id="currentDate">Date: --</span> | <span id="clock">Time: --:--:--</span>
@@ -351,7 +401,7 @@
     </div>
     <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
     <table id="dataTable"><thead><tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage</th><th>Action</th></tr></thead><tbody></tbody></table>
-    
+
     <!-- Detail Modal (existing) -->
     <div class="modal" id="detailModal">
       <div class="modal-content">
@@ -393,6 +443,35 @@
       </div>
     </div>
 
+    <!-- NEU: Statistik Modal -->
+    <div class="modal" id="statisticsModal">
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeStatisticsModal()">✖</span>
+        <h3>Statistik</h3>
+        <div style="width:100%; display: flex; gap: 10px; margin-bottom: 15px;">
+            <label for="statFromDate">Von:</label>
+            <input type="date" id="statFromDate" onchange="generateStatistics()">
+            <label for="statToDate">Bis:</label>
+            <input type="date" id="statToDate" onchange="generateStatistics()">
+            <button onclick="downloadStatisticsToCSV()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                Statistik herunterladen
+            </button>
+        </div>
+        <div id="statisticsBody" style="width:100%; max-height: 70vh; overflow-y: auto;">
+          <!-- Diagramme werden hier gerendert -->
+          <div class="chart-container">
+              <h4>Tonnage pro Monat</h4>
+              <canvas id="tonnagePerMonthChart"></canvas>
+          </div>
+          <div class="chart-container">
+              <h4>Tonnage pro Kunde</h4>
+              <canvas id="tonnagePerCustomerChart"></canvas>
+          </div>
+          <!-- Statistik-Inhalt (Tabellen) wird hier geladen -->
+        </div>
+      </div>
+    </div>
+
   </div>
   <div class="calendar">
     <div class="nav">
@@ -402,6 +481,7 @@
     <div id="calendarArea" class="calendar-wrapper"></div>
   </div>
   <!-- WICHTIGE KORREKTUR: script.js hierher verschoben und 'defer' entfernt -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js CDN hinzufügen -->
   <script src="script.js" type="module"></script>
 </body>
 </html>
