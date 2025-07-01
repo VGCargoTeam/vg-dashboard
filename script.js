@@ -372,7 +372,7 @@ function openModal(originalIndex) {
       if (value === undefined || value === null) value = "";
 
       const isAlwaysReadOnlyField = [
-          "Ref", "Created At", "Acceptance Timestamp", "Email Request"
+          "Ref", "Created At", "Acceptance Timestamp", "Email Request", "Accepted By Name"
       ].includes(key);
 
       // 'Accepted By Name' und 'Acceptance Timestamp' sollten immer schreibgeschützt sein.
