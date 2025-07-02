@@ -160,6 +160,34 @@
       box-sizing: border-box;
     }
 
+    /* Filter section layout within main */
+    .filter-section-wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: flex-end;
+        margin-top: 10px; /* Abstand nach der Uhrzeit */
+    }
+    .filter-section-wrapper > div {
+        flex: 1;
+        min-width: 180px; /* Mindestbreite für Filterfelder */
+    }
+    .filter-section-wrapper label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #333;
+    }
+    .filter-section-wrapper input[type="text"],
+    .filter-section-wrapper input[type="date"] {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        box-sizing: border-box;
+    }
+
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -525,7 +553,7 @@
       </div>
 
       <h2 class="text-xl font-semibold mb-4 text-blue-800">Filter & Search</h2>
-      <div class="search-filter-section">
+      <div class="filter-section-wrapper"> <!-- Changed from search-filter-section to filter-section-wrapper -->
         <div>
           <label for="refSearch">Reference:</label>
           <input type="text" id="refSearch" onkeyup="filterTable()" placeholder="Search by Ref" />
@@ -535,15 +563,15 @@
           <input type="text" id="airlineSearch" onkeyup="filterTable()" placeholder="Search by Airline" />
         </div>
         <div>
-          <label for="flightNumberSearch">Flight Number:</label>
+          <label for="flightNumberSearch">Flugnummer:</label>
           <input type="text" id="flightNumberSearch" onkeyup="filterTable()" placeholder="Search by Flight No." />
         </div>
         <div>
-          <label for="fromDate">From Date:</label>
+          <label for="fromDate">From:</label>
           <input type="date" id="fromDate" onchange="filterTable()" />
         </div>
         <div>
-          <label for="toDate">To Date:</label>
+          <label for="toDate">To:</label>
           <input type="date" id="toDate" onchange="filterTable()" />
         </div>
         <div class="flex items-center mt-2">
@@ -659,7 +687,7 @@
       <label for="recipientEmailInput">Recipient Email:</label>
       <input type="email" id="recipientEmailInput" placeholder="Enter recipient email address">
       <p id="emailConfirmationMessage" style="color: red;"></p>
-      <div class="button-group">
+      <div class="modal-buttons">
         <button class="btn btn-primary" id="sendEmailConfirmBtn">Send Confirmation</button>
         <button class="btn btn-secondary" onclick="closeEmailConfirmationModal()">Cancel</button>
       </div>
