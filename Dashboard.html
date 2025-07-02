@@ -253,14 +253,33 @@
     .calendar-day:hover {
       background-color: #d1d9e0;
     }
+    /* NEUE KALENDER-FARBEN */
+    .calendar-day.import-only {
+      background-color: #ffc107; /* Gelb für Import */
+      font-weight: bold;
+      color: #333;
+    }
+    .calendar-day.export-only {
+      background-color: #28a745; /* Grün für Export */
+      font-weight: bold;
+      color: #fff; /* Weißer Text für bessere Lesbarkeit auf Grün */
+    }
+    .calendar-day.import-export {
+      background: linear-gradient(to right, #ffc107 50%, #28a745 50%); /* Halb Gelb, Halb Grün */
+      font-weight: bold;
+      color: #333; /* Standardtextfarbe, da es gemischt ist */
+    }
+    /* Bestehende has-flights Klasse, falls weder Import noch Export zutrifft */
     .calendar-day.has-flights {
-      background-color: #ffc107;
+      background-color: #add8e6; /* Hellblau als Standard für Flüge ohne spezifischen Typ */
       font-weight: bold;
       color: #333;
     }
     .calendar-day.has-flights:hover {
-      background-color: #e0a800;
+      background-color: #90bed4;
     }
+    /* Ende NEUE KALENDER-FARBEN */
+
     .calendar-day.empty {
       background-color: #f8f9fa;
       cursor: default;
@@ -418,7 +437,7 @@
 <body class="font-inter flex flex-col lg:flex-row min-h-screen text-gray-800">
   <div class="main">
     <div class="logo-container"> <!-- NEU: Logo-Container -->
-        <img src="VG_Cargo_Logo_small.png" alt="VG Cargo Logo"> <!-- Dein Logo-Bild -->
+        <img src="https://placehold.co/150x50/000000/FFFFFF?text=VG+Cargo+Logo" alt="VG Cargo Logo"> <!-- Dein Logo-Bild -->
     </div>
 
     <div class="header-area" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -537,8 +556,8 @@
             <input type="email" id="recipientEmailInput" placeholder="Empfänger E-Mail" required>
             <p id="emailConfirmationMessage" style="color: red;"></p>
             <div class="modal-buttons">
-                <button class="send-button" id="sendEmailConfirmBtn">Senden</button>
-                <button class="cancel-button" onclick="closeEmailConfirmationModal()">Abbrechen</button>
+                <button class="btn btn-primary" id="sendEmailConfirmBtn">Senden</button>
+                <button class="btn btn-secondary" onclick="closeEmailConfirmationModal()">Abbrechen</button>
             </div>
         </div>
     </div>
