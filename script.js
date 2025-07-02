@@ -39,10 +39,16 @@ function updateUIBasedOnUserRole() {
   const adminElements = document.querySelectorAll(".admin-only");
   const loggedInUsernameSpan = document.getElementById('loggedInUsername');
   const loggedInUserRoleSpan = document.getElementById('loggedInUserRole');
+  const loggedInUsernameProfileSpan = document.getElementById('loggedInUsernameProfile');
+  const loggedInUserRoleProfileSpan = document.getElementById('loggedInUserRoleProfile');
+
 
   if (currentUser) {
     if (loggedInUsernameSpan) loggedInUsernameSpan.textContent = currentUser.name;
     if (loggedInUserRoleSpan) loggedInUserRoleSpan.textContent = currentUser.role;
+    if (loggedInUsernameProfileSpan) loggedInUsernameProfileSpan.textContent = currentUser.name;
+    if (loggedInUserRoleProfileSpan) loggedInUserRoleProfileSpan.textContent = currentUser.role;
+
 
     if (currentUser.role === 'admin') {
       adminElements.forEach(el => el.style.display = ""); // Standardanzeige
@@ -54,6 +60,8 @@ function updateUIBasedOnUserRole() {
     adminElements.forEach(el => el.style.display = "none");
     if (loggedInUsernameSpan) loggedInUsernameSpan.textContent = 'N/A';
     if (loggedInUserRoleSpan) loggedInUserRoleSpan.textContent = 'N/A';
+    if (loggedInUsernameProfileSpan) loggedInUsernameProfileSpan.textContent = 'N/A';
+    if (loggedInUserRoleProfileSpan) loggedInUserRoleProfileSpan.textContent = 'N/A';
   }
 }
 
@@ -359,7 +367,9 @@ function openModal(originalIndex) {
     'AGB Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
     'Service Description Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
     'Accepted By Name': "",
-    'Acceptance Timestamp': ""
+    'Acceptance Timestamp': "",
+    'Flight Type Import': "Nein", // NEU: Standardwert
+    'Flight Type Export': "Nein"  // NEU: Standardwert
   } : requestData[originalIndex];
 
   // Speichere die aktuellen Daten im Modal, um sie später für die E-Mail zu verwenden
@@ -445,6 +455,9 @@ function openModal(originalIndex) {
           return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" ${readOnlyAttr} style="${styleAttr}" />`;
       } else if (key === "Email Request") { // E-Mail Request ist ein normales Textfeld
           return `<label>${label}:</label><textarea name="${key}" rows="5" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
+      } else if (key === "Flight Type Import" || key === "Flight Type Export") { // NEU: Checkboxen für Import/Export
+          const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
+          return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}"> ${label}</label>`;
       }
       return `<label>${label}:</label><input type="text" name="${key}" value="${value}" ${readOnlyAttr} style="${styleAttr}" />`;
     }).join("");
@@ -472,6 +485,8 @@ function openModal(originalIndex) {
     { label: "Abflugzeit", key: "Abflugzeit" },
     { label: "Tonnage", key: "Tonnage" },
     { label: "Vorfeldbegleitung", key: "Vorfeldbegleitung", type: "checkbox" },
+    { label: "Flight Type Import", key: "Flight Type Import", type: "checkbox" }, // NEU
+    { label: "Flight Type Export", key: "Flight Type Export", type: "checkbox" }, // NEU
     { label: "E-Mail Request", key: "Email Request" }
   ];
 
@@ -823,13 +838,19 @@ function generateCalendarHTML(year, month) {
         let simpleTitleContent = '';
         let dayHasVorfeldbegleitung = false;
 
+        // NEU: Import/Export Status für den Tag
+        let hasImport = false;
+        let hasExport = false;
+
+
         // Check if current day is today and add 'today' class
         if (currentCalendarDayForCell.getTime() === today.getTime()) {
             cellClasses.push('today');
         }
 
         if (flightsForDay.length > 0) {
-          cellClasses.push('has-flights');
+          // Entferne 'has-flights' da wir spezifischere Klassen verwenden
+          // cellClasses.push('has-flights');
 
           flightsForDay.forEach(f => {
             const tonnageValue = parseFloat(String(f.Tonnage).replace(',', '.') || "0") || 0;
@@ -860,9 +881,29 @@ function generateCalendarHTML(year, month) {
             if (f['Vorfeldbegleitung'] && String(f['Vorfeldbegleitung']).toLowerCase() === 'ja') {
               dayHasVorfeldbegleitung = true;
             }
+            // NEU: Import/Export Status prüfen
+            if (String(f['Flight Type Import'] || '').toLowerCase() === 'ja') {
+                hasImport = true;
+            }
+            if (String(f['Flight Type Export'] || '').toLowerCase() === 'ja') {
+                hasExport = true;
+            }
           });
           simpleTitleContent = `Flüge: ${flightsForDay.length}`;
         }
+
+        // NEU: Klassen für Kalenderfarben hinzufügen
+        if (hasImport && hasExport) {
+            cellClasses.push('import-export');
+        } else if (hasImport) {
+            cellClasses.push('import-only');
+        } else if (hasExport) {
+            cellClasses.push('export-only');
+        } else if (flightsForDay.length > 0) {
+            // Wenn Flüge da sind, aber weder Import noch Export markiert, Standardfarbe für Flüge
+            cellClasses.push('has-flights');
+        }
+
 
         const dataTooltipContent = tooltipContentArray.join('\n\n').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
         const flightIcon = dayHasVorfeldbegleitung ? ' <span class="flight-icon">&#9992;</span>' : '';
@@ -887,7 +928,6 @@ document.addEventListener("DOMContentLoaded", () => {
   updateClock();
   setInterval(updateClock, 1000);
 
-  // Die fetchData-Polling wird erst gestartet, nachdem der Benutzer authentifiziert wurde (in checkAuthStatus)
   // Das Event-Listener für archiveCheckbox muss hier bleiben, da es keine globale Funktion ist.
   const archiveCheckbox = document.getElementById("archiveCheckbox");
   if (archiveCheckbox) {
@@ -1117,18 +1157,8 @@ function generateStatistics() {
 
     filteredData.forEach(item => {
         const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
-        // Finanzstatistiken entfernt:
-        // const rate = parseFloat(String(item.Rate).replace(',', '.') || "0") || 0;
-        // const securityCharges = parseFloat(String(item['Security charges']).replace(',', '.') || "0") || 0;
-        // const ft10Consumables = parseFloat(String(item['10ft consumables']).replace(',', '.') || "0") || 0;
-        // const ft20Consumables = parseFloat(String(item['20ft consumables']).replace(',', '.') || "0") || 0;
-
+        
         totalTonnage += tonnage;
-        // Finanzstatistiken entfernt:
-        // totalRate += rate;
-        // totalSecurityCharges += securityCharges;
-        // total10ftConsumables += ft10Consumables;
-        // total20ftConsumables += ft20Consumables;
 
         // Dangerous Goods Statistik
         // Sicherstellen, dass item['Dangerous Goods'] immer ein String ist, bevor toLowerCase aufgerufen wird
@@ -1146,8 +1176,6 @@ function generateStatistics() {
         }
         airlineStats[airlineName].totalTonnage += tonnage;
         airlineStats[airlineName].totalFlights++;
-        // Berechne den geschätzten Umsatz (Rate + Security Charges + Verbrauchsmaterialien) - ENTFALLEN
-        // airlineStats[airlineName].totalRevenue += (rate + securityCharges + ft10Consumables + ft20Consumables);
 
         // Tonnage pro Monat Statistik
         const flightDate = item['Flight Date'];
@@ -1166,14 +1194,6 @@ function generateStatistics() {
     let statsHTML = '<h4>Gesamtübersicht</h4>';
     statsHTML += `<p>Gesamtzahl Flüge: <strong>${totalFlights}</strong></p>`;
     statsHTML += `<p>Gesamte Tonnage: <strong>${totalTonnage.toLocaleString('de-DE', { maximumFractionDigits: 2 })} kg</strong></p>`;
-
-    // Finanzstatistiken entfernt
-    // if (currentUser && currentUser.role === 'admin') {
-    //     statsHTML += `<p>Gesamte Rate (ohne DG/Zusatzkosten): <strong>${totalRate.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}</strong></p>`;
-    //     statsHTML += `<p>Gesamte Security Charges: <strong>${totalSecurityCharges.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}</strong></p>`;
-    //     statsHTML += `<p>Gesamte 10ft Consumables: <strong>${total10ftConsumables.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}</strong></p>`;
-    //     statsHTML += `<p>Gesamte 20ft Consumables: <strong>${total20ftConsumables.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}</strong></p>`;
-    // }
 
 
     statsHTML += '<h4>Dangerous Goods Statistik</h4>';
@@ -1198,10 +1218,6 @@ function generateStatistics() {
     statsHTML += '<h4>Statistik nach Airline</h4>';
     if (Object.keys(airlineStats).length > 0) {
         statsHTML += `<table><thead><tr><th>Airline</th><th>Flüge</th><th>Tonnage (kg)</th>`;
-        // Geschätzter Umsatz Header entfernt
-        // if (currentUser && currentUser.role === 'admin') {
-        //     statsHTML += `<th>Geschätzter Umsatz</th>`;
-        // }
         statsHTML += `</tr></thead><tbody>`;
 
         // Sortiere Airlines nach Gesamtflügen absteigend
@@ -1212,10 +1228,6 @@ function generateStatistics() {
             statsHTML += `<td>${airlineName}</td>`;
             statsHTML += `<td>${stats.totalFlights}</td>`;
             statsHTML += `<td>${stats.totalTonnage.toLocaleString('de-DE', { maximumFractionDigits: 2 })}</td>`;
-            // Geschätzter Umsatz Zelle entfernt
-            // if (currentUser && currentUser.role === 'admin') {
-            //     row += `,${stats.totalRevenue.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}`;
-            // }
             statsHTML += `</tr>`;
         });
         statsHTML += `</tbody></table>`;
@@ -1239,7 +1251,12 @@ function generateStatistics() {
 }
 
 function renderTonnagePerMonthChart(data) {
-    const ctx = document.getElementById('tonnagePerMonthChart').getContext('2d');
+    const ctx = document.getElementById('tonnagePerMonthChart');
+    if (!ctx) {
+        console.error("Canvas element 'tonnagePerMonthChart' not found.");
+        return;
+    }
+    const chartCtx = ctx.getContext('2d');
 
     // Zerstöre die vorherige Chart-Instanz, falls vorhanden
     if (tonnagePerMonthChartInstance) {
@@ -1249,7 +1266,7 @@ function renderTonnagePerMonthChart(data) {
     const labels = Object.keys(data).sort(); // Sortiere nach Monat (YYYY-MM)
     const tonnageValues = labels.map(label => data[label]);
 
-    tonnagePerMonthChartInstance = new Chart(ctx, {
+    tonnagePerMonthChartInstance = new Chart(chartCtx, {
         type: 'bar', // Balkendiagramm
         data: {
             labels: labels,
@@ -1300,7 +1317,12 @@ function renderTonnagePerMonthChart(data) {
 }
 
 function renderTonnagePerCustomerChart(data) {
-    const ctx = document.getElementById('tonnagePerCustomerChart').getContext('2d');
+    const ctx = document.getElementById('tonnagePerCustomerChart');
+    if (!ctx) {
+        console.error("Canvas element 'tonnagePerCustomerChart' not found.");
+        return;
+    }
+    const chartCtx = ctx.getContext('2d');
 
     // Zerstöre die vorherige Chart-Instanz, falls vorhanden
     if (tonnagePerCustomerChartInstance) {
@@ -1323,7 +1345,7 @@ function renderTonnagePerCustomerChart(data) {
     ];
     const borderColors = backgroundColors.map(color => color.replace('0.6', '1')); // Feste Ränder
 
-    tonnagePerCustomerChartInstance = new Chart(ctx, {
+    tonnagePerCustomerChartInstance = new Chart(chartCtx, {
         type: 'bar', // Balkendiagramm
         data: {
             labels: labels,
@@ -1415,39 +1437,15 @@ function downloadStatisticsToCSV() {
     // --- Gesamtübersicht Statistik ---
     let totalFlights = filteredData.length;
     let totalTonnage = 0;
-    // Finanzstatistiken entfernt:
-    // let totalRate = 0;
-    // let totalSecurityCharges = 0;
-    // let total10ftConsumables = 0;
-    // let total20ftConsumables = 0;
 
     filteredData.forEach(item => {
         const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
-        // Finanzstatistiken entfernt:
-        // const rate = parseFloat(String(item.Rate).replace(',', '.') || "0") || 0;
-        // const securityCharges = parseFloat(String(item['Security charges']).replace(',', '.') || "0") || 0;
-        // const ft10Consumables = parseFloat(String(item['10ft consumables']).replace(',', '.') || "0") || 0;
-        // const ft20Consumables = parseFloat(String(item['20ft consumables']).replace(',', '.') || "0") || 0;
-
         totalTonnage += tonnage;
-        // Finanzstatistiken entfernt:
-        // totalRate += rate;
-        // totalSecurityCharges += securityCharges;
-        // total10ftConsumables += ft10Consumables;
-        // total20ftConsumables += ft20Consumables;
     });
 
     csvContent += "Gesamtuebersicht\n";
     csvContent += "Gesamtzahl Fluege," + totalFlights + "\n";
     csvContent += "Gesamte Tonnage (kg)," + totalTonnage.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n"; // Nutze en-US für CSV-Konsistenz
-
-    // Finanzstatistiken entfernt:
-    // if (currentUser && currentUser.role === 'admin') {
-    //     csvContent += "Gesamte Rate (EUR)," + totalRate.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n";
-    //     csvContent += "Gesamte Security Charges (EUR)," + totalSecurityCharges.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n";
-    //     csvContent += "Gesamte 10ft Consumables (EUR)," + total10ftConsumables.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n";
-    //     csvContent += "Gesamte 20ft Consumables (EUR)," + total20ftConsumables.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n";
-    // }
     csvContent += "\n"; // Leere Zeile zur Trennung
 
     // --- Dangerous Goods Statistik ---
@@ -1518,35 +1516,20 @@ function downloadStatisticsToCSV() {
     filteredData.forEach(item => {
         const airlineName = item.Airline || 'Unbekannt';
         const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
-        // Finanzstatistiken entfernt:
-        // const rate = parseFloat(String(item.Rate).replace(',', '.') || "0") || 0;
-        // const securityCharges = parseFloat(String(item['Security charges']).replace(',', '.') || "0") || 0;
-        // const ft10Consumables = parseFloat(String(item['10ft consumables']).replace(',', '.') || "0") || 0;
-        // const ft20Consumables = parseFloat(String(item['20ft consumables']).replace(',', '.') || "0") || 0;
 
         if (!airlineStats[airlineName]) {
-            airlineStats[airlineName] = { totalTonnage: 0, totalFlights: 0 }; // totalRevenue entfernt
+            airlineStats[airlineName] = { totalTonnage: 0, totalFlights: 0 };
         }
         airlineStats[airlineName].totalTonnage += tonnage;
         airlineStats[airlineName].totalFlights++;
-        // Finanzstatistiken entfernt:
-        // airlineStats[airlineName].totalRevenue += (rate + securityCharges + ft10Consumables + ft20Consumables);
     });
 
     csvContent += "Statistik nach Airline\n";
     let airlineHeader = "Airline,Fluege,Tonnage (kg)";
-    // Geschätzter Umsatz Header entfernt:
-    // if (currentUser && currentUser.role === 'admin') {
-    //     airlineHeader += ",Geschaetzter Umsatz (EUR)";
-    // }
     csvContent += airlineHeader + "\n";
 
     Object.entries(airlineStats).sort(([, a], [, b]) => b.totalFlights - a.totalFlights).forEach(([airlineName, stats]) => {
         let row = `"${airlineName}",${stats.totalFlights},${stats.totalTonnage.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 })}`;
-        // Geschätzter Umsatz Zelle entfernt:
-        // if (currentUser && currentUser.role === 'admin') {
-        //     row += `,${stats.totalRevenue.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 })}`;
-        // }
         csvContent += row + "\n";
     });
 
@@ -1696,6 +1679,8 @@ function generateEmailBody(data) {
     body += `Abflugzeit: ${data['Abflugzeit'] || '-'}\n`;
     body += `Tonnage: ${data.Tonnage ? parseFloat(String(data.Tonnage).replace(',', '.')).toLocaleString('de-DE') + ' kg' : '-'}\n`;
     body += `Vorfeldbegleitung: ${data.Vorfeldbegleitung || '-'}\n`;
+    body += `Flugtyp Import: ${data['Flight Type Import'] || '-'}\n`; // NEU
+    body += `Flugtyp Export: ${data['Flight Type Export'] || '-'}\n`; // NEU
     body += `E-Mail Anfrage: ${data['Email Request'] || '-'}\n\n`;
 
     // Preisdetails (nur wenn Admin, ansonsten nicht in der E-Mail enthalten)
