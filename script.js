@@ -1,5 +1,5 @@
 // Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
-const API_URL = 'https://script.google.com/macros/s/AKfycbwapPxAb9riSm2wfWi1Fj8dF0MZYz6XaMIUB3bEGMKwKsXtKiWq4LIGQ3pFifbCYUPI/exec'; // <<< VERIFIZIERE DIESE URL
+const API_URL = 'https://script.google.com/macros/s/AKfycbyf7_rWlJND85GtAs6Bk93UButwxni_AbolBc6KpEks8lU-IzQyVTrshYOTtQHc_tmG/exec'; // <<< VERIFIZIERE DIESE URL
 
 // !!! WICHTIG: Die users.js-Importzeile wird entfernt, da die Benutzerdaten nun aus Google Sheets kommen. !!!
 // import { users } from './users.js';
