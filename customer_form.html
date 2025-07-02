@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: url('Airplane.jpg') no-repeat center center fixed; /* Using placeholder for Airplane.jpg */
+            background: url('https://placehold.co/1920x1080/ADD8E6/000000?text=Airplane+Background') no-repeat center center fixed; /* Using placeholder for Airplane.jpg */
             background-size: cover;
             display: flex;
             justify-content: center;
@@ -84,6 +84,16 @@
             width: 20px;
             height: 20px;
         }
+        /* Added for multiple checkboxes in one line */
+        .checkbox-row {
+            display: flex;
+            gap: 20px; /* Space between checkboxes */
+            margin-top: 10px;
+        }
+        .checkbox-row .checkbox-group {
+            margin-bottom: 0; /* Remove extra margin if part of a row */
+        }
+
         button[type="submit"] {
             width: 100%;
             padding: 15px;
@@ -321,6 +331,23 @@
                     <label for="AircraftType">Aircraft Type (optional):</label>
                     <input type="text" id="AircraftType" name="Aircraft Type">
                 </div>
+
+                <!-- NEU: Import/Export Checkboxen -->
+                <div class="form-group">
+                    <label>Flight Type:</label>
+                    <div class="checkbox-row">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="flightTypeImport" name="Flight Type Import">
+                            <label for="flightTypeImport">Import</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="flightTypeExport" name="Flight Type Export">
+                            <label for="flightTypeExport">Export</label>
+                        </div>
+                    </div>
+                </div>
+                <!-- Ende NEU: Import/Export Checkboxen -->
+
                 <!-- E-Mail Request hierher verschoben und Platzhalter geändert -->
                 <div class="form-group">
                     <label for="EmailRequest">E-Mail Request (optional):</label>
@@ -402,6 +429,10 @@
         const okSuccessButton = document.getElementById('okSuccessButton');
         const closeSuccessPopup = document.getElementById('closeSuccessPopup');
 
+        // NEU: Import/Export Checkboxen
+        const flightTypeImport = document.getElementById('flightTypeImport');
+        const flightTypeExport = document.getElementById('flightTypeExport');
+
 
         let pendingPayload = null; // Speichert das Payload, bis der Name bestätigt wurde
 
@@ -452,6 +483,11 @@
             for (const [key, value] of formData.entries()) {
                 pendingPayload[key] = value;
             }
+
+            // NEU: Import/Export Werte hinzufügen
+            pendingPayload['Flight Type Import'] = flightTypeImport.checked ? 'Ja' : 'Nein';
+            pendingPayload['Flight Type Export'] = flightTypeExport.checked ? 'Ja' : 'Nein';
+
 
             // Optional: Vorbelegung des Namensfeldes im Modal, falls E-Mail-Kontaktname vorhanden
             if (pendingPayload['Contact Name Invoicing']) {
@@ -539,8 +575,8 @@
             nameConfirmModal.style.display = 'none';
             confirmNameInput.value = ''; // Eingabefeld zurücksetzen
             submitButton.disabled = false; // Submit Button wieder aktivieren
-            submitButton.textContent = 'Submit Request'; // Text zurücksetzen
-            toggleSubmitButton(); // Re-evaluate button state
+            submitButton.textContent = 'Submit Request';
+            toggleSubmitButton();
         });
 
         // Event Listener für den OK-Button und den Schließen-Button im Erfolgs-Popup
