@@ -27,82 +27,36 @@
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
-      display: flex; /* Flexbox für Hauptbereich und Kalender */
-      flex-direction: column; /* Standard auf kleinen Bildschirmen */
-      min-height: 100vh;
-      text-gray-800; /* Textfarbe */
     }
-
-    /* Flex-Anordnung für größere Bildschirme */
-    @media (min-width: 1024px) {
-      body {
-        flex-direction: row; /* Nebeneinander auf großen Bildschirmen */
-      }
-    }
-
     .main {
-      flex: 1; /* Nimmt den meisten Platz ein */
+      flex: 1;
       background: rgba(255,255,255,0.85);
       backdrop-filter: blur(6px);
       padding: 30px;
       margin: 20px;
       border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      position: relative; /* Für Logo-Positionierung */
-      display: flex; /* Für interne Spalten (Filter/Tabelle) */
-      flex-direction: column; /* Standard auf kleinen Bildschirmen */
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      position: relative;
     }
-
-    /* Anordnung der internen Spalten im Main-Bereich */
-    .main-content-wrapper {
-      display: flex;
-      flex-direction: column; /* Standard auf kleinen Bildschirmen */
-      gap: 20px;
-      flex: 1; /* Füllt den verfügbaren Platz im Main-Div */
-    }
-
-    @media (min-width: 1024px) {
-      .main-content-wrapper {
-        flex-direction: row; /* Nebeneinander auf großen Bildschirmen */
-      }
-    }
-
-    .left-panel-content {
-      flex: 1; /* Nimmt einen Teil des Platzes im Main-Bereich ein */
-      min-width: 250px; /* Mindestbreite für Filter/Buttons */
-    }
-
-    .middle-panel-content {
-      flex: 2; /* Nimmt mehr Platz für die Tabelle ein */
-    }
-
     .calendar {
-      width: 500px; /* Feste Breite für den Kalender */
+      width: 500px;
       background: rgba(255,255,255,0.85);
       backdrop-filter: blur(6px);
       padding: 20px;
-      margin: 20px 20px 20px 0; /* Rechtsbündig mit Abstand */
+      margin: 20px 20px 20px 0;
       border-radius: 12px;
       box-shadow: 0 0 20px rgba(0,0,0,0.3);
-      overflow: visible; /* Wichtig für Kalender-Tooltips */
+      overflow: visible;
     }
-
-    @media (max-width: 1023px) {
-      .calendar {
-        width: auto; /* Volle Breite auf kleinen Bildschirmen */
-        margin: 20px; /* Gleichmäßiger Abstand */
-      }
+    .calendar-wrapper {
+        overflow: visible;
     }
-
-    input[type="text"], input[type="date"], input[type="time"], select, textarea {
-      padding: 8px 10px;
-      margin: 5px 0; /* Vertikaler Abstand */
+    input[type="text"], input[type="date"] {
+      padding: 6px 10px;
+      margin: 5px;
       border: 1px solid #ccc;
       border-radius: 6px;
-      width: 100%; /* Volle Breite im Container */
-      box-sizing: border-box; /* Padding und Border in die Breite einbeziehen */
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
@@ -163,8 +117,6 @@
       gap: 20px;
       max-height: 90vh;
       overflow-y: auto;
-      box-shadow: 0 0 20px rgba(0,0,0,0.3);
-      position: relative; /* Für Schließen-Button */
     }
     /* Stil für das History-Modal, damit es sich vom Detail-Modal unterscheidet */
     #historyModal .modal-content {
@@ -183,7 +135,7 @@
     #historyBody li {
         margin-bottom: 10px;
         padding: 10px;
-        border: 1px solid #ddd;
+        border: 1px solid #eee;
         border-radius: 5px;
         background-color: #fdfdfd;
         font-size: 0.9em;
@@ -252,7 +204,7 @@
       padding: 6px;
       margin-top: 5px;
       border: 1px solid #ccc;
-      border-radius: 4px; /* Etwas kleinere Radien im Modal */
+      border-radius: 6px;
       font-size: 13px;
     }
     .logo-container { /* NEU: Für das Logo */
@@ -292,10 +244,6 @@
       font-size: 14px;
       position: relative;
       overflow: visible; /* Wichtig für Tooltips/Icons */
-    }
-    .calendar-block th {
-      background-color: #f2f2f2;
-      font-weight: bold;
     }
     .calendar-day {
       cursor: pointer;
@@ -467,10 +415,10 @@
     }
   </style>
 </head>
-<body class="font-inter">
+<body class="font-inter flex flex-col lg:flex-row min-h-screen text-gray-800">
   <div class="main">
-    <div class="logo-container"> <!-- Logo-Container -->
-        <img src="https://placehold.co/150x50/000000/FFFFFF?text=VG+Cargo+Logo" alt="VG Cargo Logo"> <!-- Platzhalter für dein Logo -->
+    <div class="logo-container"> <!-- NEU: Logo-Container -->
+        <img src="VG_Cargo_Logo_small.png" alt="VG Cargo Logo"> <!-- Dein Logo-Bild -->
     </div>
 
     <div class="header-area" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -480,66 +428,122 @@
       </button>
     </div>
 
-    <div class="main-content-wrapper">
-      <div class="left-panel-content">
-        <h2 class="text-xl font-semibold mb-4 text-blue-800">Filter & Search</h2>
-        <div class="search-filter-section">
-          <div>
-            <label for="refSearch">Reference:</label>
-            <input type="text" id="refSearch" onkeyup="filterTable()" placeholder="Search by Ref" />
-          </div>
-          <div>
-            <label for="airlineSearch">Airline:</label>
-            <input type="text" id="airlineSearch" onkeyup="filterTable()" placeholder="Search by Airline" />
-          </div>
-          <div>
-            <label for="flightNumberSearch">Flight Number:</label>
-            <input type="text" id="flightNumberSearch" onkeyup="filterTable()" placeholder="Search by Flight No." />
-          </div>
-          <div>
-            <label for="fromDate">From Date:</label>
-            <input type="date" id="fromDate" onchange="filterTable()" />
-          </div>
-          <div>
-            <label for="toDate">To Date:</label>
-            <input type="date" id="toDate" onchange="filterTable()" />
-          </div>
-          <div class="flex items-center mt-2">
-              <input type="checkbox" id="archiveCheckbox" class="mr-2" onchange="filterTable()">
-              <label for="archiveCheckbox" class="mb-0">Show Past Flights</label>
-          </div>
-        </div>
-        <button class="btn btn-create w-full" onclick="createNewRequest()">Create New Request</button>
-        <button class="btn btn-primary w-full mt-4" onclick="openStatisticsModal()">View Statistics</button>
-      </div>
+    <div style="display: flex; gap: 10px; margin: 10px 0 20px;">
+        <button onclick="createNewRequest()" style="padding: 10px 16px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+          Charter Anfrage erstellen
+        </button>
+        <button onclick="openStatisticsModal()" style="padding: 10px 16px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            Statistik anzeigen
+        </button>
+    </div>
 
-      <div class="middle-panel-content">
-        <h2 class="text-xl font-semibold mb-4 text-blue-800">Charter Requests</h2>
-        <div class="flex justify-between items-center mb-4">
-          <div id="currentDate" class="font-medium text-gray-700"></div>
-          <div id="clock" class="font-medium text-gray-700"></div>
-        </div>
-        <div class="overflow-x-auto">
-          <table id="dataTable" class="data-table">
-            <thead>
-              <tr>
-                <th>Ref</th>
-                <th>Flight Date</th>
-                <th>Airline</th>
-                <th>Tonnage (kg)</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Data will be loaded here -->
-            </tbody>
-          </table>
-        </div>
-        <div id="summaryInfo" class="summary-info mt-4"></div>
+
+    <div style="text-align: center; font-size: 16px; color: #e63244;">
+      <span id="currentDate">Date: --</span> | <span id="clock">Time: --:--:--</span>
+    </div>
+    <div style="margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
+      <label>Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
+      <label>Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
+      <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" /> <!-- NEU: Flugnummer Suchfeld -->
+      <label>From:</label> <input type="date" id="fromDate" onchange="filterTable()" />
+      <label>To:</label> <input type="date" id="toDate" onchange="filterTable()" />
+      <!-- Moderne Archiv-Checkbox -->
+      <div class="inline-flex items-center ml-4">
+          <label for="archiveCheckbox" class="font-medium text-gray-700 mr-2 cursor-pointer">Archiv anzeigen:</label>
+          <input type="checkbox" id="archiveCheckbox" class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer border-gray-300 shadow-sm">
       </div>
     </div>
-  </div>
+    <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
+    <table id="dataTable"><thead><tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage</th><th>Action</th></tr></thead><tbody></tbody></table>
 
+    <!-- Detail Modal (existing) -->
+    <div class="modal" id="detailModal">
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeModal()">✖</span>
+        <div id="modalBody" style="width:100%; display:flex; flex-wrap:wrap; gap:20px;"></div>
+      </div>
+    </div>
+
+    <!-- NEU: History Modal -->
+    <div class="modal" id="historyModal">
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeHistoryModal()">✖</span>
+        <h3>History for Reference: <span id="historyRef"></span></h3>
+        <div id="historyBody" style="width:100%; max-height: 70vh; overflow-y: auto;">
+          <!-- History content will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- NEU: Profil Modal -->
+    <div class="modal" id="profileModal">
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeProfileModal()">✖</span>
+        <h3 style="width:100%; text-align: center;">Profilverwaltung</h3>
+        <p>Angemeldet als: <span id="loggedInUsername"></span> (<span id="loggedInUserRole"></span>)</p>
+        <div style="width:100%; margin-top: 20px;">
+          <label>Neues Passwort:</label>
+          <input type="password" id="newPasswordInput" style="width: calc(100% - 12px);">
+          <label>Passwort bestätigen:</label>
+          <input type="password" id="confirmPasswordInput" style="width: calc(100% - 12px);">
+          <button onclick="changePassword()" style="width: 100%; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 6px; margin-top: 15px; cursor: pointer;">
+            Passwort ändern
+          </button>
+          <p id="passwordChangeMessage" style="color: red; margin-top: 10px;"></p>
+        </div>
+        <button onclick="logoutUser()" style="width: 100%; padding: 10px; background-color: #dc3545; color: white; border: none; border-radius: 6px; margin-top: 20px; cursor: pointer;">
+          Abmelden
+        </button>
+      </div>
+    </div>
+
+    <!-- NEU: Statistik Modal -->
+    <div class="modal" id="statisticsModal">
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeStatisticsModal()">✖</span>
+        <h3>Statistik</h3>
+        <div id="statisticsBody">
+          <!-- Datumsauswahl und Download-Button zuerst -->
+          <div style="width:100%; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 15px;">
+              <label for="statFromDate">Von:</label>
+              <input type="date" id="statFromDate" onchange="generateStatistics()">
+              <label for="statToDate">Bis:</label>
+              <input type="date" id="statToDate" onchange="generateStatistics()">
+              <button onclick="downloadStatisticsToCSV()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                  Statistik herunterladen
+              </button>
+          </div>
+          <!-- Diagramme und Tabellen werden hier dynamisch von generateStatistics() eingefügt -->
+          <!-- Siehe generateStatistics() in script.js für die genaue Reihenfolge -->
+
+          <div class="chart-container">
+              <h4>Tonnage pro Monat</h4>
+              <canvas id="tonnagePerMonthChart"></canvas>
+          </div>
+          <div class="chart-container">
+              <h4>Tonnage pro Kunde</h4>
+              <canvas id="tonnagePerCustomerChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEU: E-Mail Bestätigungsmodal -->
+    <div class="modal" id="emailConfirmationModal">
+        <div class="modal-content">
+            <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeEmailConfirmationModal()">✖</span>
+            <h3>Charter Bestätigung senden</h3>
+            <p>Bitte geben Sie die E-Mail-Adresse des Empfängers ein:</p>
+            <input type="email" id="recipientEmailInput" placeholder="Empfänger E-Mail" required>
+            <p id="emailConfirmationMessage" style="color: red;"></p>
+            <div class="modal-buttons">
+                <button class="send-button" id="sendEmailConfirmBtn">Senden</button>
+                <button class="cancel-button" onclick="closeEmailConfirmationModal()">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+  </div>
   <div class="calendar">
     <div class="nav">
       <button onclick="shiftCalendar(-1)">← Back</button>
@@ -547,94 +551,6 @@
     </div>
     <div id="calendarArea" class="calendar-wrapper"></div>
   </div>
-
-  <!-- Detail Modal -->
-  <div id="detailModal" class="modal">
-    <div class="modal-content">
-      <span class="close-button" onclick="closeModal()">&times;</span>
-      <h2>Request Details</h2>
-      <div id="modalBody">
-        <!-- Details will be loaded here -->
-      </div>
-    </div>
-  </div>
-
-  <!-- Profile Modal -->
-  <div id="profileModal" class="modal">
-    <div class="modal-content">
-      <span class="close-button" onclick="closeProfileModal()">&times;</span>
-      <h2>User Profile</h2>
-      <div class="profile-details">
-        <p><strong>Username:</strong> <span id="loggedInUsernameProfile"></span></p>
-        <p><strong>Role:</strong> <span id="loggedInUserRoleProfile"></span></p>
-        <h3 class="mt-4">Change Password</h3>
-        <label for="newPasswordInput">New Password:</label>
-        <input type="password" id="newPasswordInput" placeholder="Enter new password">
-        <label for="confirmPasswordInput">Confirm New Password:</label>
-        <input type="password" id="confirmPasswordInput" placeholder="Confirm new password">
-        <p id="passwordChangeMessage" style="color: red;"></p>
-        <div class="button-group">
-          <button class="btn btn-primary" onclick="changePassword()">Change Password</button>
-          <button class="btn btn-secondary" onclick="closeProfileModal()">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- History Modal -->
-  <div id="historyModal" class="modal">
-    <div class="modal-content">
-      <span class="close-button" onclick="closeHistoryModal()">&times;</span>
-      <h2>History for Ref: <span id="historyRef"></span></h2>
-      <div id="historyBody">
-        <!-- History logs will be loaded here -->
-      </div>
-    </div>
-  </div>
-
-  <!-- Statistics Modal -->
-  <div id="statisticsModal" class="modal">
-    <div class="modal-content">
-      <span class="close-button" onclick="closeStatisticsModal()">&times;</span>
-      <h2>Statistics</h2>
-      <div class="date-range-selector">
-          <label for="statFromDate">Von:</label>
-          <input type="date" id="statFromDate" onchange="generateStatistics()">
-          <label for="statToDate">Bis:</label>
-          <input type="date" id="statToDate" onchange="generateStatistics()">
-          <button onclick="downloadStatisticsToCSV()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
-              Statistik herunterladen
-          </button>
-      </div>
-      <!-- Diagramme und Tabellen werden hier dynamisch von generateStatistics() eingefügt -->
-      <!-- Siehe generateStatistics() in script.js für die genaue Reihenfolge -->
-
-      <div class="chart-container">
-          <h4>Tonnage pro Monat</h4>
-          <canvas id="tonnagePerMonthChart"></canvas>
-      </div>
-      <div class="chart-container">
-          <h4>Tonnage pro Kunde</h4>
-          <canvas id="tonnagePerCustomerChart"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <!-- Email Confirmation Modal -->
-  <div id="emailConfirmationModal" class="modal">
-    <div class="modal-content">
-      <span class="close-button" onclick="closeEmailConfirmationModal()">&times;</span>
-      <h2>Send Final Charter Confirmation</h2>
-      <label for="recipientEmailInput">Recipient Email:</label>
-      <input type="email" id="recipientEmailInput" placeholder="Enter recipient email address">
-      <p id="emailConfirmationMessage" style="color: red;"></p>
-      <div class="button-group">
-        <button class="btn btn-primary" id="sendEmailConfirmBtn">Send Confirmation</button>
-        <button class="btn btn-secondary" onclick="closeEmailConfirmationModal()">Cancel</button>
-      </div>
-    </div>
-  </div>
-
   <!-- WICHTIGE KORREKTUR: script.js hierher verschoben und 'defer' entfernt -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js CDN hinzufügen -->
   <script src="script.js" type="module"></script>
