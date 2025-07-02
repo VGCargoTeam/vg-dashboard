@@ -212,7 +212,7 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
         try {
             // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
             let dateObj;
-            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
+            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
                 const parts = displayFlightDate.split('-');
                 dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
             } else if (displayFlightDate instanceof Date) { // Falls es direkt ein Date-Objekt ist (selten, aber sicherheitshalber)
@@ -282,7 +282,7 @@ function filterTable() {
     let flightDateObj;
 
     // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
-    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
+    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
         const parts = flightDateFromData.split('-');
         flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDateFromData instanceof Date) { // Falls es direkt ein Date-Objekt ist
@@ -369,7 +369,9 @@ function openModal(originalIndex) {
     'Accepted By Name': "",
     'Acceptance Timestamp': "",
     'Flight Type Import': "Nein", // NEU: Standardwert
-    'Flight Type Export': "Nein"  // NEU: Standardwert
+    'Flight Type Export': "Nein",  // NEU: Standardwert
+    'Origin': '', // NEU: Origin für Import
+    'Destination': '' // NEU: Destination für Export
   } : requestData[originalIndex];
 
   // Speichere die aktuellen Daten im Modal, um sie später für die E-Mail zu verwenden
@@ -422,10 +424,10 @@ function openModal(originalIndex) {
         if (value) {
             try {
                 // Parsen des Datums, um es im Input korrekt darzustellen (YYYY-MM-DD Format)
-                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
+                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
                     dateValue = value;
                 } else if (value instanceof Date) {
-                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu竭-MM-DD
+                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu YYYY-MM-DD
                 }
             } catch (e) {
                 console.error("Fehler beim Parsen des Flugdatums für Modal-Input:", value, e);
@@ -455,9 +457,14 @@ function openModal(originalIndex) {
           return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" ${readOnlyAttr} style="${styleAttr}" />`;
       } else if (key === "Email Request") { // E-Mail Request ist ein normales Textfeld
           return `<label>${label}:</label><textarea name="${key}" rows="5" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
-      } else if (key === "Flight Type Import" || key === "Flight Type Export") { // NEU: Checkboxen für Import/Export
+      } else if (key === "Flight Type Import") { // NEU: Checkbox für Import
           const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
-          return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}"> ${label}</label>`;
+          const originInput = (String(r['Flight Type Import']).toLowerCase() === 'ja') ? `<label>Origin:</label><input type="text" name="Origin" value="${r.Origin || ''}" ${readOnlyAttr} style="${styleAttr}" />` : '';
+          return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}" onchange="toggleOriginDestinationFields(this, 'Origin')"> ${label}</label>${originInput}`;
+      } else if (key === "Flight Type Export") { // NEU: Checkbox für Export
+          const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
+          const destinationInput = (String(r['Flight Type Export']).toLowerCase() === 'ja') ? `<label>Destination:</label><input type="text" name="Destination" value="${r.Destination || ''}" ${readOnlyAttr} style="${styleAttr}" />` : '';
+          return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}" onchange="toggleOriginDestinationFields(this, 'Destination')"> ${label}</label>${destinationInput}`;
       }
       return `<label>${label}:</label><input type="text" name="${key}" value="${value}" ${readOnlyAttr} style="${styleAttr}" />`;
     }).join("");
@@ -596,6 +603,48 @@ function openModal(originalIndex) {
 
   modal.style.display = "flex";
 }
+
+// NEU: Funktion zum Umschalten der Origin/Destination Felder basierend auf Checkbox
+function toggleOriginDestinationFields(checkbox, fieldType) {
+    const parentLabel = checkbox.closest('label');
+    let inputElement = parentLabel.nextElementSibling; // Versuchen, das nächste Geschwisterelement zu finden
+
+    // Wenn es kein Input-Element ist oder es nicht das richtige ist, suchen wir es
+    if (!inputElement || (inputElement.tagName !== 'INPUT' && inputElement.tagName !== 'LABEL')) {
+        // Suche innerhalb des gleichen modal-section Divs
+        const sectionDiv = checkbox.closest('.modal-section');
+        if (sectionDiv) {
+            inputElement = sectionDiv.querySelector(`input[name="${fieldType}"]`);
+        }
+    }
+
+    if (checkbox.checked) {
+        // Wenn die Checkbox aktiviert ist, füge das Feld hinzu, falls es nicht existiert
+        if (!inputElement || inputElement.name !== fieldType) {
+            const newLabel = document.createElement('label');
+            newLabel.textContent = `${fieldType}:`;
+            const newInput = document.createElement('input');
+            newInput.type = 'text';
+            newInput.name = fieldType;
+            newInput.value = currentModalData[fieldType] || ''; // Vorhandenen Wert setzen
+            newInput.style.cssText = 'width: 100%; padding: 6px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;';
+
+            parentLabel.parentNode.insertBefore(newLabel, parentLabel.nextSibling);
+            newLabel.parentNode.insertBefore(newInput, newLabel.nextSibling);
+        } else {
+            // Wenn das Feld bereits existiert, stelle sicher, dass es sichtbar ist
+            inputElement.style.display = '';
+            inputElement.previousElementSibling.style.display = ''; // Label auch anzeigen
+        }
+    } else {
+        // Wenn die Checkbox deaktiviert ist, verstecke das Feld
+        if (inputElement && inputElement.name === fieldType) {
+            inputElement.style.display = 'none';
+            inputElement.previousElementSibling.style.display = 'none'; // Label auch verstecken
+        }
+    }
+}
+
 
 // Neue Funktion, die vom Modal aus den Löschvorgang startet und dann das Modal schließt
 async function deleteRowFromModal(ref) {
@@ -772,7 +821,7 @@ function openCalendarDayFlights(year, month, day) {
   const clickedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
   const flightsOnThisDay = requestData.filter(r => {
-    let flightDateFromData = r['Flight Date']; // Dies ist bereits竭-MM-DD vom Backend
+    let flightDateFromData = r['Flight Date']; // Dies ist bereits YYYY-MM-DD vom Backend
 
     // Einfacher String-Vergleich
     const isMatch = flightDateFromData === clickedDateStr;
@@ -878,6 +927,13 @@ function generateCalendarHTML(year, month) {
               `\nAbflugzeit: ${formattedAbflugzeit}` +
               `\nTonnage: ${tonnageValue.toLocaleString('de-DE')} kg`
             );
+            if (f.Origin) { // NEU: Origin zum Tooltip hinzufügen
+                tooltipContentArray[tooltipContentArray.length - 1] += `\nOrigin: ${f.Origin}`;
+            }
+            if (f.Destination) { // NEU: Destination zum Tooltip hinzufügen
+                tooltipContentArray[tooltipContentArray.length - 1] += `\nDestination: ${f.Destination}`;
+            }
+
             if (f['Vorfeldbegleitung'] && String(f['Vorfeldbegleitung']).toLowerCase() === 'ja') {
               dayHasVorfeldbegleitung = true;
             }
@@ -1680,7 +1736,9 @@ function generateEmailBody(data) {
     body += `Tonnage: ${data.Tonnage ? parseFloat(String(data.Tonnage).replace(',', '.')).toLocaleString('de-DE') + ' kg' : '-'}\n`;
     body += `Vorfeldbegleitung: ${data.Vorfeldbegleitung || '-'}\n`;
     body += `Flugtyp Import: ${data['Flight Type Import'] || '-'}\n`; // NEU
+    body += `Origin: ${data.Origin || '-'}\n`; // NEU
     body += `Flugtyp Export: ${data['Flight Type Export'] || '-'}\n`; // NEU
+    body += `Destination: ${data.Destination || '-'}\n`; // NEU
     body += `E-Mail Anfrage: ${data['Email Request'] || '-'}\n\n`;
 
     // Preisdetails (nur wenn Admin, ansonsten nicht in der E-Mail enthalten)
@@ -1737,6 +1795,7 @@ window.renderTonnagePerCustomerChart = renderTonnagePerCustomerChart; // Mache n
 window.downloadStatisticsToCSV = downloadStatisticsToCSV; // Mache neue Download-Funktion global zugänglich
 window.openEmailConfirmationModal = openEmailConfirmationModal; // NEU: E-Mail Bestätigungsmodal öffnen
 window.closeEmailConfirmationModal = closeEmailConfirmationModal; // NEU: E-Mail Bestätigungsmodal schließen
+window.toggleOriginDestinationFields = toggleOriginDestinationFields; // NEU: Funktion global zugänglich machen
 
 // Initialisiere Auth-Status, sobald das DOM geladen ist.
 // Dies wird nach dem window.onload Event, aber vor dem Polling ausgeführt.
