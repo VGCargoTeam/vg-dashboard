@@ -16,6 +16,9 @@ today.setHours(0, 0, 0, 0); // Setzt die Zeit auf Mitternacht für den Vergleich
 let tonnagePerMonthChartInstance = null;
 let tonnagePerCustomerChartInstance = null;
 
+// Variable zum Speichern der aktuell im Modal angezeigten Daten
+let currentModalData = null;
+
 
 // === AUTHENTIFIZIERUNG UND BENUTZERVERWALTUNG ===
 function checkAuthStatus() {
@@ -355,6 +358,9 @@ function openModal(originalIndex) {
     'Acceptance Timestamp': ""
   } : requestData[originalIndex];
 
+  // Speichere die aktuellen Daten im Modal, um sie später für die E-Mail zu verwenden
+  currentModalData = r;
+
   const modal = document.getElementById("detailModal");
   const modalBody = document.getElementById("modalBody");
   modalBody.innerHTML = "";
@@ -374,11 +380,6 @@ function openModal(originalIndex) {
       const isAlwaysReadOnlyField = [
           "Ref", "Created At", "Acceptance Timestamp", "Email Request", "Accepted By Name"
       ].includes(key);
-
-      // 'Accepted By Name' und 'Acceptance Timestamp' sollten immer schreibgeschützt sein.
-      // 'Email Request' wurde bereits in 'isAlwaysReadOnlyField' hinzugefügt.
-      // Hier wurde 'Accepted By Name' zur Liste der immer schreibgeschützten Felder hinzugefügt.
-
 
       let readOnlyAttr = '';
       let styleAttr = '';
@@ -543,6 +544,20 @@ function openModal(originalIndex) {
   historyButton.onclick = () => showHistory(r.Ref);
   buttonContainer.appendChild(historyButton);
 
+  if (currentUser && originalIndex !== -1) { // Button für alle Rollen, wenn ein Eintrag geöffnet ist
+      const sendConfirmationButton = document.createElement("button");
+      sendConfirmationButton.textContent = "Final Charter Confirmation senden";
+      sendConfirmationButton.style.padding = "10px 20px";
+      sendConfirmationButton.style.fontWeight = "bold";
+      sendConfirmationButton.style.backgroundColor = "#007BFF"; // Blau für Senden
+      sendConfirmationButton.style.color = "white";
+      sendConfirmationButton.style.border = "none";
+      sendConfirmationButton.style.borderRadius = "6px";
+      sendConfirmationButton.style.cursor = "pointer";
+      sendConfirmationButton.onclick = () => openEmailConfirmationModal(r); // Übergabe der aktuellen Daten
+      buttonContainer.appendChild(sendConfirmationButton);
+  }
+
   if (currentUser && currentUser.role === 'admin' && originalIndex !== -1) {
     const deleteButtonModal = document.createElement("button");
     deleteButtonModal.textContent = "Eintrag löschen";
@@ -613,6 +628,7 @@ document.addEventListener('keydown', (e) => {
     closeHistoryModal();
     closeProfileModal();
     closeStatisticsModal(); // NEU: Statistik Modal schließen
+    closeEmailConfirmationModal(); // NEU: E-Mail Bestätigungsmodal schließen
   }
 });
 
@@ -1194,7 +1210,7 @@ function generateStatistics() {
             statsHTML += `<td>${stats.totalTonnage.toLocaleString('de-DE', { maximumFractionDigits: 2 })}</td>`;
             // Geschätzter Umsatz Zelle entfernt
             // if (currentUser && currentUser.role === 'admin') {
-            //     statsHTML += `<td>${stats.totalRevenue.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}</td>`;
+            //     row += `,${stats.totalRevenue.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}`;
             // }
             statsHTML += `</tr>`;
         });
@@ -1545,9 +1561,157 @@ function downloadStatisticsToCSV() {
         showSaveFeedback("Statistik erfolgreich heruntergeladen!", true);
     } else {
         // Fallback für Browser, die das Download-Attribut nicht unterstützen (heute weniger wahrscheinlich)
-        showSaveFeedback("Ihr Browser unterstützt das direkte Herunterladen nicht. Bitte kopieren Sie den Text manuell.", false);
+        showSaveFeedback("Ihr Browser unterstützt das direkt Herunterladen nicht. Bitte kopieren Sie den Text manuell.", false);
         console.warn("Download-Attribut wird nicht unterstützt. Fallback erforderlich.");
     }
+}
+
+// === NEUE E-MAIL BESTÄTIGUNGSFUNKTIONEN ===
+function openEmailConfirmationModal(data) {
+    // Setze das aktuelle Datenobjekt für die E-Mail-Funktion
+    currentModalData = data;
+    const emailConfirmationModal = document.getElementById('emailConfirmationModal');
+    const recipientEmailInput = document.getElementById('recipientEmailInput');
+    const emailConfirmationMessage = document.getElementById('emailConfirmationMessage');
+
+    // Versuche, die E-Mail-Adresse des Kunden vorab auszufüllen
+    if (currentModalData && currentModalData['Contact E-Mail Invoicing']) {
+        recipientEmailInput.value = currentModalData['Contact E-Mail Invoicing'];
+    } else {
+        recipientEmailInput.value = '';
+    }
+    emailConfirmationMessage.textContent = ''; // Alte Nachrichten löschen
+    emailConfirmationModal.style.display = 'flex';
+}
+
+function closeEmailConfirmationModal() {
+    document.getElementById('emailConfirmationModal').style.display = 'none';
+    document.getElementById('recipientEmailInput').value = ''; // Eingabefeld leeren
+    document.getElementById('emailConfirmationMessage').textContent = ''; // Nachricht leeren
+}
+
+document.getElementById('sendEmailConfirmBtn').addEventListener('click', async () => {
+    const recipientEmailInput = document.getElementById('recipientEmailInput');
+    const emailConfirmationMessage = document.getElementById('emailConfirmationMessage');
+    const recipientEmail = recipientEmailInput.value.trim();
+
+    if (!recipientEmail) {
+        emailConfirmationMessage.textContent = 'Bitte geben Sie eine Empfänger-E-Mail-Adresse ein.';
+        emailConfirmationMessage.style.color = 'red';
+        return;
+    }
+
+    // Einfache E-Mail-Validierung
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)) {
+        emailConfirmationMessage.textContent = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
+        emailConfirmationMessage.style.color = 'red';
+        return;
+    }
+
+    // Deaktiviere den Button während des Sendens
+    const sendButton = document.getElementById('sendEmailConfirmBtn');
+    sendButton.disabled = true;
+    sendButton.textContent = 'Senden...';
+    emailConfirmationMessage.textContent = 'Sende E-Mail...';
+    emailConfirmationMessage.style.color = 'blue';
+
+    try {
+        const emailSubject = `Charter Bestätigung für Referenz: ${currentModalData.Ref || 'N/A'}`;
+        const emailBody = generateEmailBody(currentModalData);
+
+        const payload = {
+            mode: 'sendConfirmationEmail',
+            to: recipientEmail,
+            from: 'sales@vgcargo.de', // Feste Absenderadresse
+            bcc: 'sales@vgcargo.de, import@vgcargo.de, export@vgcargo.de', // Feste BCC-Adressen
+            subject: emailSubject,
+            body: emailBody,
+            ref: currentModalData.Ref, // Referenz für Audit-Log
+            user: currentUser.name // Aktueller Benutzer für Audit-Log
+        };
+
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(payload).toString(),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'success') {
+            emailConfirmationMessage.textContent = 'Charter Bestätigung erfolgreich gesendet!';
+            emailConfirmationMessage.style.color = 'green';
+            showSaveFeedback("Charter Bestätigung gesendet!", true);
+            // Schließe das Modal nach einer kurzen Verzögerung
+            setTimeout(() => {
+                closeEmailConfirmationModal();
+                closeModal(); // Auch das Detail-Modal schließen
+                fetchData(); // Daten neu laden, um History zu aktualisieren
+            }, 1500);
+        } else {
+            emailConfirmationMessage.textContent = result.message || 'Fehler beim Senden der E-Mail.';
+            emailConfirmationMessage.style.color = 'red';
+            showSaveFeedback("Fehler beim Senden der Bestätigung!", false);
+        }
+    } catch (error) {
+        console.error('Fehler beim Senden der E-Mail:', error);
+        emailConfirmationMessage.textContent = 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.';
+        emailConfirmationMessage.style.color = 'red';
+        showSaveFeedback("Fehler beim Senden der Bestätigung!", false);
+    } finally {
+        sendButton.disabled = false;
+        sendButton.textContent = 'Senden';
+    }
+});
+
+function generateEmailBody(data) {
+    let body = `Sehr geehrte/r ${data['Contact Name Invoicing'] || 'Kunde/in'},\n\n`;
+    body += `hiermit bestätigen wir Ihre Charteranfrage mit der Referenznummer ${data.Ref || 'N/A'}.\n\n`;
+    body += `Nachfolgend finden Sie die Details Ihrer Anfrage:\n\n`;
+
+    // Kundendetails
+    body += `--- Kundendetails ---\n`;
+    body += `Rechnungsfirma: ${data['Billing Company'] || '-'}\n`;
+    body += `Rechnungsadresse: ${data['Billing Address'] || '-'}\n`;
+    body += `Steuernummer: ${data['Tax Number'] || '-'}\n`;
+    body += `Kontaktname (Rechnung): ${data['Contact Name Invoicing'] || '-'}\n`;
+    body += `Kontakt E-Mail (Rechnung): ${data['Contact E-Mail Invoicing'] || '-'}\n`;
+    body += `AGB Akzeptiert: ${data['AGB Accepted'] || '-'}\n`;
+    body += `Service Beschreibung Akzeptiert: ${data['Service Description Accepted'] || '-'}\n`;
+    body += `Akzeptiert von: ${data['Accepted By Name'] || '-'}\n`;
+    body += `Akzeptanz-Zeitstempel: ${data['Acceptance Timestamp'] || '-'}\n\n`;
+
+    // Flugdetails
+    body += `--- Flugdetails ---\n`;
+    body += `Airline: ${data.Airline || '-'}\n`;
+    body += `Flugzeugtyp: ${data['Aircraft Type'] || '-'}\n`;
+    body += `Flugnummer: ${data.Flugnummer || '-'}\n`;
+    body += `Flugdatum: ${data['Flight Date'] ? new Date(data['Flight Date']).toLocaleDateString('de-DE') : '-'}\n`;
+    body += `Abflugzeit: ${data['Abflugzeit'] || '-'}\n`;
+    body += `Tonnage: ${data.Tonnage ? parseFloat(String(data.Tonnage).replace(',', '.')).toLocaleString('de-DE') + ' kg' : '-'}\n`;
+    body += `Vorfeldbegleitung: ${data.Vorfeldbegleitung || '-'}\n`;
+    body += `E-Mail Anfrage: ${data['Email Request'] || '-'}\n\n`;
+
+    // Preisdetails (nur wenn Admin, ansonsten nicht in der E-Mail enthalten)
+    // Da diese E-Mail an den Kunden geht, sollten sensible Preisdetails hier nicht enthalten sein,
+    // es sei denn, der Kunde hat diese Informationen bereits erhalten.
+    // Für eine "finale Bestätigung" ist es wahrscheinlich, dass diese Details enthalten sein MÜSSEN.
+    // Ich nehme an, dass die "Rate" und "Zusatzkosten" für den Kunden relevant sind.
+    body += `--- Preisdetails (Geschätzt) ---\n`;
+    body += `Rate: ${data.Rate ? parseFloat(String(data.Rate).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}\n`;
+    body += `Security Charges: ${data['Security charges'] ? parseFloat(String(data['Security charges']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}\n`;
+    body += `Dangerous Goods: ${data['Dangerous Goods'] || '-'}\n`;
+    body += `10ft Consumables: ${data['10ft consumables'] ? parseFloat(String(data['10ft consumables']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}\n`;
+    body += `20ft Consumables: ${data['20ft consumables'] ? parseFloat(String(data['20ft consumables']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}\n`;
+    body += `Zusatzkosten: ${data.Zusatzkosten || '-'}\n\n`;
+
+
+    body += `Wir werden uns in Kürze mit der finalen Charterbestätigung bei Ihnen melden.\n\n`;
+    body += `Mit freundlichen Grüßen,\nIhr VG Cargo Team\nsales@vgcargo.de`;
+
+    return body;
 }
 
 
@@ -1582,6 +1746,8 @@ window.generateStatistics = generateStatistics; // Mache neue Funktion global zu
 window.renderTonnagePerMonthChart = renderTonnagePerMonthChart; // Mache neue Funktion global zugänglich
 window.renderTonnagePerCustomerChart = renderTonnagePerCustomerChart; // Mache neue Funktion global zugänglich
 window.downloadStatisticsToCSV = downloadStatisticsToCSV; // Mache neue Download-Funktion global zugänglich
+window.openEmailConfirmationModal = openEmailConfirmationModal; // NEU: E-Mail Bestätigungsmodal öffnen
+window.closeEmailConfirmationModal = closeEmailConfirmationModal; // NEU: E-Mail Bestätigungsmodal schließen
 
 // Initialisiere Auth-Status, sobald das DOM geladen ist.
 // Dies wird nach dem window.onload Event, aber vor dem Polling ausgeführt.
