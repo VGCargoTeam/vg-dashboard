@@ -229,8 +229,12 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
 
     const deleteButtonHTML = (currentUser && currentUser.role === 'admin') ? `<button class="btn btn-delete admin-only" onclick="deleteRow(this)">Delete</button>` : '';
 
+    // NEU: Status der finalen Bestätigung prüfen und Icon hinzufügen
+    const isConfirmed = String(r['Final Confirmation Sent'] || '').toLowerCase() === 'ja';
+    const confirmationIcon = isConfirmed ? '<span class="text-green-500 ml-1">&#10004;</span>' : ''; // Grünes Häkchen
+
     row.innerHTML = `
-      <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})">${r.Ref}</a></td>
+      <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})">${r.Ref}</a>${confirmationIcon}</td>
       <td>${displayFlightDate}</td>
       <td>${r.Airline || "-"}</td>
       <td>${ton.toLocaleString('de-DE')}</td> <td>
@@ -600,7 +604,7 @@ async function deleteRowFromModal(ref) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
     }
     const responseData = await response.json();
 
@@ -669,7 +673,7 @@ async function saveDetails() {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
     }
     const responseData = await response.json();
 
@@ -710,7 +714,7 @@ async function deleteRow(btn) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
     }
     const responseData = await response.json();
 
