@@ -212,7 +212,7 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
         try {
             // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
             let dateObj;
-            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
+            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
                 const parts = displayFlightDate.split('-');
                 dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
             } else if (displayFlightDate instanceof Date) { // Falls es direkt ein Date-Objekt ist (selten, aber sicherheitshalber)
@@ -282,7 +282,7 @@ function filterTable() {
     let flightDateObj;
 
     // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
-    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
+    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
         const parts = flightDateFromData.split('-');
         flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDateFromData instanceof Date) { // Falls es direkt ein Date-Objekt ist
@@ -381,9 +381,10 @@ function openModal(originalIndex) {
   const modalBody = document.getElementById("modalBody");
   modalBody.innerHTML = "";
 
-  const section = (title, contentHTML) => {
+  // Modifizierte section Funktion, um eine Farbklasse zu akzeptieren
+  const section = (title, contentHTML, colorClass = '') => {
     const wrap = document.createElement("div");
-    wrap.className = "modal-section";
+    wrap.className = `modal-section ${colorClass}`; // Farbklasse hier hinzufügen
     wrap.innerHTML = `<h3>${title}</h3>` + contentHTML;
     return wrap;
   };
@@ -424,10 +425,10 @@ function openModal(originalIndex) {
         if (value) {
             try {
                 // Parsen des Datums, um es im Input korrekt darzustellen (YYYY-MM-DD Format)
-                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
+                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
                     dateValue = value;
                 } else if (value instanceof Date) {
-                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu YYYY-MM-DD
+                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu竭-MM-DD
                 }
             } catch (e) {
                 console.error("Fehler beim Parsen des Flugdatums für Modal-Input:", value, e);
@@ -507,8 +508,9 @@ function openModal(originalIndex) {
     { label: "Zusatzkosten", key: "Zusatzkosten", type: "textarea" } // Zusatzkosten als Textarea
   ];
 
-  modalBody.appendChild(section("Kundendetails", renderFields(customerFields)));
-  modalBody.appendChild(section("Flugdetails", renderFields(flightFields)));
+  // Hinzufügen der Abschnitte mit spezifischen Hintergrundfarben
+  modalBody.appendChild(section("Kundendetails", renderFields(customerFields), 'bg-blue-50'));
+  modalBody.appendChild(section("Flugdetails", renderFields(flightFields), 'bg-green-50'));
 
   // Preisdetails nur für Admins anzeigen
   if (currentUser && currentUser.role === 'admin') {
@@ -530,7 +532,7 @@ function openModal(originalIndex) {
         }
     }).join("");
 
-    modalBody.appendChild(section("Preisdetails", priceDetailsHTML));
+    modalBody.appendChild(section("Preisdetails", priceDetailsHTML, 'bg-yellow-50')); // Farbklasse für Preisdetails
   }
   // Der 'else' Block für Viewer wurde entfernt, da 'Zusatzkosten'
   // direkt in renderFields() behandelt wird, um es komplett zu überspringen.
@@ -821,7 +823,7 @@ function openCalendarDayFlights(year, month, day) {
   const clickedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
   const flightsOnThisDay = requestData.filter(r => {
-    let flightDateFromData = r['Flight Date']; // Dies ist bereits YYYY-MM-DD vom Backend
+    let flightDateFromData = r['Flight Date']; // Dies ist bereits竭-MM-DD vom Backend
 
     // Einfacher String-Vergleich
     const isMatch = flightDateFromData === clickedDateStr;
