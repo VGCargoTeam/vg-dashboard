@@ -362,6 +362,57 @@
     #dataTable tbody td a:hover {
         color: #0056b3; /* Dunkleres Blau beim Hover */
     }
+
+    /* Styles for the new email confirmation modal */
+    #emailConfirmationModal .modal-content {
+        max-width: 450px;
+        text-align: center;
+        flex-direction: column;
+        gap: 15px;
+    }
+    #emailConfirmationModal h3 {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+    }
+    #emailConfirmationModal p {
+        margin-bottom: 15px;
+    }
+    #emailConfirmationModal input[type="email"] {
+        width: calc(100% - 20px);
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
+    #emailConfirmationModal .modal-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+    }
+    #emailConfirmationModal .modal-buttons button {
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        flex-grow: 1;
+    }
+    #emailConfirmationModal .modal-buttons .send-button {
+        background-color: #28a745;
+        color: white;
+        border: none;
+    }
+    #emailConfirmationModal .modal-buttons .send-button:hover {
+        background-color: #218838;
+    }
+    #emailConfirmationModal .modal-buttons .cancel-button {
+        background-color: #6c757d;
+        color: white;
+        border: none;
+    }
+    #emailConfirmationModal .modal-buttons .cancel-button:hover {
+        background-color: #5a6268;
+    }
   </style>
 </head>
 <body class="font-inter flex flex-col lg:flex-row min-h-screen text-gray-800">
@@ -475,6 +526,21 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- NEU: E-Mail Bestätigungsmodal -->
+    <div class="modal" id="emailConfirmationModal">
+        <div class="modal-content">
+            <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeEmailConfirmationModal()">✖</span>
+            <h3>Charter Bestätigung senden</h3>
+            <p>Bitte geben Sie die E-Mail-Adresse des Empfängers ein:</p>
+            <input type="email" id="recipientEmailInput" placeholder="Empfänger E-Mail" required>
+            <p id="emailConfirmationMessage" style="color: red;"></p>
+            <div class="modal-buttons">
+                <button class="send-button" id="sendEmailConfirmBtn">Senden</button>
+                <button class="cancel-button" onclick="closeEmailConfirmationModal()">Abbrechen</button>
+            </div>
+        </div>
     </div>
 
   </div>
