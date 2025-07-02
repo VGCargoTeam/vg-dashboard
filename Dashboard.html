@@ -27,298 +27,271 @@
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
+      display: flex; /* Flexbox für Hauptbereich und Kalender */
+      flex-direction: column; /* Standard auf kleinen Bildschirmen */
+      min-height: 100vh;
+      text-gray-800; /* Textfarbe */
     }
+
+    /* Flex-Anordnung für größere Bildschirme */
+    @media (min-width: 1024px) {
+      body {
+        flex-direction: row; /* Nebeneinander auf großen Bildschirmen */
+      }
+    }
+
     .main {
-      flex: 1;
+      flex: 1; /* Nimmt den meisten Platz ein */
       background: rgba(255,255,255,0.85);
       backdrop-filter: blur(6px);
       padding: 30px;
       margin: 20px;
       border-radius: 12px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      position: relative; /* Für Logo-Positionierung */
+      display: flex; /* Für interne Spalten (Filter/Tabelle) */
+      flex-direction: column; /* Standard auf kleinen Bildschirmen */
     }
-    .container {
+
+    /* Anordnung der internen Spalten im Main-Bereich */
+    .main-content-wrapper {
       display: flex;
+      flex-direction: column; /* Standard auf kleinen Bildschirmen */
       gap: 20px;
-      padding: 20px;
-      max-width: 1400px;
-      margin: 20px auto;
-      align-items: flex-start;
+      flex: 1; /* Füllt den verfügbaren Platz im Main-Div */
     }
-    .left-panel, .right-panel {
-      flex: 1;
+
+    @media (min-width: 1024px) {
+      .main-content-wrapper {
+        flex-direction: row; /* Nebeneinander auf großen Bildschirmen */
+      }
+    }
+
+    .left-panel-content {
+      flex: 1; /* Nimmt einen Teil des Platzes im Main-Bereich ein */
+      min-width: 250px; /* Mindestbreite für Filter/Buttons */
+    }
+
+    .middle-panel-content {
+      flex: 2; /* Nimmt mehr Platz für die Tabelle ein */
+    }
+
+    .calendar {
+      width: 500px; /* Feste Breite für den Kalender */
       background: rgba(255,255,255,0.85);
       backdrop-filter: blur(6px);
       padding: 20px;
+      margin: 20px 20px 20px 0; /* Rechtsbündig mit Abstand */
       border-radius: 12px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      overflow: visible; /* Wichtig für Kalender-Tooltips */
     }
-    .middle-panel {
-      flex: 2; /* Macht die mittlere Spalte breiter */
-      background: rgba(255,255,255,0.85);
-      backdrop-filter: blur(6px);
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+
+    @media (max-width: 1023px) {
+      .calendar {
+        width: auto; /* Volle Breite auf kleinen Bildschirmen */
+        margin: 20px; /* Gleichmäßiger Abstand */
+      }
     }
-    .header {
-      background-color: #0056b3;
-      color: white;
-      padding: 15px 30px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .header h1 {
-      margin: 0;
-      font-size: 1.8em;
-    }
-    .header .user-info {
-      font-size: 0.9em;
-    }
-    .header .user-info button {
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      padding: 8px 15px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      margin-left: 10px;
-    }
-    .header .user-info button:hover {
-      background-color: #0056b3;
-    }
-    .search-filter-section {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 20px;
-      align-items: flex-end;
-    }
-    .search-filter-section div {
-      flex: 1;
-      min-width: 180px;
-    }
-    .search-filter-section label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-      color: #333;
-    }
-    .search-filter-section input[type="text"],
-    .search-filter-section input[type="date"] {
-      width: 100%;
-      padding: 8px;
+
+    input[type="text"], input[type="date"], input[type="time"], select, textarea {
+      padding: 8px 10px;
+      margin: 5px 0; /* Vertikaler Abstand */
       border: 1px solid #ccc;
       border-radius: 6px;
-      box-sizing: border-box;
+      width: 100%; /* Volle Breite im Container */
+      box-sizing: border-box; /* Padding und Border in die Breite einbeziehen */
     }
-    .btn {
-      padding: 8px 15px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-    .btn-primary {
-      background-color: #007BFF;
-      color: white;
-    }
-    .btn-primary:hover {
-      background-color: #0056b3;
-    }
-    .btn-create {
-      background-color: #28a745;
-      color: white;
-    }
-    .btn-create:hover {
-      background-color: #218838;
-    }
-    .btn-view {
-      background-color: #17a2b8;
-      color: white;
-    }
-    .btn-view:hover {
-      background-color: #138496;
-    }
-    .btn-delete {
-      background-color: #dc3545;
-      color: white;
-      margin-left: 5px;
-    }
-    .btn-delete:hover {
-      background-color: #c82333;
-    }
-    .data-table {
+
+    table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
-    }
-    .data-table th, .data-table td {
-      border: 1px solid #ddd;
-      padding: 10px;
-      text-align: left;
-    }
-    .data-table th {
-      background-color: #f2f2f2;
-      font-weight: bold;
-    }
-    .data-table tr:nth-child(even) {
-      background-color: #f9f9f9;
-    }
-    .data-table tr:hover {
-      background-color: #f1f1f1;
-    }
-    .summary-info {
-      margin-top: 15px;
-      font-weight: bold;
-      color: #333;
-    }
-
-    /* Modal Styles */
-    .modal {
-      display: none; /* Hidden by default */
-      position: fixed; /* Stay in place */
-      z-index: 1000; /* Sit on top */
-      left: 0;
-      top: 0;
-      width: 100%; /* Full width */
-      height: 100%; /* Full height */
-      overflow: auto; /* Enable scroll if needed */
-      background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-      justify-content: center;
-      align-items: center;
-    }
-    .modal-content {
-      background-color: #fefefe;
-      margin: auto;
-      padding: 30px;
-      border: 1px solid #888;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 700px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-      position: relative;
-      animation: fadeIn 0.3s ease-out;
-      max-height: 90vh; /* Begrenzt die Höhe des Modals */
-      overflow-y: auto; /* Ermöglicht Scrollen innerhalb des Modals */
-    }
-    .modal-content h2 {
-      color: #0056b3;
-      margin-top: 0;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-    .modal-content .close-button {
-      color: #aaa;
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
-      position: absolute;
-      top: 10px;
-      right: 20px;
-    }
-    .modal-content .close-button:hover,
-    .modal-content .close-button:focus {
-      color: black;
-      text-decoration: none;
-      cursor: pointer;
-    }
-    .modal-section {
-      background-color: #f0f8ff;
-      border: 1px solid #e0e0e0;
+      background: white;
       border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 20px;
     }
-    .modal-section h3 {
-      color: #0056b3;
-      margin-top: 0;
-      margin-bottom: 15px;
-      border-bottom: 2px solid #007BFF;
-      padding-bottom: 5px;
-    }
-    .modal-section label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-      color: #555;
-      margin-top: 10px;
-    }
-    .modal-section input[type="text"],
-    .modal-section input[type="date"],
-    .modal-section input[type="time"],
-    .modal-section select,
-    .modal-section textarea {
-      width: calc(100% - 16px); /* Adjust for padding */
-      padding: 8px;
+    th, td {
       border: 1px solid #ccc;
-      border-radius: 6px;
-      box-sizing: border-box;
-      margin-bottom: 10px;
+      padding: 8px;
+      text-align: center;
+      font-size: 14px;
     }
-    .modal-section textarea {
-        resize: vertical; /* Allow vertical resizing */
-        min-height: 60px;
-    }
-
-    /* Calendar Styles */
-    .calendar {
-      flex: 1;
-      background: rgba(255,255,255,0.85);
-      backdrop-filter: blur(6px);
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .calendar .nav {
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-      margin-bottom: 15px;
-    }
-    .calendar .nav button {
+    th {
       background-color: #007BFF;
       color: white;
+    }
+    .nav button, .btn {
+      padding: 6px 12px;
+      margin: 3px;
       border: none;
-      padding: 8px 15px;
       border-radius: 6px;
+      font-size: 13px;
       cursor: pointer;
-      transition: background-color 0.3s ease;
     }
-    .calendar .nav button:hover {
-      background-color: #0056b3;
+    .nav button {
+      background-color: #28a745;
+      color: white;
     }
-    .calendar-wrapper {
-      display: flex;
-      gap: 20px;
-      width: 100%;
+    .nav button:hover {
+      background-color: #218838;
+    }
+    .btn-view { background-color: #17a2b8; color: white; }
+    .btn-delete { background-color: #dc3545; color: white; }
+    .summary {
+      text-align: right;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
       justify-content: center;
+      align-items: center;
+      z-index: 2000;
     }
-    .calendar-block {
-      flex: 1;
-      min-width: 300px;
-      max-width: 45%; /* Adjusted for two columns */
-      text-align: center;
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 700px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      position: relative; /* Für Schließen-Button */
     }
-    .calendar-block h3 {
-      color: #0056b3;
-      margin-bottom: 10px;
+    /* Stil für das History-Modal, damit es sich vom Detail-Modal unterscheidet */
+    #historyModal .modal-content {
+        max-width: 800px; /* Breiter für die Historie */
+        flex-direction: column; /* Elemente untereinander anordnen */
+        align-items: flex-start;
     }
+    #historyModal .modal-content h3 {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    #historyBody ul {
+        width: 100%;
+    }
+    #historyBody li {
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #fdfdfd;
+        font-size: 0.9em;
+    }
+    #historyBody pre {
+        background-color: #eee;
+        padding: 5px;
+        border-radius: 3px;
+        overflow-x: auto;
+        font-size: 0.8em;
+    }
+
+    /* NEUE STILE FÜR STATISTIK MODAL */
+    #statisticsModal .modal-content {
+        max-width: 900px; /* Breiter für die Statistik */
+        flex-direction: column; /* Stellt sicher, dass die Elemente vertikal gestapelt werden */
+        align-items: flex-start;
+    }
+    #statisticsModal .modal-content h3 {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    #statisticsBody {
+        width: 100%;
+        max-height: 70vh;
+        overflow-y: auto;
+        /* Sicherstellen, dass der Inhalt vertikal gestapelt wird */
+        display: flex;
+        flex-direction: column;
+        gap: 20px; /* Abstand zwischen den Statistikbereichen */
+    }
+    #statisticsBody table {
+        width: 100%;
+        margin-top: 15px;
+    }
+    #statisticsBody th, #statisticsBody td {
+        padding: 10px;
+        border: 1px solid #ccc;
+        text-align: left;
+    }
+    #statisticsBody th {
+        background-color: #f2f2f2;
+    }
+
+    /* NEUE STILE FÜR DIAGRAMME */
+    .chart-container {
+        width: 100%;
+        background: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .chart-container canvas {
+        width: 100% !important; /* Wichtig für Responsivität von Chart.js */
+        height: 300px !important; /* Feste Höhe für die Diagramme */
+    }
+
+
+    .modal-content p {
+      flex: 1 1 45%;
+      margin: 0;
+    }
+    .modal-content input, .modal-content textarea {
+      width: 100%;
+      padding: 6px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px; /* Etwas kleinere Radien im Modal */
+      font-size: 13px;
+    }
+    .logo-container { /* NEU: Für das Logo */
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 10; /* Damit es über anderen Elementen liegt */
+    }
+    .logo-container img {
+        height: 50px; /* Oder die gewünschte Größe */
+        /* Optional: Schatten, Border-Radius für das Logo selbst */
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+    .checkbox-label input[type="checkbox"] {
+      transform: translateY(-1px);
+    }
+
+    /* KALENDER-STILE */
     .calendar-block table {
       width: 100%;
-      border-collapse: collapse;
+      table-layout: fixed;
     }
     .calendar-block th, .calendar-block td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: center;
-      width: calc(100% / 7); /* Ensure equal width columns */
+      width: calc(100% / 7);
+      padding: 10px 5px;
+      height: 50px;
+      vertical-align: top;
+      font-size: 14px;
+      position: relative;
+      overflow: visible; /* Wichtig für Tooltips/Icons */
     }
     .calendar-block th {
       background-color: #f2f2f2;
@@ -326,342 +299,253 @@
     }
     .calendar-day {
       cursor: pointer;
-      transition: background-color 0.3s ease;
-      position: relative; /* For flight icon positioning */
+      background-color: #e9ecef;
+      transition: background-color 0.2s ease;
     }
     .calendar-day:hover {
-      background-color: #e0e0e0;
-    }
-    .calendar-day.empty {
-      background-color: #f9f9f9;
-      cursor: default;
+      background-color: #d1d9e0;
     }
     .calendar-day.has-flights {
-      background-color: #d4edda; /* Light green for days with flights */
+      background-color: #ffc107;
       font-weight: bold;
+      color: #333;
     }
-    .calendar-day.today {
-      background-color: #fff3cd; /* Light yellow for today */
-      border: 2px solid #ffc107;
+    .calendar-day.has-flights:hover {
+      background-color: #e0a800;
+    }
+    .calendar-day.empty {
+      background-color: #f8f9fa;
+      cursor: default;
     }
     .flight-icon {
       position: absolute;
-      bottom: 2px;
-      right: 2px;
-      font-size: 0.8em;
-      color: #0056b3;
+      top: 5px;
+      right: 5px;
+      font-size: 1.2em;
+      color: #007BFF;
     }
 
-    /* Tooltip Styles */
+    /* TOOLTIP-STILE */
     [data-tooltip] {
       position: relative;
-      cursor: help;
+      z-index: 1;
     }
 
     [data-tooltip]:hover::after {
       content: attr(data-tooltip);
       position: absolute;
-      top: 100%; /* Position below the element */
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #333;
+      bottom: calc(100% + 5px);
+      left: 50%; /* Zentriert über dem Element */
+      transform: translateX(-50%); /* Korrigiert die Zentrierung */
+
+      background-color: rgba(0, 0, 0, 0.9);
       color: #fff;
       padding: 8px 12px;
       border-radius: 6px;
-      white-space: pre-wrap; /* Preserve newlines */
-      z-index: 1001;
-      font-size: 0.9em;
+      white-space: pre-wrap; /* Zeilenumbrüche im Tooltip erlauben */
+      z-index: 1000;
+      min-width: 180px;
+      max-width: 300px; /* Breitere Tooltips erlauben */
       text-align: left;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      pointer-events: none; /* Tooltip soll Klicks nicht blockieren */
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
+
+      /* Zusätzliche Anpassung, um sicherzustellen, dass es nicht den Bildschirmrand überlappt */
+      /* Max-width und transform: translateX(-50%) sollten die meisten Fälle abdecken */
     }
 
-    /* Responsive adjustments */
-    @media (max-width: 1024px) {
-      .container {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .left-panel, .middle-panel, .right-panel, .calendar {
-        flex: none;
-        width: auto;
-        margin-bottom: 20px;
-      }
-      .calendar-wrapper {
-        flex-direction: column;
-        align-items: center;
-      }
-      .calendar-block {
-        max-width: 90%;
-      }
+    [data-tooltip]:hover::before {
+      content: '';
+      position: absolute;
+      bottom: 100%; /* Pfeil über dem Tooltip-Inhalt */
+      left: 50%;
+      transform: translateX(-50%) translateY(5px); /* Positioniert den Pfeil */
+      border-width: 5px;
+      border-style: solid;
+      border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
+      z-index: 1001;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
     }
 
-    @media (max-width: 768px) {
-      .header {
-        flex-direction: column;
-        gap: 10px;
-      }
-      .search-filter-section {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .search-filter-section div {
-        min-width: unset;
-        width: 100%;
-      }
-      .modal-content {
-        width: 95%;
-        padding: 20px;
-      }
+    /* Tooltip anzeigen bei Hover */
+    [data-tooltip]:hover::after,
+    [data-tooltip]:hover::before {
+      opacity: 1;
+      visibility: visible;
     }
 
-    /* Profile Modal Specific Styles */
-    #profileModal .modal-content {
-        max-width: 400px;
-        padding: 25px;
+    /* Modal spezifische Stile */
+    .modal-section {
+      background: #f7f7f7;
+      padding: 15px;
+      border-radius: 10px;
+      width: 100%; /* Wichtig, damit Abschnitte 100% Breite einnehmen */
     }
-    #profileModal label {
-        margin-top: 15px;
-        margin-bottom: 5px;
+    .modal-section h3 {
+      margin-top: 0;
+      font-size: 1.1rem;
+      color: #444;
+    }
+    .modal-section label {
+      display: block;
+      margin-top: 8px;
+      font-weight: bold;
+    }
+    .modal-section input, .modal-section textarea {
+      width: 100%;
+      padding: 6px;
+      margin-top: 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    /* Stil für Referenzlinks in der Tabelle */
+    #dataTable tbody td a {
+        color: #007BFF; /* Blau */
+        text-decoration: underline; /* Unterstrichen */
         font-weight: bold;
-    }
-    #profileModal input[type="password"] {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        box-sizing: border-box;
-    }
-    #profileModal .button-group {
-        display: flex;
-        justify-content: space-around;
-        margin-top: 25px;
-    }
-    #profileModal .button-group button {
-        padding: 10px 20px;
-        border-radius: 6px;
         cursor: pointer;
-        font-weight: bold;
     }
-    #profileModal #passwordChangeMessage {
-        text-align: center;
-        margin-top: 15px;
-        font-weight: bold;
+    #dataTable tbody td a:hover {
+        color: #0056b3; /* Dunkleres Blau beim Hover */
     }
 
-    /* History Modal Specific Styles */
-    #historyModal .modal-content {
-        max-width: 800px;
-    }
-    #historyModal ul {
-        max-height: 60vh; /* Begrenzt die Höhe der Historienliste */
-        overflow-y: auto; /* Ermöglicht Scrollen */
-        border: 1px solid #eee;
-        padding: 10px;
-        border-radius: 8px;
-        background-color: #fdfdfd;
-    }
-    #historyModal li {
-        border-bottom: 1px dashed #e0e0e0;
-        padding-bottom: 10px;
-        margin-bottom: 10px;
-    }
-    #historyModal li:last-child {
-        border-bottom: none;
-        margin-bottom: 0;
-    }
-    #historyModal pre {
-        background-color: #e9e9e9;
-        padding: 10px;
-        border-radius: 6px;
-        overflow-x: auto;
-        white-space: pre-wrap; /* Zeilenumbrüche im Pre-Tag */
-    }
-
-    /* Statistics Modal Specific Styles */
-    #statisticsModal .modal-content {
-        max-width: 900px;
-        padding: 30px;
-    }
-    #statisticsModal .date-range-selector {
-        display: flex;
-        gap: 15px;
-        align-items: center;
-        margin-bottom: 25px;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-    #statisticsModal .date-range-selector label {
-        font-weight: bold;
-        color: #333;
-    }
-    #statisticsModal .date-range-selector input[type="date"] {
-        padding: 8px;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        flex: 1;
-        min-width: 150px;
-    }
-    #statisticsModal .chart-container {
-        margin-top: 30px;
-        padding: 20px;
-        background-color: #ffffff;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        height: 400px; /* Feste Höhe für die Charts */
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
-    #statisticsModal .chart-container h4 {
-        color: #0056b3;
-        margin-top: 0;
-        margin-bottom: 15px;
-        text-align: center;
-        width: 100%;
-    }
-    #statisticsModal canvas {
-        width: 100% !important;
-        height: 100% !important;
-    }
-    #statisticsModal table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-    }
-    #statisticsModal th, #statisticsModal td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: left;
-    }
-    #statisticsModal th {
-        background-color: #f2f2f2;
-        font-weight: bold;
-    }
-    #statisticsModal ul {
-        list-style-type: disc;
-        padding-left: 20px;
-        margin-top: 10px;
-    }
-    #statisticsModal p {
-        margin-bottom: 10px;
-    }
-
-    /* Email Confirmation Modal Styles */
+    /* Styles for the new email confirmation modal */
     #emailConfirmationModal .modal-content {
-        max-width: 500px;
-        padding: 30px;
+        max-width: 450px;
+        text-align: center;
+        flex-direction: column;
+        gap: 15px;
     }
-    #emailConfirmationModal label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: bold;
-        color: #333;
+    #emailConfirmationModal h3 {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+    }
+    #emailConfirmationModal p {
+        margin-bottom: 15px;
     }
     #emailConfirmationModal input[type="email"] {
-        width: calc(100% - 16px);
+        width: calc(100% - 20px);
         padding: 10px;
         border: 1px solid #ccc;
         border-radius: 6px;
-        box-sizing: border-box;
         margin-bottom: 20px;
     }
-    #emailConfirmationModal .button-group {
+    #emailConfirmationModal .modal-buttons {
         display: flex;
-        justify-content: space-around;
-        margin-top: 20px;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
     }
-    #emailConfirmationModal .button-group button {
+    #emailConfirmationModal .modal-buttons button {
         padding: 10px 20px;
         border-radius: 6px;
         cursor: pointer;
         font-weight: bold;
+        flex-grow: 1;
     }
-    #emailConfirmationModal #emailConfirmationMessage {
-        text-align: center;
-        margin-top: 15px;
-        font-weight: bold;
+    #emailConfirmationModal .modal-buttons .send-button {
+        background-color: #28a745;
+        color: white;
+        border: none;
     }
-
+    #emailConfirmationModal .modal-buttons .send-button:hover {
+        background-color: #218838;
+    }
+    #emailConfirmationModal .modal-buttons .cancel-button {
+        background-color: #6c757d;
+        color: white;
+        border: none;
+    }
+    #emailConfirmationModal .modal-buttons .cancel-button:hover {
+        background-color: #5a6268;
+    }
   </style>
 </head>
 <body class="font-inter">
-  <div class="header">
-    <h1>Charter Dashboard</h1>
-    <div class="user-info">
-      Logged in as: <span id="loggedInUsername"></span> (<span id="loggedInUserRole"></span>)
-      <button onclick="openProfileModal()">Profile</button>
-      <button onclick="logoutUser()">Logout</button>
+  <div class="main">
+    <div class="logo-container"> <!-- Logo-Container -->
+        <img src="https://placehold.co/150x50/000000/FFFFFF?text=VG+Cargo+Logo" alt="VG Cargo Logo"> <!-- Platzhalter für dein Logo -->
+    </div>
+
+    <div class="header-area" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h1 style="flex-grow: 1; text-align: center; margin-left: 70px; font-size: 2.5rem;">Charter Dashboard</h1> <!-- Überschrift vergrößert -->
+      <button onclick="openProfileModal()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+        Profil
+      </button>
+    </div>
+
+    <div class="main-content-wrapper">
+      <div class="left-panel-content">
+        <h2 class="text-xl font-semibold mb-4 text-blue-800">Filter & Search</h2>
+        <div class="search-filter-section">
+          <div>
+            <label for="refSearch">Reference:</label>
+            <input type="text" id="refSearch" onkeyup="filterTable()" placeholder="Search by Ref" />
+          </div>
+          <div>
+            <label for="airlineSearch">Airline:</label>
+            <input type="text" id="airlineSearch" onkeyup="filterTable()" placeholder="Search by Airline" />
+          </div>
+          <div>
+            <label for="flightNumberSearch">Flight Number:</label>
+            <input type="text" id="flightNumberSearch" onkeyup="filterTable()" placeholder="Search by Flight No." />
+          </div>
+          <div>
+            <label for="fromDate">From Date:</label>
+            <input type="date" id="fromDate" onchange="filterTable()" />
+          </div>
+          <div>
+            <label for="toDate">To Date:</label>
+            <input type="date" id="toDate" onchange="filterTable()" />
+          </div>
+          <div class="flex items-center mt-2">
+              <input type="checkbox" id="archiveCheckbox" class="mr-2" onchange="filterTable()">
+              <label for="archiveCheckbox" class="mb-0">Show Past Flights</label>
+          </div>
+        </div>
+        <button class="btn btn-create w-full" onclick="createNewRequest()">Create New Request</button>
+        <button class="btn btn-primary w-full mt-4" onclick="openStatisticsModal()">View Statistics</button>
+      </div>
+
+      <div class="middle-panel-content">
+        <h2 class="text-xl font-semibold mb-4 text-blue-800">Charter Requests</h2>
+        <div class="flex justify-between items-center mb-4">
+          <div id="currentDate" class="font-medium text-gray-700"></div>
+          <div id="clock" class="font-medium text-gray-700"></div>
+        </div>
+        <div class="overflow-x-auto">
+          <table id="dataTable" class="data-table">
+            <thead>
+              <tr>
+                <th>Ref</th>
+                <th>Flight Date</th>
+                <th>Airline</th>
+                <th>Tonnage (kg)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Data will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+        <div id="summaryInfo" class="summary-info mt-4"></div>
+      </div>
     </div>
   </div>
 
-  <div class="container">
-    <div class="left-panel">
-      <h2 class="text-xl font-semibold mb-4 text-blue-800">Filter & Search</h2>
-      <div class="search-filter-section">
-        <div>
-          <label for="refSearch">Reference:</label>
-          <input type="text" id="refSearch" onkeyup="filterTable()" placeholder="Search by Ref" />
-        </div>
-        <div>
-          <label for="airlineSearch">Airline:</label>
-          <input type="text" id="airlineSearch" onkeyup="filterTable()" placeholder="Search by Airline" />
-        </div>
-        <div>
-          <label for="flightNumberSearch">Flight Number:</label>
-          <input type="text" id="flightNumberSearch" onkeyup="filterTable()" placeholder="Search by Flight No." />
-        </div>
-        <div>
-          <label for="fromDate">From Date:</label>
-          <input type="date" id="fromDate" onchange="filterTable()" />
-        </div>
-        <div>
-          <label for="toDate">To Date:</label>
-          <input type="date" id="toDate" onchange="filterTable()" />
-        </div>
-        <div class="flex items-center mt-2">
-            <input type="checkbox" id="archiveCheckbox" class="mr-2" onchange="filterTable()">
-            <label for="archiveCheckbox" class="mb-0">Show Past Flights</label>
-        </div>
-      </div>
-      <button class="btn btn-create w-full" onclick="createNewRequest()">Create New Request</button>
-      <button class="btn btn-primary w-full mt-4" onclick="openStatisticsModal()">View Statistics</button>
+  <div class="calendar">
+    <div class="nav">
+      <button onclick="shiftCalendar(-1)">← Back</button>
+      <button onclick="shiftCalendar(1)">Forward →</button>
     </div>
-
-    <div class="middle-panel">
-      <h2 class="text-xl font-semibold mb-4 text-blue-800">Charter Requests</h2>
-      <div class="flex justify-between items-center mb-4">
-        <div id="currentDate" class="font-medium text-gray-700"></div>
-        <div id="clock" class="font-medium text-gray-700"></div>
-      </div>
-      <div class="overflow-x-auto">
-        <table id="dataTable" class="data-table">
-          <thead>
-            <tr>
-              <th>Ref</th>
-              <th>Flight Date</th>
-              <th>Airline</th>
-              <th>Tonnage (kg)</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Data will be loaded here -->
-          </tbody>
-        </table>
-      </div>
-      <div id="summaryInfo" class="summary-info mt-4"></div>
-    </div>
-
-    <div class="calendar">
-      <div class="nav">
-        <button onclick="shiftCalendar(-1)">← Back</button>
-        <button onclick="shiftCalendar(1)">Forward →</button>
-      </div>
-      <div id="calendarArea" class="calendar-wrapper"></div>
-    </div>
-
+    <div id="calendarArea" class="calendar-wrapper"></div>
   </div>
 
   <!-- Detail Modal -->
