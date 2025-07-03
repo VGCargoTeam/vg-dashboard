@@ -1776,8 +1776,8 @@ function generateEmailBody(data, userRole) {
             <div class="detail-item"><span class="detail-label">Steuernummer:</span> ${data['Tax Number'] || '-'}</div>
             <div class="detail-item"><span class="detail-label">Kontaktname (Rechnung):</span> ${data['Contact Name Invoicing'] || '-'}</div>
             <div class="detail-item"><span class="detail-label">Kontakt E-Mail (Rechnung):</span> ${data['Contact E-Mail Invoicing'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">AGB Akzeptiert:</span> ${data['AGB Accepted'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Service Beschreibung Akzeptiert:</span> ${data['Service Description Accepted'] || '-'}</div>
+            <div class="detail-item"><span class="detail-label">AGB Akzeptiert:</span> Ja</div>
+            <div class="detail-item"><span class="detail-label">Service Beschreibung Akzeptiert:</span> Ja</div>
             <div class="detail-item"><span class="detail-label">Akzeptiert von:</span> ${data['Accepted By Name'] || '-'}</div>
             <div class="detail-item"><span class="detail-label">Akzeptanz-Zeitstempel:</span> ${data['Acceptance Timestamp'] || '-'}</div>
 
