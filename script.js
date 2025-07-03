@@ -1714,50 +1714,110 @@ document.getElementById('sendEmailConfirmBtn').addEventListener('click', async (
 
 // Funktion zum Generieren des E-Mail-Bodys basierend auf Daten und Benutzerrolle
 function generateEmailBody(data, userRole) {
-    let body = `Sehr geehrte/r ${data['Contact Name Invoicing'] || 'Kunde/in'},\n\n`;
-    body += `hiermit bestätigen wir Ihre Charteranfrage mit der Referenznummer ${data.Ref || 'N/A'}.\n\n`;
-    body += `Nachfolgend finden Sie die Details Ihrer Anfrage:\n\n`;
+    // Start des HTML-E-Mail-Bodys
+    let body = `
+    <!DOCTYPE html>
+    <html lang="de">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Charter Bestätigung</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333333;
+                background-color: #f4f4f4;
+                margin: 0;
+                padding: 20px;
+            }
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+                background: #ffffff;
+                padding: 30px;
+                border-radius: 8px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }
+            h2, h3 {
+                color: #0056b3;
+                border-bottom: 1px solid #eeeeee;
+                padding-bottom: 5px;
+                margin-top: 20px;
+            }
+            p {
+                margin-bottom: 10px;
+            }
+            .detail-item {
+                margin-bottom: 5px;
+            }
+            .detail-label {
+                font-weight: bold;
+            }
+            .footer {
+                margin-top: 30px;
+                padding-top: 15px;
+                border-top: 1px solid #eeeeee;
+                text-align: center;
+                font-size: 0.9em;
+                color: #777777;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <p>Sehr geehrte/r ${data['Contact Name Invoicing'] || 'Kunde/in'},</p>
+            <p>hiermit bestätigen wir Ihre Charteranfrage mit der Referenznummer <strong>${data.Ref || 'N/A'}</strong>.</p>
+            <p>Nachfolgend finden Sie die Details Ihrer Anfrage:</p>
 
-    // Kundendetails
-    body += `--- Kundendetails ---\n`;
-    body += `Rechnungsfirma: ${data['Billing Company'] || '-'}\n`;
-    body += `Rechnungsadresse: ${data['Billing Address'] || '-'}\n`;
-    body += `Steuernummer: ${data['Tax Number'] || '-'}\n`;
-    body += `Kontaktname (Rechnung): ${data['Contact Name Invoicing'] || '-'}\n`;
-    body += `Kontakt E-Mail (Rechnung): ${data['Contact E-Mail Invoicing'] || '-'}\n`;
-    body += `AGB Akzeptiert: ${data['AGB Accepted'] || '-'}\n`;
-    body += `Service Beschreibung Akzeptiert: ${data['Service Description Accepted'] || '-'}\n`;
-    body += `Akzeptiert von: ${data['Accepted By Name'] || '-'}\n`;
-    body += `Akzeptanz-Zeitstempel: ${data['Acceptance Timestamp'] || '-'}\n\n`;
+            <h2>Kundendetails</h2>
+            <div class="detail-item"><span class="detail-label">Rechnungsfirma:</span> ${data['Billing Company'] || '-'}</div>
+            <div class="detail-item"><span class="detail-label">Rechnungsadresse:</span> ${data['Billing Address'] || '-'}</div>
+            <div class="detail-item"><span class="detail-label">Steuernummer:</span> ${data['Tax Number'] || '-'}</div>
+            <div class="detail-item"><span class="detail-label">Kontaktname (Rechnung):</span> ${data['Contact Name Invoicing'] || '-'}</div>
+            <div class="detail-item"><span class="detail-label">Kontakt E-Mail (Rechnung):</span> ${data['Contact E-Mail Invoicing'] || '-'}</div>
+            <div class="detail-item"><span class="detail-label">AGB Akzeptiert:</span> ${data['AGB Accepted'] || '-'}</div>
+            <div class="detail-item"><span class="detail-label">Service Beschreibung Akzeptiert:</span> ${data['Service Description Accepted'] || '-'}</div>
+            <div class="detail-item"><span class="detail-label">Akzeptiert von:</span> ${data['Accepted By Name'] || '-'}</div>
+            <div class="detail-item"><span class="detail-label">Akzeptanz-Zeitstempel:</span> ${data['Acceptance Timestamp'] || '-'}</div>
 
-    // Flugdetails
-    body += `--- Flugdetails ---\n`;
-    body += `Airline: ${data.Airline || '-'}\n`;
-    body += `Flugzeugtyp: ${data['Aircraft Type'] || '-'}\n`;
-    body += `Flugnummer: ${data.Flugnummer || '-'}\n`;
-    body += `Flugdatum: ${data['Flight Date'] ? new Date(data['Flight Date']).toLocaleDateString('de-DE') : '-'}\n`;
-    body += `Abflugzeit: ${data['Abflugzeit'] || '-'}\n`;
-    body += `Tonnage: ${data.Tonnage ? parseFloat(String(data.Tonnage).replace(',', '.')).toLocaleString('de-DE') + ' kg' : '-'}\n`;
-    body += `Vorfeldbegleitung: ${data.Vorfeldbegleitung || '-'}\n`;
-    body += `Flugtyp Import: ${data['Flight Type Import'] || '-'}\n`;
-    body += `Origin: ${data.Origin || '-'}\n`;
-    body += `Flugtyp Export: ${data['Flight Type Export'] || '-'}\n`;
-    body += `Destination: ${data.Destination || '-'}\n`;
-    body += `E-Mail Anfrage: ${data['Email Request'] || '-'}\n\n`;
+            <h2>Flugdetails</h2>
+            <div class="detail-item"><span class="detail-label">Airline:</span> ${data.Airline || '-'}</div>
+            <div class="detail-item"><span class="detail-label">Flugzeugtyp:</span> ${data['Aircraft Type'] || '-'}</div>
+            <div class="detail-item"><span class="detail-label">Flugnummer:</span> ${data.Flugnummer || '-'}</div>
+            <div class="detail-item"><span class="detail-label">Flugdatum:</span> ${data['Flight Date'] ? new Date(data['Flight Date']).toLocaleDateString('de-DE') : '-'}</div>
+            <div class="detail-item"><span class="detail-label">Abflugzeit:</span> ${data['Abflugzeit'] || '-'}</div>
+            <div class="detail-item"><span class="detail-label">Tonnage:</span> ${data.Tonnage ? parseFloat(String(data.Tonnage).replace(',', '.')).toLocaleString('de-DE') + ' kg' : '-'}</div>
+            <div class="detail-item"><span class="detail-label">Vorfeldbegleitung:</span> ${data.Vorfeldbegleitung || '-'}</div>
+            <div class="detail-item"><span class="detail-label">Flugtyp Import:</span> ${data['Flight Type Import'] || '-'}</div>
+            <div class="detail-item"><span class="detail-label">Origin:</span> ${data.Origin || '-'}</div>
+            <div class="detail-item"><span class="detail-label">Flugtyp Export:</span> ${data['Flight Type Export'] || '-'}</div>
+            <div class="detail-item"><span class="detail-label">Destination:</span> ${data.Destination || '-'}</div>
+            <div class="detail-item"><span class="detail-label">E-Mail Anfrage:</span> ${data['Email Request'] || '-'}</div>
+    `;
 
     // Preisdetails nur für Admin-Benutzer
     if (userRole === 'admin') {
-        body += `--- Preisdetails ---\n`; // "Geschätzt" entfernt
-        body += `Rate: ${data.Rate ? parseFloat(String(data.Rate).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}\n`;
-        body += `Security Charges: ${data['Security charges'] ? parseFloat(String(data['Security charges']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}\n`;
-        body += `Dangerous Goods: ${data['Dangerous Goods'] || '-'}\n`;
-        body += `10ft Consumables: ${data['10ft consumables'] ? parseFloat(String(data['10ft consumables']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}\n`;
-        body += `20ft Consumables: ${data['20ft consumables'] ? parseFloat(String(data['20ft consumables']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}\n`;
-        body += `Zusatzkosten: ${data.Zusatzkosten || '-'}\n\n`;
+        body += `
+            <h2>Preisdetails</h2>
+            <div class="detail-item"><span class="detail-label">Rate:</span> ${data.Rate ? parseFloat(String(data.Rate).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}</div>
+            <div class="detail-item"><span class="detail-label">Security Charges:</span> ${data['Security charges'] ? parseFloat(String(data['Security charges']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}</div>
+            <div class="detail-item"><span class="detail-label">Dangerous Goods:</span> ${data['Dangerous Goods'] || '-'}</div>
+            <div class="detail-item"><span class="detail-label">10ft Consumables:</span> ${data['10ft consumables'] ? parseFloat(String(data['10ft consumables']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}</div>
+            <div class="detail-item"><span class="detail-label">20ft Consumables:</span> ${data['20ft consumables'] ? parseFloat(String(data['20ft consumables']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}</div>
+            <div class="detail-item"><span class="detail-label">Zusatzkosten:</span> ${data.Zusatzkosten || '-'}</div>
+        `;
     }
 
-    body += `Wir werden uns in Kürze mit der finalen Charterbestätigung bei Ihnen melden.\n\n`;
-    body += `Mit freundlichen Grüßen,\nIhr VG Cargo Team`; // sales@vgcargo.de entfernt
+    body += `
+            <div class="footer">
+                <p>Mit freundlichen Grüßen,</p>
+                <p>Ihr VG Cargo Team</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
 
     return body;
 }
