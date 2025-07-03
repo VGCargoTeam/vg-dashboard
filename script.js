@@ -967,7 +967,13 @@ function generateCalendarHTML(year, month) {
         const flightIcon = dayHasVorfeldbegleitung ? ' <span class="flight-icon">&#9992;</span>' : '';
 
         // Added styling for 'today' class here
-        const dayNumberClass = cellClasses.includes('today') ? 'font-bold text-lg' : '';
+        let dayNumberClass = '';
+        if (currentCalendarDayForCell.getTime() === today.getTime()) {
+            dayNumberClass = 'font-bold text-lg today-red-text'; // NEU: Klasse für rote Farbe
+        } else {
+            dayNumberClass = 'font-bold text-lg'; // Standardklasse für die Zahl
+        }
+
 
         html += `<td class='${cellClasses.join(' ')}' title='${simpleTitleContent}' data-tooltip='${dataTooltipContent}' onclick="openCalendarDayFlights(${year}, ${month}, ${day})"><div class="${dayNumberClass}">${day}</div>${flightIcon}</td>`;
         day++;
