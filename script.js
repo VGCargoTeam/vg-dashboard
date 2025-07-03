@@ -1667,7 +1667,7 @@ document.getElementById('sendEmailConfirmBtn').addEventListener('click', async (
         const payload = {
             mode: 'sendConfirmationEmail',
             to: recipientEmail,
-            from: 'sales@vgcargo.de', // Feste Absenderadresse
+            from: 'aklassen26@gmail.com', // Feste Absenderadresse
             bcc: 'sales@vgcargo.de, import@vgcargo.de, export@vgcargo.de', // Feste BCC-Adressen
             subject: emailSubject,
             body: emailBody,
