@@ -1,5 +1,5 @@
 // Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
-const API_URL = 'https://script.google.com/macros/s/AKfycbzo-FgxA6TMJYK4xwLbrsRnNTAU_AN-FEJJoZH6w7aJ3BlcsaB751LjdUJ9nieGtu1P/exec'; // <<< VERIFIZIERE DIESE URL
+const API_URL = 'https://script.google.com/macros/s/AKfycbzo-FgxA6TMJYK4xwLbrsRnNTAU_AN-FEJJoZH6w7aJ3BlcsaB751LjdUJ9nieGtu1P/exec'; // <<< AKTUALISIERT: NEUER LINK VOM BENUTZER
 
 // !!! WICHTIG: Die users.js-Importzeile wird entfernt, da die Benutzerdaten nun aus Google Sheets kommen. !!!
 // import { users } from './users.js';
@@ -1662,12 +1662,13 @@ document.getElementById('sendEmailConfirmBtn').addEventListener('click', async (
 
     try {
         const emailSubject = `Charter Bestätigung für Referenz: ${currentModalData.Ref || 'N/A'}`;
-        const emailBody = generateEmailBody(currentModalData);
+        // Hier wird der E-Mail-Body basierend auf der Benutzerrolle generiert
+        const emailBody = generateEmailBody(currentModalData, currentUser.role);
 
         const payload = {
             mode: 'sendConfirmationEmail',
             to: recipientEmail,
-            from: 'aklassen26@gmail.com', // Feste Absenderadresse
+            from: 'sales@vgcargo.de', // Feste Absenderadresse
             bcc: 'sales@vgcargo.de, import@vgcargo.de, export@vgcargo.de', // Feste BCC-Adressen
             subject: emailSubject,
             body: emailBody,
@@ -1711,7 +1712,8 @@ document.getElementById('sendEmailConfirmBtn').addEventListener('click', async (
     }
 });
 
-function generateEmailBody(data) {
+// Funktion zum Generieren des E-Mail-Bodys basierend auf Daten und Benutzerrolle
+function generateEmailBody(data, userRole) {
     let body = `Sehr geehrte/r ${data['Contact Name Invoicing'] || 'Kunde/in'},\n\n`;
     body += `hiermit bestätigen wir Ihre Charteranfrage mit der Referenznummer ${data.Ref || 'N/A'}.\n\n`;
     body += `Nachfolgend finden Sie die Details Ihrer Anfrage:\n\n`;
@@ -1737,28 +1739,25 @@ function generateEmailBody(data) {
     body += `Abflugzeit: ${data['Abflugzeit'] || '-'}\n`;
     body += `Tonnage: ${data.Tonnage ? parseFloat(String(data.Tonnage).replace(',', '.')).toLocaleString('de-DE') + ' kg' : '-'}\n`;
     body += `Vorfeldbegleitung: ${data.Vorfeldbegleitung || '-'}\n`;
-    body += `Flugtyp Import: ${data['Flight Type Import'] || '-'}\n`; // NEU
-    body += `Origin: ${data.Origin || '-'}\n`; // NEU
-    body += `Flugtyp Export: ${data['Flight Type Export'] || '-'}\n`; // NEU
-    body += `Destination: ${data.Destination || '-'}\n`; // NEU
+    body += `Flugtyp Import: ${data['Flight Type Import'] || '-'}\n`;
+    body += `Origin: ${data.Origin || '-'}\n`;
+    body += `Flugtyp Export: ${data['Flight Type Export'] || '-'}\n`;
+    body += `Destination: ${data.Destination || '-'}\n`;
     body += `E-Mail Anfrage: ${data['Email Request'] || '-'}\n\n`;
 
-    // Preisdetails (nur wenn Admin, ansonsten nicht in der E-Mail enthalten)
-    // Da diese E-Mail an den Kunden geht, sollten sensible Preisdetails hier nicht enthalten sein,
-    // es sei denn, der Kunde hat diese Informationen bereits erhalten.
-    // Für eine "finale Bestätigung" ist es wahrscheinlich, dass diese Details enthalten sein MÜSSEN.
-    // Ich nehme an, dass die "Rate" und "Zusatzkosten" für den Kunden relevant sind.
-    body += `--- Preisdetails (Geschätzt) ---\n`;
-    body += `Rate: ${data.Rate ? parseFloat(String(data.Rate).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}\n`;
-    body += `Security Charges: ${data['Security charges'] ? parseFloat(String(data['Security charges']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}\n`;
-    body += `Dangerous Goods: ${data['Dangerous Goods'] || '-'}\n`;
-    body += `10ft Consumables: ${data['10ft consumables'] ? parseFloat(String(data['10ft consumables']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}\n`;
-    body += `20ft Consumables: ${data['20ft consumables'] ? parseFloat(String(data['20ft consumables']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}\n`;
-    body += `Zusatzkosten: ${data.Zusatzkosten || '-'}\n\n`;
-
+    // Preisdetails nur für Admin-Benutzer
+    if (userRole === 'admin') {
+        body += `--- Preisdetails ---\n`; // "Geschätzt" entfernt
+        body += `Rate: ${data.Rate ? parseFloat(String(data.Rate).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}\n`;
+        body += `Security Charges: ${data['Security charges'] ? parseFloat(String(data['Security charges']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}\n`;
+        body += `Dangerous Goods: ${data['Dangerous Goods'] || '-'}\n`;
+        body += `10ft Consumables: ${data['10ft consumables'] ? parseFloat(String(data['10ft consumables']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}\n`;
+        body += `20ft Consumables: ${data['20ft consumables'] ? parseFloat(String(data['20ft consumables']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}\n`;
+        body += `Zusatzkosten: ${data.Zusatzkosten || '-'}\n\n`;
+    }
 
     body += `Wir werden uns in Kürze mit der finalen Charterbestätigung bei Ihnen melden.\n\n`;
-    body += `Mit freundlichen Grüßen,\nIhr VG Cargo Team\nsales@vgcargo.de`;
+    body += `Mit freundlichen Grüßen,\nIhr VG Cargo Team`; // sales@vgcargo.de entfernt
 
     return body;
 }
