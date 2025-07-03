@@ -1,5 +1,5 @@
 // Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
-const API_URL = 'https://script.google.com/macros/s/AKfycbzo-FgxA6TMJYK4xwLbrsRnNTAU_AN-FEJJoZH6w7aJ3BlcsaB751LjdUJ9nieGtu1P/exec'; // <<< AKTUALISIERT: NEUER LINK VOM BENUTZER
+const API_URL = 'https://script.google.com/macros/s/AKfycbzo-FgxA6TMJYK4xwLbrsRnTTAU_AN-FEJJoZH6w7aJ3BlcsaB751LjdUJ9nieGtu1P/exec'; // <<< AKTUALISIERT: NEUER LINK VOM BENUTZER
 
 // !!! WICHTIG: Die users.js-Importzeile wird entfernt, da die Benutzerdaten nun aus Google Sheets kommen. !!!
 // import { users } from './users.js';
@@ -17,7 +17,7 @@ let tonnagePerMonthChartInstance = null;
 let tonnagePerCustomerChartInstance = null;
 
 // Variable zum Speichern der aktuell im Modal angezeigten Daten
-let currentModalData = null;
+let currentModalData = null; // Beibehalten, wird aber für E-Mail-Versand dynamisch aktualisiert
 
 
 // === AUTHENTIFIZIERUNG UND BENUTZERVERWALTUNG ===
@@ -28,7 +28,7 @@ function checkAuthStatus() {
     // Da die Benutzerdaten nun aus Google Sheets kommen, brauchen wir hier keine users-Datei-Überprüfung mehr.
     // Wir vertrauen darauf, dass das currentUser-Objekt gültig ist, wenn es im localStorage ist.
     updateUIBasedOnUserRole();
-    fetchData(); // Daten laden, wenn angemeldet
+    filterTable(); // Daten laden und filtern, wenn angemeldet (filterTable ruft fetchData auf)
   } else {
     // Wenn nicht angemeldet, zur Login-Seite umleiten
     window.location.href = 'login.html';
@@ -175,8 +175,21 @@ function logoutUser() {
 }
 
 // === DATENABRUF UND TABELLEN-RENDERUNG ===
-function fetchData() {
-  fetch(API_URL + "?mode=read")
+/**
+ * Fetches data from the Google Apps Script API based on provided date range.
+ * @param {string} startDate - Start date in YYYY-MM-DD format (optional).
+ * @param {string} endDate - End date in YYYY-MM-DD format (optional).
+ */
+function fetchData(startDate = null, endDate = null) {
+  let url = API_URL + "?mode=read";
+  if (startDate) {
+    url += `&startDate=${startDate}`;
+  }
+  if (endDate) {
+    url += `&endDate=${endDate}`;
+  }
+
+  fetch(url)
     .then(r => {
       if (!r.ok) {
         throw new Error(`HTTP-Fehler! Status: ${r.status}`);
@@ -184,9 +197,11 @@ function fetchData() {
       return r.json();
     })
     .then(d => {
-      requestData = d.data; // Speichert das Array der Daten
-      console.log("Rohdaten von API:", JSON.parse(JSON.stringify(d.data))); // Zum Debuggen
-      filterTable(); // Ruft filterTable auf, um sowohl Tabelle als auch Kalender zu aktualisieren
+      requestData = d.data; // Speichert das Array der Daten (bereits serverseitig gefiltert)
+      console.log("Rohdaten von API (nach Serverfilterung):", JSON.parse(JSON.stringify(d.data))); // Zum Debuggen
+      
+      // Nach dem Abrufen der Daten, client-seitige Filterung anwenden und rendern
+      applyClientSideFiltersAndRender();
     })
     .catch((error) => {
       console.error("Fehler beim Laden der Daten:", error);
@@ -204,7 +219,15 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
     const row = document.createElement("tr");
     const ton = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0;
 
+    // Finde den Originalindex in requestData, falls benötigt (für openModal)
+    // Da requestData jetzt schon gefiltert ist, ist der Index direkt im requestData Array relevant.
+    // Wenn wir nur die gefilterten Daten rendern, ist der "originalIndex" innerhalb dieser gefilterten Daten.
+    // Für openModal benötigen wir jedoch den Index im *vollständigen* requestData Array,
+    // das nach dem fetchData-Aufruf aktualisiert wird.
+    // Eine bessere Lösung wäre, openModal direkt das Objekt zu übergeben oder die Ref zu verwenden.
+    // Für jetzt nehmen wir an, dass r.Ref eindeutig ist und findIndex funktioniert.
     const originalIndex = requestData.findIndex(item => item.Ref === r.Ref);
+
 
     // Datum korrekt für die Anzeige formatieren (DD.MM.YYYY)
     let displayFlightDate = r['Flight Date'] || "-";
@@ -212,7 +235,7 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
         try {
             // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
             let dateObj;
-            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
+            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
                 const parts = displayFlightDate.split('-');
                 dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
             } else if (displayFlightDate instanceof Date) { // Falls es direkt ein Date-Objekt ist (selten, aber sicherheitshalber)
@@ -261,90 +284,61 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
   updateUIBasedOnUserRole();
 }
 
-function filterTable() {
+/**
+ * Applies client-side filters (text search) to the already fetched requestData
+ * and then renders the table and calendars.
+ */
+function applyClientSideFiltersAndRender() {
   const refSearch = document.getElementById("refSearch").value.toLowerCase();
   const airlineSearch = document.getElementById("airlineSearch").value.toLowerCase();
   const flightNumberSearchInput = document.getElementById("flightNumberSearch");
   const flightNumberSearch = flightNumberSearchInput ? flightNumberSearchInput.value.toLowerCase() : '';
-  const fromDateInput = document.getElementById("fromDate").value;
-  const toDateInput = document.getElementById("toDate").value;
-  const showArchive = document.getElementById("archiveCheckbox") ? document.getElementById("archiveCheckbox").checked : false; // Archiv-Checkbox, falls vorhanden
 
   const filtered = requestData.filter(r => {
     const matchesRef = (r.Ref || '').toLowerCase().includes(refSearch);
     const matchesAirline = (r.Airline || '').toLowerCase().includes(airlineSearch);
     const matchesFlightNumber = (r.Flugnummer || '').toLowerCase().includes(flightNumberSearch);
-
-    let matchesDateRange = true;
-    let isPastOrTodayAndGoneFlight = false;
-
-    let flightDateFromData = r['Flight Date'];
-    let flightDateObj;
-
-    // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
-    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
-        const parts = flightDateFromData.split('-');
-        flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    } else if (flightDateFromData instanceof Date) { // Falls es direkt ein Date-Objekt ist
-        flightDateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
-    } else {
-        flightDateObj = new Date('Invalid Date'); // Ungültiges Datum
-    }
-    flightDateObj.setHours(0, 0, 0, 0); // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist
-    console.log(`[filterTable] Original: "${flightDateFromData}", Geparsed (Lokal): ${flightDateObj}`);
-
-
-    if (flightDateObj && !isNaN(flightDateObj.getTime())) {
-      if (flightDateObj < today) {
-          isPastOrTodayAndGoneFlight = true;
-      } else if (flightDateObj.getTime() === today.getTime()) {
-          const abflugzeit = r['Abflugzeit'];
-          if (abflugzeit) {
-              // Abflugzeit muss auch als lokaler Zeitpunkt für den Vergleich geparst werden
-              let flightTimeAsDate = new Date();
-              if (typeof abflugzeit === 'string' && abflugzeit.match(/^\d{2}:\d{2}$/)) { // Erwartet HH:MM vom Backend
-                  const [hours, minutes] = abflugzeit.split(':').map(Number);
-                  flightTimeAsDate.setHours(hours, minutes, 0, 0);
-              } else if (abflugzeit instanceof Date) {
-                  flightTimeAsDate = abflugzeit; // Falls schon Date-Objekt
-              } else {
-                 flightTimeAsDate = new Date('Invalid Date');
-              }
-
-              const now = new Date();
-              now.setSeconds(0, 0);
-              now.setMilliseconds(0);
-
-              if (!isNaN(flightTimeAsDate.getTime()) && flightTimeAsDate <= now) {
-                  isPastOrTodayAndGoneFlight = true;
-              }
-          }
-      }
-
-      // Filter nach Datumsbereich
-      if (fromDateInput) {
-          const fromDateParts = fromDateInput.split('-');
-          const fromDateObj = new Date(parseInt(fromDateParts[0]), parseInt(fromDateParts[1]) - 1, parseInt(fromDateParts[2]));
-          fromDateObj.setHours(0,0,0,0); // Auch Filterdatum auf Mitternacht setzen
-          if (flightDateObj < fromDateObj) matchesDateRange = false;
-      }
-      if (toDateInput) {
-          const toDateParts = toDateInput.split('-');
-          const toDateObj = new Date(parseInt(toDateParts[0]), parseInt(toDateParts[1]) - 1, parseInt(toDateParts[2]));
-          toDateObj.setHours(0,0,0,0); // Auch Filterdatum auf Mitternacht setzen
-          if (flightDateObj > toDateObj) matchesDateRange = false;
-      }
-    } else {
-        isPastOrTodayAndGoneFlight = false;
-    }
-
-    const passesPastFlightFilter = showArchive || !isPastOrTodayAndGoneFlight;
-
-    return matchesRef && matchesAirline && matchesFlightNumber && matchesDateRange && passesPastFlightFilter;
+    return matchesRef && matchesAirline && matchesFlightNumber;
   });
+
   renderTable(filtered);
-  renderCalendars();
+  renderCalendars(); // Kalender wird immer mit den aktuell geladenen Daten gerendert
 }
+
+
+/**
+ * Determines which data to fetch from the server based on UI filters
+ * and then triggers the fetchData call and client-side rendering.
+ */
+function filterTable() {
+  const fromDateInput = document.getElementById("fromDate").value;
+  const toDateInput = document.getElementById("toDate").value;
+  const showArchive = document.getElementById("archiveCheckbox") ? document.getElementById("archiveCheckbox").checked : false;
+
+  let startDateToFetch = null;
+  let endDateToFetch = null;
+
+  if (fromDateInput && toDateInput) {
+    // Wenn From/To-Filter gesetzt sind, lade genau diesen Bereich
+    startDateToFetch = fromDateInput;
+    endDateToFetch = toDateInput;
+    console.log("Fetching data for specific range:", startDateToFetch, "-", endDateToFetch);
+  } else {
+    // Standardansicht: Aktuelle/Zukünftige Flüge + letzte 14 Tage
+    // Der Apps Script ist so konfiguriert, dass er dies als Standard liefert,
+    // wenn keine startDate/endDate Parameter gesendet werden.
+    // Daher rufen wir fetchData ohne Parameter auf.
+    console.log("Fetching default data (current/future + last 14 days).");
+  }
+
+  // Rufe fetchData mit den bestimmten Daten auf
+  fetchData(startDateToFetch, endDateToFetch);
+
+  // Die client-seitliche Filterung (nach Ref, Airline, Flugnummer)
+  // und das Rendern des Kalenders werden in applyClientSideFiltersAndRender() aufgerufen,
+  // nachdem fetchData abgeschlossen ist.
+}
+
 
 // === MODAL FUNKTIONEN ===
 function openModal(originalIndex) {
@@ -375,7 +369,8 @@ function openModal(originalIndex) {
   } : requestData[originalIndex];
 
   // Speichere die aktuellen Daten im Modal, um sie später für die E-Mail zu verwenden
-  currentModalData = r;
+  // currentModalData wird hier initial gesetzt, aber für den E-Mail-Versand dynamisch aus den Feldern gelesen.
+  currentModalData = r; 
 
   const modal = document.getElementById("detailModal");
   const modalBody = document.getElementById("modalBody");
@@ -425,10 +420,10 @@ function openModal(originalIndex) {
         if (value) {
             try {
                 // Parsen des Datums, um es im Input korrekt darzustellen (YYYY-MM-DD Format)
-                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
+                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
                     dateValue = value;
                 } else if (value instanceof Date) {
-                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu竭-MM-DD
+                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu YYYY-MM-DD
                 }
             } catch (e) {
                 console.error("Fehler beim Parsen des Flugdatums für Modal-Input:", value, e);
@@ -681,7 +676,7 @@ async function deleteRowFromModal(ref) {
       console.error("Löschen fehlgeschlagen:", responseData);
     }
     closeModal();
-    fetchData();
+    filterTable(); // Ruft filterTable auf, um Daten neu zu laden und zu filtern
   } catch (err) {
     showSaveFeedback("Fehler beim Löschen!", false);
     console.error(err);
@@ -735,7 +730,7 @@ async function saveDetails() {
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-      body: new URLSearchParams(data)
+      body: new URLSearchParams(data).toString(),
     });
 
     if (!response.ok) {
@@ -750,7 +745,7 @@ async function saveDetails() {
       console.error("Speichern fehlgeschlagen:", responseData);
     }
     closeModal();
-    fetchData();
+    filterTable(); // Ruft filterTable auf, um Daten neu zu laden und zu filtern
   } catch (err) {
     showSaveFeedback("Fehler beim Speichern!", false);
     console.error(err);
@@ -776,7 +771,7 @@ async function deleteRow(btn) {
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-      body: new URLSearchParams(data)
+      body: new URLSearchParams(data).toString(),
     });
 
     if (!response.ok) {
@@ -790,7 +785,7 @@ async function deleteRow(btn) {
       showSaveFeedback(`Fehler beim Löschen des Eintrags! ${responseData.message || ''}`, false);
       console.error("Löschen fehlgeschlagen:", responseData);
     }
-    fetchData();
+    filterTable(); // Ruft filterTable auf, um Daten neu zu laden und zu filtern
   } catch (err) {
     showSaveFeedback("Fehler beim Löschen!", false);
     console.error(err);
@@ -823,7 +818,7 @@ function openCalendarDayFlights(year, month, day) {
   const clickedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
   const flightsOnThisDay = requestData.filter(r => {
-    let flightDateFromData = r['Flight Date']; // Dies ist bereits竭-MM-DD vom Backend
+    let flightDateFromData = r['Flight Date']; // Dies ist bereits YYYY-MM-DD vom Backend
 
     // Einfacher String-Vergleich
     const isMatch = flightDateFromData === clickedDateStr;
@@ -967,13 +962,7 @@ function generateCalendarHTML(year, month) {
         const flightIcon = dayHasVorfeldbegleitung ? ' <span class="flight-icon">&#9992;</span>' : '';
 
         // Added styling for 'today' class here
-        let dayNumberClass = '';
-        if (currentCalendarDayForCell.getTime() === today.getTime()) {
-            dayNumberClass = 'font-bold text-lg today-red-text'; // NEU: Klasse für rote Farbe
-        } else {
-            dayNumberClass = 'font-bold text-lg'; // Standardklasse für die Zahl
-        }
-
+        const dayNumberClass = cellClasses.includes('today') ? 'font-bold text-lg' : '';
 
         html += `<td class='${cellClasses.join(' ')}' title='${simpleTitleContent}' data-tooltip='${dataTooltipContent}' onclick="openCalendarDayFlights(${year}, ${month}, ${day})"><div class="${dayNumberClass}">${day}</div>${flightIcon}</td>`;
         day++;
@@ -997,6 +986,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (archiveCheckbox) {
       archiveCheckbox.addEventListener('change', filterTable);
   }
+  // Event-Listener für From/To Daten
+  document.getElementById("fromDate").addEventListener('change', filterTable);
+  document.getElementById("toDate").addEventListener('change', filterTable);
 });
 
 function updateClock() {
@@ -1187,6 +1179,8 @@ function generateStatistics() {
     const toDate = new Date(statToDateInput);
     toDate.setHours(23, 59, 59, 999); // Setze auf Ende des Tages für inklusiven Bereich
 
+    // Für Statistiken verwenden wir immer die aktuell geladenen Daten (requestData),
+    // da diese bereits durch filterTable() und fetchData() auf den relevanten Bereich eingegrenzt wurden.
     const filteredData = requestData.filter(r => {
         let flightDateFromData = r['Flight Date'];
         let flightDateObj;
@@ -1201,20 +1195,17 @@ function generateStatistics() {
         }
         flightDateObj.setHours(0, 0, 0, 0); // Normalisiere für den Vergleich
 
+        // Die Filterung für die Statistik soll nur auf dem client-seitig verfügbaren requestData basieren,
+        // aber innerhalb des vom Benutzer gewählten Statistik-Datumsbereichs.
         return flightDateObj >= fromDate && flightDateObj <= toDate;
     });
 
     // Statistiken initialisieren
     let totalFlights = filteredData.length;
     let totalTonnage = 0;
-    // Finanzstatistiken entfernt:
-    // let totalRate = 0;
-    // let totalSecurityCharges = 0;
-    // let total10ftConsumables = 0;
-    // let total20ftConsumables = 0;
     const dangerousGoodsCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
     const VorfeldbegleitungCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
-    const airlineStats = {}; // { AirlineName: { totalTonnage: X, totalFlights: Y } } - totalRevenue entfernt
+    const airlineStats = {}; // { AirlineName: { totalTonnage: X, totalFlights: Y } }
     const tonnagePerMonth = {}; // { "YYYY-MM": totalTonnage }
     const tonnagePerCustomer = {}; // { CustomerName: totalTonnage }
 
@@ -1236,7 +1227,7 @@ function generateStatistics() {
         // Airline-spezifische Statistik
         const airlineName = item.Airline || 'Unbekannt';
         if (!airlineStats[airlineName]) {
-            airlineStats[airlineName] = { totalTonnage: 0, totalFlights: 0 }; // totalRevenue entfernt
+            airlineStats[airlineName] = { totalTonnage: 0, totalFlights: 0 };
         }
         airlineStats[airlineName].totalTonnage += tonnage;
         airlineStats[airlineName].totalFlights++;
@@ -1272,7 +1263,7 @@ function generateStatistics() {
     statsHTML += '<h4>Vorfeldbegleitung Statistik</h4>';
     statsHTML += `<ul>`;
     statsHTML += `<li>Ja: ${VorfeldbegleitungCount["Ja"]} (${(VorfeldbegleitungCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
-    statsHTML += `<li>Nein: ${VorfeldbegleitungCount["Nein"]} (${(VorfeldbegleitungCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
+    statsHTML += `<li>Nein: ${VorfeldbegleitungCount["Nein"]} (${(VorfeldbegleitungCount["Neen"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
     if (VorfeldbegleitungCount["N/A"] > 0) {
         statsHTML += `<li>Nicht angegeben: ${VorfeldbegleitungCount["N/A"]} (${(VorfeldbegleitungCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
     }
@@ -1620,7 +1611,7 @@ function downloadStatisticsToCSV() {
 // === NEUE E-MAIL BESTÄTIGUNGSFUNKTIONEN ===
 function openEmailConfirmationModal(data) {
     // Setze das aktuelle Datenobjekt für die E-Mail-Funktion
-    currentModalData = data;
+    currentModalData = data; // Initialisierung mit den geladenen Daten
     const emailConfirmationModal = document.getElementById('emailConfirmationModal');
     const recipientEmailInput = document.getElementById('recipientEmailInput');
     const emailConfirmationMessage = document.getElementById('emailConfirmationMessage');
@@ -1667,20 +1658,39 @@ document.getElementById('sendEmailConfirmBtn').addEventListener('click', async (
     emailConfirmationMessage.style.color = 'blue';
 
     try {
-        const emailSubject = `Charter Bestätigung für Referenz: ${currentModalData.Ref || 'N/A'}`;
-        // Hier wird der E-Mail-Body basierend auf der Benutzerrolle generiert
-        const emailBody = generateEmailBody(currentModalData, currentUser.role);
+        // NEU: Daten direkt aus den Modal-Inputfeldern sammeln
+        const inputs = document.querySelectorAll("#detailModal input[name]:not([disabled]), #detailModal textarea[name]:not([disabled]), #detailModal select[name]:not([disabled])");
+        const modalCurrentData = {};
+        inputs.forEach(i => {
+            if (i.name === "Flight Date") {
+                modalCurrentData[i.name] = i.value;
+            } else if (['Tonnage', 'Rate', 'Security charges', '10ft consumables', '20ft consumables'].includes(i.name)) {
+                modalCurrentData[i.name] = i.value.replace(/,/g, '.').replace('€', '').trim() || "";
+            } else {
+                if (i.type === "checkbox") {
+                    modalCurrentData[i.name] = i.checked ? "Ja" : "Nein";
+                } else {
+                    modalCurrentData[i.name] = i.value;
+                }
+            }
+        });
 
+        const emailSubject = `Charter Bestätigung für Referenz: ${modalCurrentData.Ref || 'N/A'}`;
+        
+        // Prepare the payload to send ALL necessary data to the backend
         const payload = {
             mode: 'sendConfirmationEmail',
             to: recipientEmail,
-            from: 'aklassen26@gmail.com', // Feste Absenderadresse
+            from: 'sales@vgcargo.de', // Feste Absenderadresse
             bcc: 'sales@vgcargo.de, import@vgcargo.de, export@vgcargo.de', // Feste BCC-Adressen
             subject: emailSubject,
-            body: emailBody,
-            ref: currentModalData.Ref, // Referenz für Audit-Log
-            user: currentUser.name // Aktueller Benutzer für Audit-Log
+            ref: modalCurrentData.Ref, // Referenz für Audit-Log
+            user: currentUser.name, // Aktueller Benutzer für Audit-Log
+            // Include all collected modal data fields directly in the payload
+            ...modalCurrentData 
         };
+
+        console.log('Payload for sending email:', payload); // Debugging-Ausgabe
 
         const response = await fetch(API_URL, {
             method: 'POST',
@@ -1700,7 +1710,7 @@ document.getElementById('sendEmailConfirmBtn').addEventListener('click', async (
             setTimeout(() => {
                 closeEmailConfirmationModal();
                 closeModal(); // Auch das Detail-Modal schließen
-                fetchData(); // Daten neu laden, um History zu aktualisieren
+                filterTable(); // Daten neu laden, um History zu aktualisieren
             }, 1500);
         } else {
             emailConfirmationMessage.textContent = result.message || 'Fehler beim Senden der E-Mail.';
@@ -1717,116 +1727,6 @@ document.getElementById('sendEmailConfirmBtn').addEventListener('click', async (
         sendButton.textContent = 'Senden';
     }
 });
-
-// Funktion zum Generieren des E-Mail-Bodys basierend auf Daten und Benutzerrolle
-function generateEmailBody(data, userRole) {
-    // Start des HTML-E-Mail-Bodys
-    let body = `
-    <!DOCTYPE html>
-    <html lang="de">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Charter Bestätigung</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                line-height: 1.6;
-                color: #333333;
-                background-color: #f4f4f4;
-                margin: 0;
-                padding: 20px;
-            }
-            .container {
-                max-width: 600px;
-                margin: 0 auto;
-                background: #ffffff;
-                padding: 30px;
-                border-radius: 8px;
-                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            }
-            h2, h3 {
-                color: #0056b3;
-                border-bottom: 1px solid #eeeeee;
-                padding-bottom: 5px;
-                margin-top: 20px;
-            }
-            p {
-                margin-bottom: 10px;
-            }
-            .detail-item {
-                margin-bottom: 5px;
-            }
-            .detail-label {
-                font-weight: bold;
-            }
-            .footer {
-                margin-top: 30px;
-                padding-top: 15px;
-                border-top: 1px solid #eeeeee;
-                text-align: center;
-                font-size: 0.9em;
-                color: #777777;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <p>Sehr geehrte/r ${data['Contact Name Invoicing'] || 'Kunde/in'},</p>
-            <p>hiermit bestätigen wir Ihre Charteranfrage mit der Referenznummer <strong>${data.Ref || 'N/A'}</strong>.</p>
-            <p>Nachfolgend finden Sie die Details Ihrer Anfrage:</p>
-
-            <h2>Kundendetails</h2>
-            <div class="detail-item"><span class="detail-label">Rechnungsfirma:</span> ${data['Billing Company'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Rechnungsadresse:</span> ${data['Billing Address'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Steuernummer:</span> ${data['Tax Number'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Kontaktname (Rechnung):</span> ${data['Contact Name Invoicing'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Kontakt E-Mail (Rechnung):</span> ${data['Contact E-Mail Invoicing'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">AGB Akzeptiert:</span> Ja</div>
-            <div class="detail-item"><span class="detail-label">Service Beschreibung Akzeptiert:</span> Ja</div>
-            <div class="detail-item"><span class="detail-label">Akzeptiert von:</span> ${data['Accepted By Name'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Akzeptanz-Zeitstempel:</span> ${data['Acceptance Timestamp'] || '-'}</div>
-
-            <h2>Flugdetails</h2>
-            <div class="detail-item"><span class="detail-label">Airline:</span> ${data.Airline || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Flugzeugtyp:</span> ${data['Aircraft Type'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Flugnummer:</span> ${data.Flugnummer || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Flugdatum:</span> ${data['Flight Date'] ? new Date(data['Flight Date']).toLocaleDateString('de-DE') : '-'}</div>
-            <div class="detail-item"><span class="detail-label">Abflugzeit:</span> ${data['Abflugzeit'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Tonnage:</span> ${data.Tonnage ? parseFloat(String(data.Tonnage).replace(',', '.')).toLocaleString('de-DE') + ' kg' : '-'}</div>
-            <div class="detail-item"><span class="detail-label">Vorfeldbegleitung:</span> ${data.Vorfeldbegleitung || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Flugtyp Import:</span> ${data['Flight Type Import'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Origin:</span> ${data.Origin || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Flugtyp Export:</span> ${data['Flight Type Export'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Destination:</span> ${data.Destination || '-'}</div>
-            <div class="detail-item"><span class="detail-label">E-Mail Anfrage:</span> ${data['Email Request'] || '-'}</div>
-    `;
-
-    // Preisdetails nur für Admin-Benutzer
-    if (userRole === 'admin') {
-        body += `
-            <h2>Preisdetails</h2>
-            <div class="detail-item"><span class="detail-label">Rate:</span> ${data.Rate ? parseFloat(String(data.Rate).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}</div>
-            <div class="detail-item"><span class="detail-label">Security Charges:</span> ${data['Security charges'] ? parseFloat(String(data['Security charges']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}</div>
-            <div class="detail-item"><span class="detail-label">Dangerous Goods:</span> ${data['Dangerous Goods'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">10ft Consumables:</span> ${data['10ft consumables'] ? parseFloat(String(data['10ft consumables']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}</div>
-            <div class="detail-item"><span class="detail-label">20ft Consumables:</span> ${data['20ft consumables'] ? parseFloat(String(data['20ft consumables']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}</div>
-            <div class="detail-item"><span class="detail-label">Zusatzkosten:</span> ${data.Zusatzkosten || '-'}</div>
-        `;
-    }
-
-    body += `
-            <div class="footer">
-                <p>Mit freundlichen Grüßen,</p>
-                <p>Ihr VG Cargo Team</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    `;
-
-    return body;
-}
 
 
 // --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
