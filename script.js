@@ -644,6 +644,10 @@ function toggleOriginDestinationFields(checkbox, fieldType) {
             inputElement.style.display = 'none';
             inputElement.previousElementSibling.style.display = 'none'; // Label auch verstecken
         }
+        // Optional: Den Wert des Feldes leeren, wenn es ausgeblendet wird
+        if (currentModalData) {
+            currentModalData[fieldType] = '';
+        }
     }
 }
 
@@ -1668,19 +1672,35 @@ document.getElementById('sendEmailConfirmBtn').addEventListener('click', async (
 
     try {
         const emailSubject = `Charter Bestätigung für Referenz: ${currentModalData.Ref || 'N/A'}`;
-        // Hier wird der E-Mail-Body basierend auf der Benutzerrolle generiert
-        const emailBody = generateEmailBody(currentModalData, currentUser.role);
-
+        
+        // Erstelle den Payload und füge ALLE Daten aus currentModalData hinzu
         const payload = {
             mode: 'sendConfirmationEmail',
             to: recipientEmail,
             from: 'sales@vgcargo.de', // Feste Absenderadresse
             bcc: 'sales@vgcargo.de, import@vgcargo.de, export@vgcargo.de', // Feste BCC-Adressen
             subject: emailSubject,
-            body: emailBody,
             ref: currentModalData.Ref, // Referenz für Audit-Log
             user: currentUser.name // Aktueller Benutzer für Audit-Log
         };
+
+        // Füge alle Eigenschaften von currentModalData zum Payload hinzu
+        for (const key in currentModalData) {
+            // Stelle sicher, dass wir keine vorhandenen Payload-Eigenschaften überschreiben
+            // und dass Date-Objekte korrekt als Strings gesendet werden
+            if (!payload.hasOwnProperty(key)) {
+                if (currentModalData[key] instanceof Date) {
+                    // Für Flight Date und Acceptance Timestamp: YYYY-MM-DD oder vollständiger String
+                    if (key === 'Flight Date') {
+                        payload[key] = currentModalData[key].toISOString().split('T')[0];
+                    } else {
+                        payload[key] = currentModalData[key].toLocaleString('de-DE'); // Oder ein anderes passendes Format
+                    }
+                } else {
+                    payload[key] = currentModalData[key];
+                }
+            }
+        }
 
         const response = await fetch(API_URL, {
             method: 'POST',
@@ -1719,6 +1739,9 @@ document.getElementById('sendEmailConfirmBtn').addEventListener('click', async (
 });
 
 // Funktion zum Generieren des E-Mail-Bodys basierend auf Daten und Benutzerrolle
+// Diese Funktion wird NICHT mehr im Frontend verwendet, da der Body auf dem Server generiert wird.
+// Sie kann gelöscht oder als Referenz belassen werden, falls sie in Zukunft wieder benötigt wird.
+/*
 function generateEmailBody(data, userRole) {
     // Start des HTML-E-Mail-Bodys
     let body = `
@@ -1827,7 +1850,7 @@ function generateEmailBody(data, userRole) {
 
     return body;
 }
-
+*/
 
 // --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
 // Wenn script.js als type="module" geladen wird, sind Funktionen
