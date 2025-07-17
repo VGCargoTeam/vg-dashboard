@@ -296,22 +296,31 @@ function filterTable() {
     let isPastOrTodayAndGoneFlight = false;
 
     let flightDateFromData = r['Flight Date'];
-    let dateObj; // Declare dateObj here to ensure it's always defined
+    let dateObj; // Declared here
 
-    // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
+    // Attempt to parse flightDateFromData into a Date object
     if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
         const parts = flightDateFromData.split('-');
         dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDateFromData instanceof Date) { // Falls es direkt ein Date-Objekt ist
         dateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
     } else {
-        dateObj = new Date('Invalid Date'); // Ungültiges Datum
+        // If flightDateFromData is not a string in YYYY-MM-DD format or a Date object,
+        // assign an invalid Date object to dateObj.
+        dateObj = new Date('Invalid Date');
     }
-    dateObj.setHours(0, 0, 0, 0); // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist
-    console.log(`[filterTable] Original: "${flightDateFromData}", Geparsed (Lokal): ${dateObj}`);
 
-
+    // Now, dateObj is guaranteed to be a Date object (possibly invalid).
+    // Perform operations only if it's a valid date.
     if (dateObj && !isNaN(dateObj.getTime())) {
+        dateObj.setHours(0, 0, 0, 0); // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist
+    } else {
+        // If date is invalid, it cannot be a past/today flight for time-based filtering
+        isPastOrTodayAndGoneFlight = false;
+        matchesDateRange = false; // An invalid date cannot match any date range
+    }
+
+    if (dateObj && !isNaN(dateObj.getTime())) { // Re-check validity before using for comparisons
       if (dateObj < today) {
           isPastOrTodayAndGoneFlight = true;
       } else if (dateObj.getTime() === today.getTime()) {
@@ -349,10 +358,11 @@ function filterTable() {
           const toDateParts = toDateInput.split('-');
           const toDateObj = new Date(parseInt(toDateParts[0]), parseInt(toDateParts[1]) - 1, parseInt(toDateParts[2]));
           toDateObj.setHours(0,0,0,0); // Auch Filterdatum auf Mitternacht setzen
-          if (dateObj > toDateObj) matchesDateRange = false;
+          if (dateObj > toDateObj) matchesDateRange = false; // Korrektur: matchesDateObj zu matchesDateRange
       }
     } else {
         isPastOrTodayAndGoneFlight = false;
+        matchesDateRange = false;
     }
 
     const passesPastFlightFilter = showArchive || !isPastOrTodayAndGoneFlight;
@@ -1004,7 +1014,7 @@ function generateCalendarHTML(year, month) {
               dayHasVorfeldbegleitung = true;
             }
             // NEU: Import/Export Status prüfen
-            if (String(f['  Flight Type Import'] || '').toLowerCase() === 'ja') {
+            if (String(f['Flight Type Import'] || '').toLowerCase() === 'ja') {
                 hasImport = true;
             }
             if (String(f['Flight Type Export'] || '').toLowerCase() === 'ja') {
