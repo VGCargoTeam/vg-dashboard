@@ -292,6 +292,7 @@
       padding: 20px; /* Mehr Polsterung */
       box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* Deutlicherer Schatten */
       background-color: #fff;
+      overflow: visible; /* Wichtig: Tooltip darf hier raus! */
     }
     .calendar-block h3 {
       text-align: center;
@@ -355,7 +356,7 @@
       border-radius: 6px; /* Stärker abgerundet */
       font-size: 0.85em; /* Etwas größerer Text */
       white-space: pre-wrap;
-      top: 110%; /* Positioniert den Tooltip unterhalb des Elements */
+      bottom: 110%; /* Positioniert den Tooltip oberhalb des Elements */
       left: 50%;
       transform: translateX(-50%);
       opacity: 0;
