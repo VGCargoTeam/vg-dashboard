@@ -752,7 +752,7 @@ async function saveDetails() {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
     }
     const responseData = await response.json();
 
@@ -793,7 +793,7 @@ async function deleteRow(btn) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
     }
     const responseData = await response.json();
 
@@ -1805,6 +1805,62 @@ function closeEmailPreviewModal() {
 // Event Listener für den Vorschau-Button
 document.getElementById('previewEmailBtn').addEventListener('click', generateEmailPreview);
 
+// NEU: Funktion zum manuellen Markieren als "Final Confirmation Sent"
+async function markAsSentManually() {
+    if (!currentModalData || !currentModalData.Ref) {
+        showSaveFeedback("Keine Referenzdaten zum Markieren verfügbar.", false);
+        return;
+    }
+
+    const refToMark = currentModalData.Ref;
+    const user = currentUser.name;
+
+    // Bestätigungsdialog
+    const isConfirmed = confirm(`Möchten Sie die Charter Confirmation für Referenz "${refToMark}" wirklich manuell als 'gesendet' markieren?`);
+    if (!isConfirmed) {
+        return;
+    }
+
+    try {
+        const payload = {
+            mode: 'markAsConfirmed', // Neuer Modus für Google Apps Script
+            ref: refToMark,
+            user: user
+        };
+
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(payload).toString(),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'success') {
+            showSaveFeedback(`Referenz ${refToMark} als 'gesendet' markiert!`, true);
+            // Aktualisiere den lokalen Datenstatus und re-render die Tabelle
+            const index = requestData.findIndex(item => item.Ref === refToMark);
+            if (index !== -1) {
+                requestData[index]['Final Confirmation Sent'] = 'Ja';
+                filterTable(); // Tabelle neu rendern, um den Haken anzuzeigen
+            }
+            closeEmailPreviewModal(); // Vorschau-Modal schließen
+            closeModal(); // Detail-Modal schließen
+            fetchData(); // Daten neu laden, um sicherzustellen, dass alles synchron ist
+        } else {
+            showSaveFeedback(result.message || 'Fehler beim Markieren als gesendet.', false);
+        }
+    } catch (error) {
+        console.error('Fehler beim manuellen Markieren als gesendet:', error);
+        showSaveFeedback('Ein Fehler ist beim Markieren als gesendet aufgetreten.', false);
+    }
+}
+
+// Event Listener für den neuen Button "Charter Confirmation gesendet"
+document.getElementById('markAsSentBtn').addEventListener('click', markAsSentManually);
+
 
 // --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
 // Wenn script.js als type="module" geladen wird, sind Funktionen
@@ -1842,6 +1898,7 @@ window.closeEmailConfirmationModal = closeEmailConfirmationModal; // NEU: E-Mail
 window.toggleOriginDestinationFields = toggleOriginDestinationFields; // NEU: Funktion global zugänglich machen
 window.generateEmailPreview = generateEmailPreview; // NEU: Funktion für E-Mail-Vorschau
 window.closeEmailPreviewModal = closeEmailPreviewModal; // NEU: Funktion zum Schließen der E-Mail-Vorschau
+window.markAsSentManually = markAsSentManually; // NEU: Funktion zum manuellen Markieren als gesendet
 // Initialisiere Auth-Status, sobald das DOM geladen ist.
 // Dies wird nach dem window.onload Event, aber vor dem Polling ausgeführt.
 checkAuthStatus();
