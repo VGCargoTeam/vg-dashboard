@@ -259,7 +259,7 @@
 
     /* Calendar styles */
     .calendar {
-      background: rgba(255,255,255,0.9);
+      background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%); /* Schönerer Hintergrund für den Kalender */
       backdrop-filter: blur(8px);
       padding: 25px; /* Mehr Polsterung */
       margin: 20px;
@@ -276,9 +276,7 @@
       width: 100%;
       margin-bottom: 20px;
     }
-    .calendar .nav button {
-      @apply px-5 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50;
-    }
+    /* Removed @apply for buttons as they are now styled directly in HTML */
     .calendar-wrapper {
       display: flex;
       gap: 25px; /* Mehr Abstand zwischen Kalenderblöcken */
@@ -494,6 +492,28 @@
       to { transform: translateY(0); opacity: 1; }
     }
 
+    /* Specific modal section colors */
+    .modal-section.bg-blue-50 {
+        background-color: #e0f7fa; /* Hellblau für Kundendetails */
+        border: 1px solid #b2ebf2;
+    }
+    .modal-section.bg-green-50 {
+        background-color: #e8f5e9; /* Hellgrün für Flugdetails */
+        border: 1px solid #a5d6a7;
+    }
+    .modal-section.bg-yellow-50 {
+        background-color: #fffde7; /* Helles Gelb für Preisdetails */
+        border: 1px solid #fff176;
+    }
+
+    /* Email input field enhancement */
+    #recipientEmailInput {
+        border: 2px solid #007bff; /* Blauer Rahmen */
+        box-shadow: 0 0 8px rgba(0, 123, 255, 0.3); /* Blauer Schatten */
+        padding: 12px; /* Mehr Polsterung */
+        font-size: 1.1em; /* Größere Schrift */
+    }
+
   </style>
   <!-- PWA Manifest Link -->
   <link rel="manifest" href="/manifest.json">
@@ -575,7 +595,7 @@
 
       <!-- Tables Section -->
       <div class="container">
-        <div class="card flex-1">
+        <div class="card flex-1 bg-red-50" id="unconfirmedFlightsCard"> <!-- Hellroter Hintergrund für Unconfirmed Flights -->
           <h2 class="text-xl font-semibold text-gray-700 mb-4">Unconfirmed Flights</h2>
           <p id="summaryInfoUnconfirmed" class="text-md font-medium text-gray-700 mb-4"></p>
           <div class="overflow-x-auto">
@@ -596,7 +616,7 @@
           </div>
         </div>
 
-        <div class="card flex-1">
+        <div class="card flex-1 bg-green-50" id="confirmedFlightsCard"> <!-- Hellgrüner Hintergrund für Confirmed Flights -->
           <h2 class="text-xl font-semibold text-gray-700 mb-4">Confirmed Flights</h2>
           <p id="summaryInfoConfirmed" class="text-md font-medium text-gray-700 mb-4"></p>
           <div class="overflow-x-auto">
@@ -731,8 +751,8 @@
   </div>
   <div class="calendar">
     <div class="nav">
-      <button onclick="shiftCalendar(-1)">← Back</button>
-      <button onclick="shiftCalendar(1)">Forward →</button>
+      <button onclick="shiftCalendar(-1)" class="px-5 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">← Back</button>
+      <button onclick="shiftCalendar(1)" class="px-5 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">Forward →</button>
     </div>
     <div id="calendarArea" class="calendar-wrapper"></div>
   </div>
