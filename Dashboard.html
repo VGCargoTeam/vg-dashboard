@@ -409,35 +409,84 @@
         gap: 10px;
         width: 100%;
     }
-    #emailConfirmationModal .modal-buttons button {
+    /* NEUE BUTTON-STILE */
+    .btn-email-action {
         padding: 10px 20px;
-        border-radius: 6px;
+        border-radius: 8px; /* Etwas runder */
         cursor: pointer;
         font-weight: bold;
-        flex-grow: 1;
+        flex-grow: 1; /* Gleichmäßige Breite */
+        transition: all 0.3s ease; /* Sanfte Übergänge */
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Leichter Schatten */
+        border: none; /* Keine Standard-Border */
     }
-    #emailConfirmationModal .modal-buttons .send-button {
-        background-color: #28a745;
+
+    .btn-email-action.send {
+        background: linear-gradient(145deg, #28a745, #218838); /* Grüner Gradient */
         color: white;
-        border: none;
     }
-    #emailConfirmationModal .modal-buttons .send-button:hover {
-        background-color: #218838;
+    .btn-email-action.send:hover {
+        background: linear-gradient(145deg, #218838, #1e7e34);
+        transform: translateY(-2px); /* Leichter Hover-Effekt */
+        box-shadow: 0 6px 8px rgba(0,0,0,0.15);
     }
-    #emailConfirmationModal .modal-buttons .cancel-button {
-        background-color: #6c757d;
+
+    .btn-email-action.preview {
+        background: linear-gradient(145deg, #007BFF, #0056b3); /* Blauer Gradient */
         color: white;
-        border: none;
     }
-    #emailConfirmationModal .modal-buttons .cancel-button:hover {
-        background-color: #5a6268;
+    .btn-email-action.preview:hover {
+        background: linear-gradient(145deg, #0056b3, #004085);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0,0,0,0.15);
     }
+
+    .btn-email-action.cancel {
+        background: linear-gradient(145deg, #6c757d, #5a6268); /* Grauer Gradient */
+        color: white;
+    }
+    .btn-email-action.cancel:hover {
+        background: linear-gradient(145deg, #5a6268, #495057);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+    }
+    /* ENDE NEUE BUTTON-STILE */
     
     /* NEU: Klasse für den heutigen Tag im Kalender */
     .today-red-text {
         color: red !important; /* Wichtig, um andere Farben zu überschreiben */
     }
-    
+
+    /* NEU: Styles für das E-Mail-Vorschau-Modal */
+    #emailPreviewModal .modal-content {
+        max-width: 800px;
+        flex-direction: column;
+        gap: 15px;
+    }
+    #emailPreviewModal h3 {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+    /* Angepasst für HTML-Inhalt */
+    #emailPreviewModal #emailPreviewContent {
+        background-color: #f0f0f0;
+        padding: 15px;
+        border-radius: 8px;
+        max-height: 60vh;
+        overflow-y: auto;
+        border: 1px solid #e0e0e0;
+        font-family: Arial, sans-serif; /* Standard-Schriftart für E-Mail-Vorschau */
+        font-size: 0.9em;
+        line-height: 1.5;
+        color: #333;
+        /* Wichtig: Entferne pre-wrap, da wir HTML rendern */
+        white-space: normal; 
+        word-wrap: break-word;
+    }
+    #emailPreviewModal .modal-buttons {
+        margin-top: 10px;
+    }
   </style>
 </head>
 <body class="font-inter flex flex-col lg:flex-row min-h-screen text-gray-800">
@@ -562,8 +611,22 @@
             <input type="email" id="recipientEmailInput" placeholder="Empfänger E-Mail" required>
             <p id="emailConfirmationMessage" style="color: red;"></p>
             <div class="modal-buttons">
-                <button class="btn btn-primary" id="sendEmailConfirmBtn">Senden</button>
-                <button class="btn btn-secondary" onclick="closeEmailConfirmationModal()">Abbrechen</button>
+                <button class="btn-email-action preview" id="previewEmailBtn">Vorschau</button>
+                <button class="btn-email-action send" id="sendEmailConfirmBtn">Senden</button>
+                <button class="btn-email-action cancel" onclick="closeEmailConfirmationModal()">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEU: E-Mail Vorschau Modal -->
+    <div class="modal" id="emailPreviewModal">
+        <div class="modal-content">
+            <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeEmailPreviewModal()">✖</span>
+            <h3>E-Mail Vorschau für Referenz: <span id="previewRef"></span></h3>
+            <!-- Geändert von <pre> zu <div> um HTML zu rendern -->
+            <div id="emailPreviewContent"></div> 
+            <div class="modal-buttons">
+                <button class="btn-email-action cancel" onclick="closeEmailPreviewModal()">Schließen</button>
             </div>
         </div>
     </div>
