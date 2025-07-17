@@ -487,6 +487,24 @@
     #emailPreviewModal .modal-buttons {
         margin-top: 10px;
     }
+
+    /* NEU: Button-Stil für "Manuell gesendet" */
+    .btn-manual-sent {
+        background: linear-gradient(145deg, #6f42c1, #563d7c); /* Lila Gradient */
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border: none;
+    }
+    .btn-manual-sent:hover {
+        background: linear-gradient(145deg, #563d7c, #463260);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+    }
   </style>
 </head>
 <body class="font-inter flex flex-col lg:flex-row min-h-screen text-gray-800">
@@ -626,6 +644,7 @@
             <!-- Geändert von <pre> zu <div> um HTML zu rendern -->
             <div id="emailPreviewContent"></div> 
             <div class="modal-buttons">
+                <button class="btn-manual-sent" id="markAsSentBtn">Charter Confirmation gesendet</button> <!-- NEU: Button hinzugefügt -->
                 <button class="btn-email-action cancel" onclick="closeEmailPreviewModal()">Schließen</button>
             </div>
         </div>
