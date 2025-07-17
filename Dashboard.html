@@ -192,7 +192,7 @@
     }
     .close-button:hover,
     .close-button:focus {
-      color: #343a40; /* Dunkler beim Hover */
+      color: black; /* Dunkler beim Hover */
       text-decoration: none;
       cursor: pointer;
     }
@@ -349,19 +349,19 @@
     [data-tooltip]::before {
       content: attr(data-tooltip);
       position: absolute;
-      background-color: rgba(0, 0, 0, 0.85); /* Etwas dunkler */
+      background-color: rgba(0, 0, 0, 0.9); /* Etwas dunkler */
       color: #fff;
       padding: 10px; /* Mehr Polsterung */
       border-radius: 6px; /* Stärker abgerundet */
       font-size: 0.85em; /* Etwas größerer Text */
       white-space: pre-wrap;
-      bottom: 110%; /* Etwas höher */
+      top: 110%; /* Positioniert den Tooltip unterhalb des Elements */
       left: 50%;
       transform: translateX(-50%);
       opacity: 0;
       visibility: hidden;
       transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
-      z-index: 10;
+      z-index: 1001; /* Sehr hoher z-index, um sicherzustellen, dass es über allem liegt */
       min-width: 180px; /* Breiter */
       text-align: left;
       box-shadow: 0 4px 10px rgba(0,0,0,0.2); /* Schatten für Tooltip */
