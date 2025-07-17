@@ -296,7 +296,7 @@ function filterTable() {
     let isPastOrTodayAndGoneFlight = false;
 
     let flightDateFromData = r['Flight Date'];
-    let flightDateObj;
+    let dateObj; // Declare dateObj here to ensure it's always defined
 
     // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
     if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
@@ -1004,7 +1004,7 @@ function generateCalendarHTML(year, month) {
               dayHasVorfeldbegleitung = true;
             }
             // NEU: Import/Export Status prüfen
-            if (String(f['Flight Type Import'] || '').toLowerCase() === 'ja') {
+            if (String(f['  Flight Type Import'] || '').toLowerCase() === 'ja') {
                 hasImport = true;
             }
             if (String(f['Flight Type Export'] || '').toLowerCase() === 'ja') {
