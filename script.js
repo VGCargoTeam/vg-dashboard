@@ -223,7 +223,7 @@ function renderTable(dataToRender = requestData) {
                 const parts = displayFlightDate.split('-');
                 dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
             } else if (displayFlightDate instanceof Date) {
-                dateObj = new Date(displayFlightDate.getFullYear(), displayFlightDate.getMonth(), displayFlightDate.getDate());
+                dateObj = new Date(displayFlightDate.getFullYear(), displayDate.getMonth(), displayDate.getDate());
             } else {
                 dateObj = new Date('Invalid Date');
             }
@@ -407,6 +407,34 @@ function openModal(originalIndex) {
     wrap.innerHTML = `<h3>${title}</h3>` + contentHTML;
     return wrap;
   };
+
+  // NEU: FlightRadar24 Link-Bereich
+  let flightRadarLinkHTML = '';
+  if (r.Flugnummer && r['Flight Date']) {
+      // Datum für FlightRadar24 im Format YYYY-MM-DD
+      let flightDateForFR24 = '';
+      if (typeof r['Flight Date'] === 'string' && r['Flight Date'].match(/^\d{4}-\d{2}-\d{2}$/)) {
+          flightDateForFR24 = r['Flight Date'];
+      } else if (r['Flight Date'] instanceof Date) {
+          flightDateForFR24 = r['Flight Date'].toISOString().split('T')[0];
+      }
+
+      if (flightDateForFR24) {
+          const flightRadarUrl = `https://www.flightradar24.com/search?query=${encodeURIComponent(r.Flugnummer)}&filter_date=${encodeURIComponent(flightDateForFR24)}`;
+          flightRadarLinkHTML = `
+              <div class="modal-section bg-purple-50" style="margin-bottom: 20px;">
+                  <h3>Flug auf FlightRadar24 anzeigen</h3>
+                  <p>Klicken Sie hier, um den Flug auf FlightRadar24 zu verfolgen:</p>
+                  <a href="${flightRadarUrl}" target="_blank" rel="noopener noreferrer" 
+                     style="display: inline-block; padding: 10px 15px; background-color: #8A2BE2; color: white; border-radius: 6px; text-decoration: none; font-weight: bold;">
+                      Flug ${r.Flugnummer} auf FlightRadar24 öffnen
+                  </a>
+              </div>
+          `;
+      }
+  }
+  modalBody.insertAdjacentHTML('afterbegin', flightRadarLinkHTML); // Füge den Link am Anfang des Modal-Bodys ein
+
 
   const renderFields = (fields) => {
     return fields.map(({ label, key, type }) => {
