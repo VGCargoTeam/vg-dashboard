@@ -350,7 +350,9 @@ function filterTable() {
 function openModal(originalIndex) {
   if (!currentUser) {
       console.error("Versuch, Modal ohne angemeldeten Benutzer zu öffnen. Weiterleitung zum Login.");
-      window.location.href = 'login.html';
+      // Using a custom alert/message box instead of window.alert
+      showSaveFeedback("Bitte melden Sie sich an, um diese Funktion zu nutzen.", false);
+      setTimeout(() => { window.location.href = 'login.html'; }, 1500); // Redirect after message
       return;
   }
 
@@ -368,6 +370,7 @@ function openModal(originalIndex) {
     'Service Description Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
     'Accepted By Name': "",
     'Acceptance Timestamp': "",
+    'Final Confirmation Sent': "Nein", // NEU: Standardwert für neue Anfragen
     'Flight Type Import': "Nein", // NEU: Standardwert
     'Flight Type Export': "Nein",  // NEU: Standardwert
     'Origin': '', // NEU: Origin für Import
@@ -395,7 +398,7 @@ function openModal(originalIndex) {
       if (value === undefined || value === null) value = "";
 
       const isAlwaysReadOnlyField = [
-          "Ref", "Created At", "Acceptance Timestamp", "Email Request", "Accepted By Name"
+          "Ref", "Created At", "Acceptance Timestamp", "Email Request", "Accepted By Name", "Final Confirmation Sent"
       ].includes(key);
 
       let readOnlyAttr = '';
@@ -466,6 +469,10 @@ function openModal(originalIndex) {
           const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
           const destinationInput = (String(r['Flight Type Export']).toLowerCase() === 'ja') ? `<label>Destination:</label><input type="text" name="Destination" value="${r.Destination || ''}" ${readOnlyAttr} style="${styleAttr}" />` : '';
           return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}" onchange="toggleOriginDestinationFields(this, 'Destination')"> ${label}</label>${destinationInput}`;
+      } else if (key === "Final Confirmation Sent") { // Anzeige für "Final Confirmation Sent"
+          const statusText = String(value).toLowerCase() === 'ja' ? 'Ja (Gesendet)' : 'Nein (Nicht gesendet)';
+          const statusColor = String(value).toLowerCase() === 'ja' ? 'green' : 'red';
+          return `<label>${label}: <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></label>`;
       }
       return `<label>${label}:</label><input type="text" name="${key}" value="${value}" ${readOnlyAttr} style="${styleAttr}" />`;
     }).join("");
@@ -482,7 +489,8 @@ function openModal(originalIndex) {
     { label: "AGB Accepted", key: "AGB Accepted" },
     { label: "Service Description Accepted", key: "Service Description Accepted" },
     { label: "Accepted By Name", key: "Accepted By Name" },
-    { label: "Acceptance Timestamp", key: "Acceptance Timestamp" }
+    { label: "Acceptance Timestamp", key: "Acceptance Timestamp" },
+    { label: "Final Confirmation Sent", key: "Final Confirmation Sent" } // NEU: Feld hinzugefügt
   ];
 
   const flightFields = [
@@ -674,7 +682,7 @@ async function deleteRowFromModal(ref) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
     const responseData = await response.json();
 
@@ -703,6 +711,7 @@ document.addEventListener('keydown', (e) => {
     closeProfileModal();
     closeStatisticsModal(); // NEU: Statistik Modal schließen
     closeEmailConfirmationModal(); // NEU: E-Mail Bestätigungsmodal schließen
+    closeEmailPreviewModal(); // NEU: E-Mail Vorschau Modal schließen
   }
 });
 
@@ -743,7 +752,7 @@ async function saveDetails() {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
     const responseData = await response.json();
 
@@ -784,7 +793,7 @@ async function deleteRow(btn) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
     const responseData = await response.json();
 
@@ -1146,7 +1155,7 @@ function openStatisticsModal() {
 
         generateStatistics(); // Statistik beim Öffnen generieren
     } else {
-        console.warn("Statistik-Modal (id='statisticsModal') nicht gefunden.");
+        console.warn("Statistik-Modal (id='statisticsModal') not found.");
     }
 }
 
@@ -1716,6 +1725,12 @@ document.getElementById('sendEmailConfirmBtn').addEventListener('click', async (
             emailConfirmationMessage.textContent = 'Charter Bestätigung erfolgreich gesendet!';
             emailConfirmationMessage.style.color = 'green';
             showSaveFeedback("Charter Bestätigung gesendet!", true);
+            // Markiere den Eintrag als "Final Confirmation Sent" = "Ja"
+            const index = requestData.findIndex(item => item.Ref === currentModalData.Ref);
+            if (index !== -1) {
+                requestData[index]['Final Confirmation Sent'] = 'Ja';
+                filterTable(); // Tabelle neu rendern, um das Häkchen anzuzeigen
+            }
             // Schließe das Modal nach einer kurzen Verzögerung
             setTimeout(() => {
                 closeEmailConfirmationModal();
@@ -1738,119 +1753,58 @@ document.getElementById('sendEmailConfirmBtn').addEventListener('click', async (
     }
 });
 
-// Funktion zum Generieren des E-Mail-Bodys basierend auf Daten und Benutzerrolle
-// Diese Funktion wird NICHT mehr im Frontend verwendet, da der Body auf dem Server generiert wird.
-// Sie kann gelöscht oder als Referenz belassen werden, falls sie in Zukunft wieder benötigt wird.
-/*
-function generateEmailBody(data, userRole) {
-    // Start des HTML-E-Mail-Bodys
-    let body = `
-    <!DOCTYPE html>
-    <html lang="de">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Charter Bestätigung</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                line-height: 1.6;
-                color: #333333;
-                background-color: #f4f4f4;
-                margin: 0;
-                padding: 20px;
-            }
-            .container {
-                max-width: 600px;
-                margin: 0 auto;
-                background: #ffffff;
-                padding: 30px;
-                border-radius: 8px;
-                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            }
-            h2, h3 {
-                color: #0056b3;
-                border-bottom: 1px solid #eeeeee;
-                padding-bottom: 5px;
-                margin-top: 20px;
-            }
-            p {
-                margin-bottom: 10px;
-            }
-            .detail-item {
-                margin-bottom: 5px;
-            }
-            .detail-label {
-                font-weight: bold;
-            }
-            .footer {
-                margin-top: 30px;
-                padding-top: 15px;
-                border-top: 1px solid #eeeeee;
-                text-align: center;
-                font-size: 0.9em;
-                color: #777777;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <p>Sehr geehrte/r ${data['Contact Name Invoicing'] || 'Kunde/in'},</p>
-            <p>hiermit bestätigen wir Ihre Charteranfrage mit der Referenznummer <strong>${data.Ref || 'N/A'}</strong>.</p>
-            <p>Nachfolgend finden Sie die Details Ihrer Anfrage:</p>
-
-            <h2>Kundendetails</h2>
-            <div class="detail-item"><span class="detail-label">Rechnungsfirma:</span> ${data['Billing Company'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Rechnungsadresse:</span> ${data['Billing Address'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Steuernummer:</span> ${data['Tax Number'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Kontaktname (Rechnung):</span> ${data['Contact Name Invoicing'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Kontakt E-Mail (Rechnung):</span> ${data['Contact E-Mail Invoicing'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">AGB Akzeptiert:</span> Ja</div>
-            <div class="detail-item"><span class="detail-label">Service Beschreibung Akzeptiert:</span> Ja</div>
-            <div class="detail-item"><span class="detail-label">Akzeptiert von:</span> ${data['Accepted By Name'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Akzeptanz-Zeitstempel:</span> ${data['Acceptance Timestamp'] || '-'}</div>
-
-            <h2>Flugdetails</h2>
-            <div class="detail-item"><span class="detail-label">Airline:</span> ${data.Airline || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Flugzeugtyp:</span> ${data['Aircraft Type'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Flugnummer:</span> ${data.Flugnummer || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Flugdatum:</span> ${data['Flight Date'] ? new Date(data['Flight Date']).toLocaleDateString('de-DE') : '-'}</div>
-            <div class="detail-item"><span class="detail-label">Abflugzeit:</span> ${data['Abflugzeit'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Tonnage:</span> ${data.Tonnage ? parseFloat(String(data.Tonnage).replace(',', '.')).toLocaleString('de-DE') + ' kg' : '-'}</div>
-            <div class="detail-item"><span class="detail-label">Vorfeldbegleitung:</span> ${data.Vorfeldbegleitung || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Flugtyp Import:</span> ${data['Flight Type Import'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Origin:</span> ${data.Origin || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Flugtyp Export:</span> ${data['Flight Type Export'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">Destination:</span> ${data.Destination || '-'}</div>
-            <div class="detail-item"><span class="detail-label">E-Mail Anfrage:</span> ${data['Email Request'] || '-'}</div>
-    `;
-
-    // Preisdetails nur für Admin-Benutzer
-    if (userRole === 'admin') {
-        body += `
-            <h2>Preisdetails</h2>
-            <div class="detail-item"><span class="detail-label">Rate:</span> ${data.Rate ? parseFloat(String(data.Rate).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}</div>
-            <div class="detail-item"><span class="detail-label">Security Charges:</span> ${data['Security charges'] ? parseFloat(String(data['Security charges']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}</div>
-            <div class="detail-item"><span class="detail-label">Dangerous Goods:</span> ${data['Dangerous Goods'] || '-'}</div>
-            <div class="detail-item"><span class="detail-label">10ft Consumables:</span> ${data['10ft consumables'] ? parseFloat(String(data['10ft consumables']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}</div>
-            <div class="detail-item"><span class="detail-label">20ft Consumables:</span> ${data['20ft consumables'] ? parseFloat(String(data['20ft consumables']).replace(',', '.')).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : '-'}</div>
-            <div class="detail-item"><span class="detail-label">Zusatzkosten:</span> ${data.Zusatzkosten || '-'}</div>
-        `;
+// NEU: Funktion zum Generieren des E-Mail-Bodys für die Vorschau
+async function generateEmailPreview() {
+    if (!currentModalData) {
+        showSaveFeedback("Keine Daten für die E-Mail-Vorschau verfügbar.", false);
+        return;
     }
 
-    body += `
-            <div class="footer">
-                <p>Mit freundlichen Grüßen,</p>
-                <p>Ihr VG Cargo Team</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    `;
+    const emailPreviewModal = document.getElementById('emailPreviewModal');
+    const previewRefSpan = document.getElementById('previewRef');
+    const emailPreviewContent = document.getElementById('emailPreviewContent');
 
-    return body;
+    previewRefSpan.textContent = currentModalData.Ref || 'N/A';
+    emailPreviewContent.innerHTML = '<p style="text-align: center;">Lade Vorschau...</p>'; // Ladeanzeige
+    emailPreviewModal.style.display = 'flex';
+
+    try {
+        // Rufe den Server auf, um den E-Mail-Body zu generieren
+        const payload = {
+            mode: 'generateEmailBody',
+            data: JSON.stringify(currentModalData), // Sende die Daten als JSON-String
+            userRole: currentUser.role // Sende die Rolle des Benutzers
+        };
+
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(payload).toString(),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'success' && result.emailBody) {
+            emailPreviewContent.innerHTML = result.emailBody; // HTML direkt rendern
+        } else {
+            emailPreviewContent.innerHTML = `<p style="color: red; text-align: center;">${result.message || 'Fehler beim Generieren der E-Mail-Vorschau.'}</p>`;
+        }
+    } catch (error) {
+        console.error('Fehler beim Generieren der E-Mail-Vorschau:', error);
+        emailPreviewContent.innerHTML = '<p style="color: red; text-align: center;">Ein unerwarteter Fehler ist aufgetreten beim Generieren der Vorschau.</p>';
+    }
 }
-*/
+
+function closeEmailPreviewModal() {
+    document.getElementById('emailPreviewModal').style.display = 'none';
+    document.getElementById('emailPreviewContent').innerHTML = ''; // Inhalt leeren
+}
+
+// Event Listener für den Vorschau-Button
+document.getElementById('previewEmailBtn').addEventListener('click', generateEmailPreview);
+
 
 // --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
 // Wenn script.js als type="module" geladen wird, sind Funktionen
@@ -1886,7 +1840,8 @@ window.downloadStatisticsToCSV = downloadStatisticsToCSV; // Mache neue Download
 window.openEmailConfirmationModal = openEmailConfirmationModal; // NEU: E-Mail Bestätigungsmodal öffnen
 window.closeEmailConfirmationModal = closeEmailConfirmationModal; // NEU: E-Mail Bestätigungsmodal schließen
 window.toggleOriginDestinationFields = toggleOriginDestinationFields; // NEU: Funktion global zugänglich machen
-
+window.generateEmailPreview = generateEmailPreview; // NEU: Funktion für E-Mail-Vorschau
+window.closeEmailPreviewModal = closeEmailPreviewModal; // NEU: Funktion zum Schließen der E-Mail-Vorschau
 // Initialisiere Auth-Status, sobald das DOM geladen ist.
 // Dies wird nach dem window.onload Event, aber vor dem Polling ausgeführt.
 checkAuthStatus();
