@@ -214,6 +214,7 @@ function renderTable(dataToRender = requestData) {
     const ton = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0;
 
     const originalIndex = requestData.findIndex(item => item.Ref === r.Ref);
+    console.log(`[DEBUG] renderTable: Processing Ref: ${r.Ref}, Found originalIndex: ${originalIndex}`); // Debug-Log
 
     let displayFlightDate = r['Flight Date'] || "-";
     if (displayFlightDate !== "-") {
@@ -364,6 +365,7 @@ function filterTable() {
 
 // === MODAL FUNKTIONEN ===
 function openModal(originalIndex) {
+  console.log(`[DEBUG] openModal called with originalIndex: ${originalIndex}`); // Debug-Log
   if (!currentUser) {
       console.error("Versuch, Modal ohne angemeldeten Benutzer zu öffnen. Weiterleitung zum Login.");
       // Using a custom alert/message box instead of window.alert
@@ -405,6 +407,14 @@ function openModal(originalIndex) {
   const modal = document.getElementById("detailModal");
   const modalBody = document.getElementById("modalBody");
   modalBody.innerHTML = "";
+
+  // Modifizierte section Funktion, um eine Farbklasse zu akzeptieren
+  const section = (title, contentHTML, colorClass = '') => {
+    const wrap = document.createElement("div");
+    wrap.className = `modal-section ${colorClass}`; // Farbklasse hier hinzufügen
+    wrap.innerHTML = `<h3>${title}</h3>` + contentHTML;
+    return wrap;
+  };
 
   // NEU: FlightRadar24 Link-Bereich
   let flightRadarLinkHTML = '';
