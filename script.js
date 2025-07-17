@@ -223,7 +223,7 @@ function renderTable(dataToRender = requestData) {
                 const parts = displayFlightDate.split('-');
                 dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
             } else if (displayFlightDate instanceof Date) {
-                dateObj = new Date(displayFlightDate.getFullYear(), displayDate.getMonth(), displayDate.getDate());
+                dateObj = new Date(displayFlightDate.getFullYear(), displayFlightDate.getMonth(), displayFlightDate.getDate());
             } else {
                 dateObj = new Date('Invalid Date');
             }
@@ -396,42 +396,34 @@ function openModal(originalIndex) {
   // Speichere die aktuellen Daten im Modal, um sie später für die E-Mail zu verwenden
   currentModalData = r;
 
+  // --- DEBUGGING-LOGS START ---
+  console.log("Debug: Data for modal (r):", r);
+  console.log("Debug: Flugnummer:", r.Flugnummer, "Typ:", typeof r.Flugnummer);
+  console.log("Debug: Flight Date:", r['Flight Date'], "Typ:", typeof r['Flight Date']);
+  // --- DEBUGGING-LOGS END ---
+
   const modal = document.getElementById("detailModal");
   const modalBody = document.getElementById("modalBody");
   modalBody.innerHTML = "";
 
-  // Modifizierte section Funktion, um eine Farbklasse zu akzeptieren
-  const section = (title, contentHTML, colorClass = '') => {
-    const wrap = document.createElement("div");
-    wrap.className = `modal-section ${colorClass}`; // Farbklasse hier hinzufügen
-    wrap.innerHTML = `<h3>${title}</h3>` + contentHTML;
-    return wrap;
-  };
-
   // NEU: FlightRadar24 Link-Bereich
   let flightRadarLinkHTML = '';
-  if (r.Flugnummer && r['Flight Date']) {
-      // Datum für FlightRadar24 im Format YYYY-MM-DD
-      let flightDateForFR24 = '';
-      if (typeof r['Flight Date'] === 'string' && r['Flight Date'].match(/^\d{4}-\d{2}-\d{2}$/)) {
-          flightDateForFR24 = r['Flight Date'];
-      } else if (r['Flight Date'] instanceof Date) {
-          flightDateForFR24 = r['Flight Date'].toISOString().split('T')[0];
-      }
-
-      if (flightDateForFR24) {
-          const flightRadarUrl = `https://www.flightradar24.com/search?query=${encodeURIComponent(r.Flugnummer)}&filter_date=${encodeURIComponent(flightDateForFR24)}`;
-          flightRadarLinkHTML = `
-              <div class="modal-section bg-purple-50" style="margin-bottom: 20px;">
-                  <h3>Flug auf FlightRadar24 anzeigen</h3>
-                  <p>Klicken Sie hier, um den Flug auf FlightRadar24 zu verfolgen:</p>
-                  <a href="${flightRadarUrl}" target="_blank" rel="noopener noreferrer" 
-                     style="display: inline-block; padding: 10px 15px; background-color: #8A2BE2; color: white; border-radius: 6px; text-decoration: none; font-weight: bold;">
-                      Flug ${r.Flugnummer} auf FlightRadar24 öffnen
-                  </a>
-              </div>
-          `;
-      }
+  // Überprüfe nur, ob die Flugnummer vorhanden ist
+  if (r.Flugnummer) {
+      // Die URL wird jetzt ohne das Datum erstellt
+      const flightRadarUrl = `https://www.flightradar24.com/search?query=${encodeURIComponent(r.Flugnummer)}`;
+      flightRadarLinkHTML = `
+          <div class="modal-section bg-purple-50" style="margin-bottom: 20px;">
+              <h3>Flug auf FlightRadar24 anzeigen</h3>
+              <p>Klicken Sie hier, um den Flug auf FlightRadar24 zu verfolgen:</p>
+              <a href="${flightRadarUrl}" target="_blank" rel="noopener noreferrer" 
+                 style="display: inline-block; padding: 10px 15px; background-color: #8A2BE2; color: white; border-radius: 6px; text-decoration: none; font-weight: bold;">
+                  Flug ${r.Flugnummer} auf FlightRadar24 öffnen
+              </a>
+          </div>
+      `;
+  } else {
+      console.log("Debug: Flugnummer ist leer, FlightRadar24 Link wird nicht generiert."); // Debugging-Log
   }
   modalBody.insertAdjacentHTML('afterbegin', flightRadarLinkHTML); // Füge den Link am Anfang des Modal-Bodys ein
 
@@ -997,7 +989,7 @@ function generateCalendarHTML(year, month) {
               dayHasVorfeldbegleitung = true;
             }
             // NEU: Import/Export Status prüfen
-            if (String(f['Flight Type Import'] || '').toLowerCase() === 'ja') {
+            if (String(f['  Flight Type Import'] || '').toLowerCase() === 'ja') {
                 hasImport = true;
             }
             if (String(f['Flight Type Export'] || '').toLowerCase() === 'ja') {
