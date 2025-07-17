@@ -299,22 +299,22 @@ function filterTable() {
     let flightDateObj;
 
     // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
-    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
+    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
         const parts = flightDateFromData.split('-');
-        flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDateFromData instanceof Date) { // Falls es direkt ein Date-Objekt ist
-        flightDateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
+        dateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
     } else {
-        flightDateObj = new Date('Invalid Date'); // Ungültiges Datum
+        dateObj = new Date('Invalid Date'); // Ungültiges Datum
     }
-    flightDateObj.setHours(0, 0, 0, 0); // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist
-    console.log(`[filterTable] Original: "${flightDateFromData}", Geparsed (Lokal): ${flightDateObj}`);
+    dateObj.setHours(0, 0, 0, 0); // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist
+    console.log(`[filterTable] Original: "${flightDateFromData}", Geparsed (Lokal): ${dateObj}`);
 
 
-    if (flightDateObj && !isNaN(flightDateObj.getTime())) {
-      if (flightDateObj < today) {
+    if (dateObj && !isNaN(dateObj.getTime())) {
+      if (dateObj < today) {
           isPastOrTodayAndGoneFlight = true;
-      } else if (flightDateObj.getTime() === today.getTime()) {
+      } else if (dateObj.getTime() === today.getTime()) {
           const abflugzeit = r['Abflugzeit'];
           if (abflugzeit) {
               // Abflugzeit muss auch als lokaler Zeitpunkt für den Vergleich geparst werden
@@ -343,13 +343,13 @@ function filterTable() {
           const fromDateParts = fromDateInput.split('-');
           const fromDateObj = new Date(parseInt(fromDateParts[0]), parseInt(fromDateParts[1]) - 1, parseInt(fromDateParts[2]));
           fromDateObj.setHours(0,0,0,0); // Auch Filterdatum auf Mitternacht setzen
-          if (flightDateObj < fromDateObj) matchesDateRange = false;
+          if (dateObj < fromDateObj) matchesDateRange = false;
       }
       if (toDateInput) {
           const toDateParts = toDateInput.split('-');
           const toDateObj = new Date(parseInt(toDateParts[0]), parseInt(toDateParts[1]) - 1, parseInt(toDateParts[2]));
           toDateObj.setHours(0,0,0,0); // Auch Filterdatum auf Mitternacht setzen
-          if (flightDateObj > toDateObj) matchesDateRange = false;
+          if (dateObj > toDateObj) matchesDateRange = false;
       }
     } else {
         isPastOrTodayAndGoneFlight = false;
@@ -379,7 +379,7 @@ function openModal(originalIndex) {
     'Created At': new Date().toLocaleString('de-DE'),
     'Billing Company': "", 'Billing Address': "", 'Tax Number': "",
     'Contact Name Invoicing': "", 'Contact E-Mail Invoicing': "",
-    'Airline': "", 'Aircraft Type': "", 'Flugnummer': "",
+    'Airline': "", 'Aircraft Type': "", 'Flugnummer': "", 'Call Sign': "", // NEU: Call Sign hier initialisieren
     'Flight Date': "", 'Abflugzeit': "", 'Tonnage': "",
     'Rate': "", 'Security charges': "", "Dangerous Goods": "Nein", // Standardwert "Nein"
     '10ft consumables': "", '20ft consumables': "",
@@ -401,6 +401,7 @@ function openModal(originalIndex) {
   // --- DEBUGGING-LOGS START ---
   console.log("Debug: Data for modal (r):", r);
   console.log("Debug: Flugnummer:", r.Flugnummer, "Typ:", typeof r.Flugnummer);
+  console.log("Debug: Call Sign:", r['Call Sign'], "Typ:", typeof r['Call Sign']); // Debug-Log für Call Sign
   console.log("Debug: Flight Date:", r['Flight Date'], "Typ:", typeof r['Flight Date']);
   // --- DEBUGGING-LOGS END ---
 
@@ -418,22 +419,24 @@ function openModal(originalIndex) {
 
   // NEU: FlightRadar24 Link-Bereich
   let flightRadarLinkHTML = '';
-  // Überprüfe nur, ob die Flugnummer vorhanden ist
-  if (r.Flugnummer) {
-      // Die URL wird jetzt ohne das Datum erstellt
-      const flightRadarUrl = `https://www.flightradar24.com/search?query=${encodeURIComponent(r.Flugnummer)}`;
+  // Verwende 'Call Sign' wenn vorhanden, sonst 'Flugnummer'
+  const searchIdentifier = r['Call Sign'] || r.Flugnummer;
+
+  if (searchIdentifier) {
+      const flightRadarUrl = `https://www.flightradar24.com/search?query=${encodeURIComponent(searchIdentifier)}`;
       flightRadarLinkHTML = `
           <div class="modal-section bg-purple-50" style="margin-bottom: 20px;">
               <h3>Flug auf FlightRadar24 anzeigen</h3>
-              <p>Klicken Sie hier, um den Flug auf FlightRadar24 zu verfolgen:</p>
+              <p>Klicken Sie hier, um den Flug auf FlightRadar24 zu verfolgen.</p>
+              <p class="text-sm text-gray-600 mt-1">Hinweis: Die Suche verwendet das 'Call Sign' (falls vorhanden) oder die 'Flugnummer'. FlightRadar24 sucht möglicherweise auch nach Call Signs, wenn die genaue Flugnummer nicht gefunden wird.</p>
               <a href="${flightRadarUrl}" target="_blank" rel="noopener noreferrer" 
                  style="display: inline-block; padding: 10px 15px; background-color: #8A2BE2; color: white; border-radius: 6px; text-decoration: none; font-weight: bold;">
-                  Flug ${r.Flugnummer} auf FlightRadar24 öffnen
+                  Flug ${searchIdentifier} auf FlightRadar24 öffnen
               </a>
           </div>
       `;
   } else {
-      console.log("Debug: Flugnummer ist leer, FlightRadar24 Link wird nicht generiert."); // Debugging-Log
+      console.log("Debug: Flugnummer und Call Sign sind leer, FlightRadar24 Link wird nicht generiert."); // Debugging-Log
   }
   modalBody.insertAdjacentHTML('afterbegin', flightRadarLinkHTML); // Füge den Link am Anfang des Modal-Bodys ein
 
@@ -474,10 +477,10 @@ function openModal(originalIndex) {
         if (value) {
             try {
                 // Parsen des Datums, um es im Input korrekt darzustellen (YYYY-MM-DD Format)
-                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
+                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
                     dateValue = value;
                 } else if (value instanceof Date) {
-                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu竭-MM-DD
+                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu YYYY-MM-DD
                 }
             } catch (e) {
                 console.error("Fehler beim Parsen des Flugdatums für Modal-Input:", value, e);
@@ -543,6 +546,7 @@ function openModal(originalIndex) {
     { label: "Airline", key: "Airline" },
     { label: "Aircraft Type", key: "Aircraft Type" },
     { label: "Flugnummer", key: "Flugnummer" },
+    { label: "Call Sign", key: "Call Sign" }, // NEU: Call Sign Feld hinzugefügt
     { label: "Flight Date", key: "Flight Date" },
     { label: "Abflugzeit", key: "Abflugzeit" },
     { label: "Tonnage", key: "Tonnage" },
@@ -882,7 +886,7 @@ function openCalendarDayFlights(year, month, day) {
   const clickedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
   const flightsOnThisDay = requestData.filter(r => {
-    let flightDateFromData = r['Flight Date']; // Dies ist bereits竭-MM-DD vom Backend
+    let flightDateFromData = r['Flight Date']; // Dies ist bereits YYYY-MM-DD vom Backend
 
     // Einfacher String-Vergleich
     const isMatch = flightDateFromData === clickedDateStr;
@@ -985,6 +989,7 @@ function generateCalendarHTML(year, month) {
               `Ref: ${f.Ref || '-'}` +
               `\nAirline: ${f.Airline || '-'}` +
               `\nFlugnummer: ${f.Flugnummer || '-'}` +
+              `\nCall Sign: ${f['Call Sign'] || '-'}` + // NEU: Call Sign zum Tooltip
               `\nAbflugzeit: ${formattedAbflugzeit}` +
               `\nTonnage: ${tonnageValue.toLocaleString('de-DE')} kg`
             );
@@ -999,7 +1004,7 @@ function generateCalendarHTML(year, month) {
               dayHasVorfeldbegleitung = true;
             }
             // NEU: Import/Export Status prüfen
-            if (String(f['  Flight Type Import'] || '').toLowerCase() === 'ja') {
+            if (String(f['Flight Type Import'] || '').toLowerCase() === 'ja') {
                 hasImport = true;
             }
             if (String(f['Flight Type Export'] || '').toLowerCase() === 'ja') {
@@ -1013,12 +1018,12 @@ function generateCalendarHTML(year, month) {
         if (hasImport && hasExport) {
             cellClasses.push('import-export');
         } else if (hasImport) {
-            cellClasses.push('import-only');
+            cellClasses.push('import-only'); // Orange
         } else if (hasExport) {
-            cellClasses.push('export-only');
+            cellClasses.push('export-only'); // Grün
         } else if (flightsForDay.length > 0) {
             // Wenn Flüge da sind, aber weder Import noch Export markiert, Standardfarbe für Flüge
-            cellClasses.push('has-flights');
+            cellClasses.push('has-flights'); // Blau
         }
 
 
