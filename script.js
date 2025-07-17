@@ -194,41 +194,43 @@ function fetchData() {
     });
 }
 
-function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von gefilterten Daten
-  const tbody = document.querySelector("#dataTable tbody");
-  tbody.innerHTML = "";
+// Geänderte renderTable Funktion
+function renderTable(dataToRender = requestData) {
+  const tbodyUnconfirmed = document.querySelector("#dataTableUnconfirmed tbody");
+  const tbodyConfirmed = document.querySelector("#dataTableConfirmed tbody");
+  
+  tbodyUnconfirmed.innerHTML = "";
+  tbodyConfirmed.innerHTML = "";
+
   let totalFlights = 0;
   let totalWeight = 0;
+  let unconfirmedFlightsCount = 0;
+  let unconfirmedTonnage = 0;
+  let confirmedFlightsCount = 0;
+  let confirmedTonnage = 0;
 
-  dataToRender.forEach((r) => { // dataToRender verwenden
+  dataToRender.forEach((r) => {
     const row = document.createElement("tr");
     const ton = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0;
 
     const originalIndex = requestData.findIndex(item => item.Ref === r.Ref);
 
-    // Datum korrekt für die Anzeige formatieren (DD.MM.YYYY)
     let displayFlightDate = r['Flight Date'] || "-";
     if (displayFlightDate !== "-") {
         try {
-            // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
             let dateObj;
-            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
+            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
                 const parts = displayFlightDate.split('-');
                 dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-            } else if (displayFlightDate instanceof Date) { // Falls es direkt ein Date-Objekt ist (selten, aber sicherheitshalber)
+            } else if (displayFlightDate instanceof Date) {
                 dateObj = new Date(displayFlightDate.getFullYear(), displayFlightDate.getMonth(), displayFlightDate.getDate());
             } else {
-                dateObj = new Date('Invalid Date'); // Ungültiges Datum
+                dateObj = new Date('Invalid Date');
             }
-
-            // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist, um Konsistenz zu gewährleisten
             dateObj.setHours(0, 0, 0, 0);
-
-            console.log(`[renderTable] Original: "${r['Flight Date']}", Geparsed (Lokal): ${dateObj}`); // Zum Debuggen
 
             if (!isNaN(dateObj.getTime())) {
                 displayFlightDate = dateObj.toLocaleDateString('de-DE');
-                console.log(`[renderTable] Formatiert (de-DE): ${displayFlightDate}`);
             }
         } catch (e) {
              console.error("Fehler bei der Datumskonvertierung für die Anzeige in Tabelle:", displayFlightDate, e);
@@ -237,7 +239,6 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
 
     const deleteButtonHTML = (currentUser && currentUser.role === 'admin') ? `<button class="btn btn-delete admin-only" onclick="deleteRow(this)">Delete</button>` : '';
 
-    // NEU: Status der finalen Bestätigung prüfen und Icon hinzufügen
     const isConfirmed = String(r['Final Confirmation Sent'] || '').toLowerCase() === 'ja';
     const confirmationIcon = isConfirmed ? '<span class="text-green-500 ml-1">&#10004;</span>' : ''; // Grünes Häkchen
 
@@ -250,13 +251,28 @@ function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von ge
         ${deleteButtonHTML}
       </td>
     `;
-    tbody.appendChild(row);
+    
+    if (isConfirmed) {
+      tbodyConfirmed.appendChild(row);
+      confirmedFlightsCount++;
+      confirmedTonnage += ton;
+    } else {
+      tbodyUnconfirmed.appendChild(row);
+      unconfirmedFlightsCount++;
+      unconfirmedTonnage += ton;
+    }
     totalFlights++;
     totalWeight += ton;
   });
 
   document.getElementById("summaryInfo").textContent =
     `Total Flights: ${totalFlights} | Total Tonnage: ${totalWeight.toLocaleString('de-DE')} kg`;
+  
+  document.getElementById("summaryInfoUnconfirmed").textContent =
+    `Nicht bestätigte Flüge: ${unconfirmedFlightsCount} | Tonnage: ${unconfirmedTonnage.toLocaleString('de-DE')} kg`;
+  
+  document.getElementById("summaryInfoConfirmed").textContent =
+    `Bestätigte Flüge: ${confirmedFlightsCount} | Tonnage: ${confirmedTonnage.toLocaleString('de-DE')} kg`;
 
   updateUIBasedOnUserRole();
 }
@@ -752,7 +768,7 @@ async function saveDetails() {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
     const responseData = await response.json();
 
@@ -793,7 +809,7 @@ async function deleteRow(btn) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
     }
     const responseData = await response.json();
 
