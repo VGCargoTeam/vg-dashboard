@@ -429,11 +429,11 @@ function openModal(originalIndex) {
 
   // NEU: FlightRadar24 Link-Bereich
   let flightRadarLinkHTML = '';
-  // Verwende 'Call Sign' wenn vorhanden, sonst 'Flugnummer'
-  const searchIdentifier = r['Call Sign'];
+  // Verwende 'Call Sign'
+  const searchIdentifier = r['Call Sign']; // Korrekte Zuweisung
 
-  if (callSign) {
-      const flightRadarUrl = `https://www.flightradar24.com/${encodeURIComponent(callSign)}`;
+  if (searchIdentifier) { // Verwende searchIdentifier
+      const flightRadarUrl = `https://www.flightradar24.com/${encodeURIComponent(searchIdentifier)}`; // Verwende searchIdentifier
       flightRadarLinkHTML = `
           <div class="modal-section bg-purple-50" style="margin-bottom: 20px;">
               <h3>Flug auf FlightRadar24 anzeigen</h3>
@@ -441,12 +441,12 @@ function openModal(originalIndex) {
               <p class="text-sm text-gray-600 mt-1">Hinweis: Die Suche auf FlightRadar24 erfolgt ausschließlich über das 'Call Sign'.</p>
               <a href="${flightRadarUrl}" target="_blank" rel="noopener noreferrer" 
                  style="display: inline-block; padding: 10px 15px; background-color: #8A2BE2; color: white; border-radius: 6px; text-decoration: none; font-weight: bold;">
-                  Flug ${callSign} auf FlightRadar24 öffnen
+                  Flug ${searchIdentifier} auf FlightRadar24 öffnen
               </a>
           </div>
       `;
   } else {
-      console.log("Debug: Call Sign sind leer, FlightRadar24 Link wird nicht generiert."); // Debugging-Log
+      console.log("Debug: Call Sign ist leer, FlightRadar24 Link wird nicht generiert."); // Debugging-Log
   }
   modalBody.insertAdjacentHTML('afterbegin', flightRadarLinkHTML); // Füge den Link am Anfang des Modal-Bodys ein
 
