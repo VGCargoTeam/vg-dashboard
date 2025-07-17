@@ -307,6 +307,10 @@
     .calendar-block table {
       width: 100%;
       border-collapse: collapse;
+      overflow: visible; /* Wichtig: Tooltip darf hier raus! */
+    }
+    .calendar-block tbody {
+      overflow: visible; /* Wichtig: Tooltip darf hier raus! */
     }
     .calendar-block th, .calendar-block td {
       border: 1px solid #f0f0f0; /* Sehr helle Rahmen */
@@ -364,7 +368,7 @@
       opacity: 0;
       visibility: hidden;
       transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
-      z-index: 1001; /* Sehr hoher z-index, um sicherzustellen, dass es über allem liegt */
+      z-index: 9999; /* Sehr hoher z-index, um sicherzustellen, dass es über allem liegt */
       min-width: 180px; /* Breiter */
       text-align: left;
       box-shadow: 0 4px 10px rgba(0,0,0,0.2); /* Schatten für Tooltip */
