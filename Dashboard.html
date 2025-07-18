@@ -44,9 +44,14 @@
     }
     .container {
       display: flex;
-      flex-direction: column; /* Changed to column to stack vertically */
+      flex-direction: column; /* Default for mobile: stack vertically */
       gap: 20px;
-      /* flex-wrap: wrap; Removed as items will always stack */
+    }
+    @media (min-width: 768px) { /* On medium screens and up */
+      .container {
+        flex-direction: row; /* Arrange side-by-side */
+        flex-wrap: wrap; /* Allow wrapping if needed */
+      }
     }
     .card {
       background: #fff;
