@@ -141,7 +141,7 @@ async function changePassword() {
           messageElem.style.color = 'green';
           // Leere die Felder nach erfolgreicher Änderung
           const newPassInput = document.getElementById('newPasswordInput');
-          const confirmPassInput = document.getElementById('confirmPasswordInput');
+          const confirmPassInput = document.getElementById('confirmPassInput');
           if (newPassInput) newPassInput.value = '';
           if (confirmPassInput) confirmPassInput.value = '';
 
@@ -212,7 +212,7 @@ function renderTables(unconfirmedData, confirmedData) { // Erlaubt das Rendern v
                   const parts = displayFlightDate.split('-');
                   dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
               } else if (displayFlightDate instanceof Date) {
-                  dateObj = new Date(displayFlightDate.getFullYear(), displayFlightDate.getMonth(), displayFlightDate.getDate());
+                  dateObj = new Date(displayFlightDate.getFullYear(), displayDate.getMonth(), displayDate.getDate());
               } else {
                   dateObj = new Date('Invalid Date');
               }
@@ -228,7 +228,7 @@ function renderTables(unconfirmedData, confirmedData) { // Erlaubt das Rendern v
       const confirmationIcon = isConfirmedTable ? '<span class="text-green-500 ml-1">&#10004;</span>' : '';
 
       row.innerHTML = `
-        <td><a href="javascript:void(0);" class="open-modal-btn" data-index="${originalIndex}">${r.Ref}</a>${confirmationIcon}</td>
+        <td><a href="javascript:void(0);" class="open-modal-link" data-index="${originalIndex}">${r.Ref}</a>${confirmationIcon}</td>
         <td>${displayFlightDate}</td>
         <td>${r.Airline || "-"}</td>
         <td>${ton.toLocaleString('de-DE')}</td>
@@ -240,10 +240,10 @@ function renderTables(unconfirmedData, confirmedData) { // Erlaubt das Rendern v
       tbody.appendChild(row);
 
       // Attach event listeners dynamically
-      const refLink = row.querySelector(`.open-modal-btn[data-index="${originalIndex}"]`);
+      const refLink = row.querySelector(`.open-modal-link[data-index="${originalIndex}"]`);
       if (refLink) {
           refLink.addEventListener('click', (event) => {
-              event.preventDefault();
+              event.preventDefault(); // Prevents default link behavior
               openModal(parseInt(event.target.dataset.index));
           });
       }
@@ -462,10 +462,10 @@ function openModal(originalIndex) {
         if (value) {
             try {
                 // Parsen des Datums, um es im Input korrekt darzustellen (YYYY-MM-DD Format)
-                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
+                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
                     dateValue = value;
                 } else if (value instanceof Date) {
-                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu竭-MM-DD
+                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu YYYY-MM-DD
                 }
             } catch (e) {
                 console.error("Fehler beim Parsen des Flugdatums für Modal-Input:", value, e);
@@ -1063,7 +1063,7 @@ function openDayOverview(dateString, flights) {
         flights.forEach(flight => {
             const li = document.createElement('li');
             li.innerHTML = `
-                <strong>Ref:</strong> <a href="javascript:void(0);" class="open-modal-btn" data-index="${requestData.findIndex(item => item.Ref === flight.Ref)}">${flight.Ref}</a><br>
+                <strong>Ref:</strong> <a href="javascript:void(0);" class="open-modal-link" data-index="${requestData.findIndex(item => item.Ref === flight.Ref)}">${flight.Ref}</a><br>
                 <strong>Airline:</strong> ${flight.Airline || '-'}<br>
                 <strong>Flugnummer:</strong> ${flight.Flugnummer || '-'}<br>
                 <strong>Call Sign:</strong> ${flight['Call Sign'] || '-'}<br>
@@ -1074,7 +1074,7 @@ function openDayOverview(dateString, flights) {
             ul.appendChild(li);
 
             // Attach event listener to the dynamically created link
-            const link = li.querySelector('.open-modal-btn');
+            const link = li.querySelector('.open-modal-link');
             if (link) {
                 link.addEventListener('click', (event) => {
                     event.preventDefault();
@@ -1648,6 +1648,8 @@ function openEmailConfirmationModal(data) {
 
 function closeEmailConfirmationModal() {
     document.getElementById('emailConfirmationModal').style.display = 'none';
+    document.getElementById('additionalEmail').value = ''; // Eingabefeld leeren
+    document.getElementById('emailConfirmationMessage').textContent = ''; // Nachricht leeren
 }
 
 async function generateEmailPreview() {
@@ -1753,9 +1755,52 @@ async function markAsSentManually(ref, sendEmail = false) {
 }
 
 
-// Initialisiere Auth-Status, sobald das DOM geladen ist.
-// Dies wird nach dem window.onload Event, aber vor dem Polling ausgeführt.
-checkAuthStatus();
+// === Initialisierung ===
+document.addEventListener('DOMContentLoaded', () => {
+  checkAuthStatus();
+  updateClock();
+  setInterval(updateClock, 1000); // Aktualisiert die Uhr jede Sekunde
+  renderCalendars(); // Initialisiere den Kalender nach dem Laden der Daten
+
+  // Event Listener für die Buttons "Charter Anfrage erstellen" und "Statistik anzeigen"
+  const createNewRequestBtn = document.getElementById('createNewRequestBtn');
+  if (createNewRequestBtn) {
+      createNewRequestBtn.addEventListener('click', createNewRequest);
+  }
+
+  const openStatisticsBtn = document.getElementById('openStatisticsBtn');
+  if (openStatisticsBtn) {
+      openStatisticsBtn.addEventListener('click', openStatisticsModal);
+  }
+
+  // Set initial dates for statistics
+  const statFromDateInput = document.getElementById('statFromDate');
+  const statToDateInput = document.getElementById('statToDate');
+  const today = new Date();
+  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  statFromDateInput.value = firstDayOfMonth.toISOString().split('T')[0];
+  statToDateInput.value = today.toISOString().split('T')[0];
+
+  // Event Listener für den Vorschau-Button im E-Mail Bestätigungsmodal
+  const previewEmailBtn = document.getElementById('previewEmailBtn');
+  if (previewEmailBtn) {
+      previewEmailBtn.addEventListener('click', generateEmailPreview);
+  }
+
+  // Event Listener für den "Charter Confirmation gesendet" Button im E-Mail Vorschau Modal
+  const markAsSentBtn = document.getElementById('markAsSentBtn');
+  if (markAsSentBtn) {
+      markAsSentBtn.addEventListener('click', () => markAsSentManually(currentModalData.Ref, true)); // Standardmäßig E-Mail senden
+  }
+});
+
+
+// === Hilfsfunktionen ===
+function updateClock() {
+  const now = new Date();
+  document.getElementById("currentDate").textContent = `Datum: ${now.toLocaleDateString('de-DE')}`;
+  document.getElementById("clock").textContent = `Uhrzeit: ${now.toLocaleTimeString('de-DE')}`;
+}
 
 // --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
 // Wenn script.js als type="module" geladen wird, sind Funktionen
