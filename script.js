@@ -1041,7 +1041,17 @@ function createMonthCalendar(date) {
 
         cell.textContent = currentDay;
         cell.className = "calendar-day";
-        cell.onclick = () => openDayOverview(fullDate.toDateString(), flightsOnDay);
+        
+        // NEU: Logik für den Klick auf Kalenderzellen
+        if (flightsOnDay.length === 1) {
+            const singleFlightIndex = requestData.findIndex(item => item.Ref === flightsOnDay[0].Ref);
+            cell.onclick = () => openModal(singleFlightIndex);
+        } else if (flightsOnDay.length > 1) {
+            cell.onclick = () => showSaveFeedback('Mehrere Flüge für diesen Tag. Bitte nutzen Sie die Tabellenansicht zur Filterung.', false);
+        } else {
+            // Keine Flüge, kein Klick-Handler
+            cell.onclick = null;
+        }
 
 
         if (flightsOnDay.length > 0) {
@@ -1080,10 +1090,12 @@ function shiftCalendar(direction) {
   renderCalendars();
 }
 
+// Diese Funktion ist nicht mehr direkt über Kalenderzellen-Klicks erreichbar,
+// aber bleibt für andere potenzielle Verwendungen oder Debugging erhalten.
 function openDayOverview(dateString, flights) {
-    const dayOverviewModal = document.getElementById('dayOverviewModal'); // NEU: Referenz auf das neue Modal
-    const dayOverviewDateSpan = document.getElementById('dayOverviewDate'); // NEU: Referenz auf den Datums-Span
-    const dayOverviewBody = document.getElementById('dayOverviewBody'); // NEU: Referenz auf den Body
+    const dayOverviewModal = document.getElementById('dayOverviewModal');
+    const dayOverviewDateSpan = document.getElementById('dayOverviewDate');
+    const dayOverviewBody = document.getElementById('dayOverviewBody');
 
     dayOverviewDateSpan.textContent = new Date(dateString).toLocaleDateString('de-DE');
     dayOverviewBody.innerHTML = ''; // Alten Inhalt leeren
@@ -1094,9 +1106,8 @@ function openDayOverview(dateString, flights) {
         const ul = document.createElement('ul');
         flights.forEach(flight => {
             const li = document.createElement('li');
-            // Find the original index of the flight in requestData
             const originalIndex = requestData.findIndex(item => item.Ref === flight.Ref);
-            console.log(`Debug: Flight Ref: ${flight.Ref}, Original Index: ${originalIndex}`); // Debugging line
+            console.log(`Debug: Flight Ref: ${flight.Ref}, Original Index: ${originalIndex}`);
 
             li.innerHTML = `
                 <strong>Ref:</strong> <a href="javascript:void(0);" class="open-modal-link" data-index="${originalIndex}">${flight.Ref}</a><br>
@@ -1109,7 +1120,6 @@ function openDayOverview(dateString, flights) {
             `;
             ul.appendChild(li);
 
-            // Attach event listener to the dynamically created link
             const link = li.querySelector('.open-modal-link');
             if (link) {
                 link.addEventListener('click', (event) => {
@@ -1117,7 +1127,7 @@ function openDayOverview(dateString, flights) {
                     const indexToOpen = parseInt(event.target.dataset.index);
                     if (indexToOpen !== -1 && !isNaN(indexToOpen)) {
                         openModal(indexToOpen);
-                        closeDayOverviewModal(); // NEU: Tagesübersicht-Modal schließen
+                        closeDayOverviewModal();
                     } else {
                         console.error("Ungültiger Index für openModal aus Tagesübersicht:", indexToOpen);
                         showSaveFeedback("Fehler: Konnte Details für diesen Flug nicht laden.", false);
@@ -1127,7 +1137,7 @@ function openDayOverview(dateString, flights) {
         });
         dayOverviewBody.appendChild(ul);
     }
-    dayOverviewModal.style.display = 'flex'; // NEU: Das Tagesübersicht-Modal anzeigen
+    dayOverviewModal.style.display = 'flex';
 }
 
 
