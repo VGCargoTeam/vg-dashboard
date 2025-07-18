@@ -361,12 +361,15 @@
     }
     .calendar-wrapper {
       display: flex;
-      flex-direction: column; /* Kalenderblöcke untereinander */
-      gap: 20px;
-      width: 100%;
+      flex-direction: row; /* Kalenderblöcke nebeneinander */
+      flex-wrap: wrap; /* Erlaubt Umbruch auf kleineren Bildschirmen */
+      justify-content: center; /* Zentriert die Kalenderblöcke */
+      gap: 10px; /* Abstand zwischen den Monaten */
+      width: 100%; /* Stellt sicher, dass der Wrapper die volle Breite des Kalender-Containers einnimmt */
     }
     .calendar-block {
-      width: 100%;
+      width: calc(50% - 5px); /* Für zwei Spalten mit 10px Gap dazwischen */
+      min-width: 180px; /* Mindestbreite, damit es nicht zu klein wird */
       background-color: white;
       border-radius: 8px;
       padding: 15px;
@@ -725,7 +728,9 @@
             <button onclick="shiftCalendar(-1)">← Back</button>
             <button onclick="shiftCalendar(1)">Forward →</button>
           </div>
-          <div id="calendarArea" class="calendar-wrapper"></div>
+          <div id="calendarArea" class="calendar-wrapper">
+            <!-- Calendar blocks will be dynamically added here by script.js -->
+          </div>
         </div>
       </div>
 
