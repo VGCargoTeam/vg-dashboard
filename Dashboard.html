@@ -313,10 +313,10 @@
     }
     /* Specific styling for calendar navigation buttons */
     .calendar .nav button {
-      padding: 8px 15px; /* Smaller padding */
-      font-size: 0.9em; /* Smaller font size */
-      border-radius: 8px; /* Slightly less rounded */
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      padding: 6px 12px; /* Smaller padding */
+      font-size: 0.8em; /* Smaller font size */
+      border-radius: 6px; /* Slightly less rounded */
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Lighter shadow */
     }
 
     .calendar-wrapper {
@@ -348,7 +348,7 @@
       width: 100%;
       border-collapse: collapse;
       overflow: visible;
-      table-layout: fixed;
+      table-layout: fixed; /* Keep fixed layout for consistent cells */
     }
     .calendar-block tbody {
       overflow: visible;
@@ -359,6 +359,7 @@
       text-align: center;
       font-size: 0.9em; /* Increased font size */
       box-sizing: border-box; /* Ensure padding is included in the element's total width and height */
+      width: calc(100% / 7); /* Distribute width equally among 7 days */
     }
     .calendar-block th {
       background-color: #f5f5f5;
@@ -375,7 +376,7 @@
       flex-direction: column; /* Stack day number and icon */
       justify-content: center;
       align-items: center;
-      min-height: 40px; /* Ensure a minimum height for cells */
+      min-height: 50px; /* Ensure a minimum height for cells */
     }
     .calendar-day:hover {
       background-color: #e6f7ff;
@@ -399,8 +400,9 @@
 
     /* Adjust font size for the day number within the calendar cell */
     .calendar-day .day-number {
-        font-size: 1em; /* Relative to parent TD's font-size (0.9em) */
+        font-size: 1.1em; /* Slightly larger for readability */
         font-weight: bold;
+        line-height: 1; /* Compact line height */
     }
 
     /* Tooltip styles for calendar */
@@ -433,11 +435,11 @@
     }
 
     .flight-icon {
-      position: absolute;
-      bottom: 4px;
-      right: 4px;
-      font-size: 0.9em;
+      /* Position static to flow with content, not absolute */
+      position: static;
+      font-size: 0.8em; /* Smaller icon */
       color: #ff5722;
+      margin-top: 2px; /* Small space between number and icon */
     }
 
     /* Responsive adjustments */
@@ -715,9 +717,9 @@
   <div class="calendar-column">
     <div class="calendar">
       <div class="nav flex justify-between items-center mb-6">
-        <button onclick="shiftCalendar(-1)" class="btn-primary-modern px-6 py-3">← Zurück</button>
+        <button onclick="shiftCalendar(-1)" class="btn-primary-modern">← Zurück</button>
         <h2 class="text-3xl font-bold text-gray-800">Flugkalender</h2>
-        <button onclick="shiftCalendar(1)" class="btn-primary-modern px-6 py-3">Weiter →</button>
+        <button onclick="shiftCalendar(1)" class="btn-primary-modern">Weiter →</button>
       </div>
       <div id="calendarArea" class="calendar-wrapper"></div>
     </div>
