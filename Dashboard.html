@@ -2,11 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Charter Dashboard - Modern</title>
-  <!-- Google Fonts - Inter -->
+  <title>Charter Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -23,773 +20,596 @@
     /* Custom styles for specific overrides or complex designs not easily done with Tailwind */
     body {
       margin: 0;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Segoe UI', sans-serif; /* Behält deine aktuelle Schriftart */
       background: url('https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg') no-repeat center center fixed;
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
     }
-    .main-content-area {
+    .main {
       flex: 1;
-      background: rgba(255,255,255,0.95); /* Slightly less transparent */
-      backdrop-filter: blur(10px); /* Stronger blur */
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(6px);
       padding: 30px;
       margin: 20px;
-      border-radius: 20px; /* More rounded corners */
-      box-shadow: 0 20px 40px rgba(0,0,0,0.3); /* Deeper shadow */
-      display: flex;
-      flex-direction: column;
-      gap: 25px; /* More space between sections */
-      overflow-y: auto;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      position: relative;
     }
-    .card-modern {
-      background: #fff;
-      padding: 25px;
-      border-radius: 15px; /* Modern rounded corners */
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1); /* Soft shadow */
-      transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    .calendar {
+      width: 500px;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(6px);
+      padding: 20px;
+      margin: 20px 20px 20px 0;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      overflow: visible;
     }
-    .card-modern:hover {
-      transform: translateY(-8px); /* More pronounced lift */
-      box-shadow: 0 12px 25px rgba(0,0,0,0.15); /* Stronger shadow on hover */
+    .calendar-wrapper {
+        overflow: visible;
     }
-    .table-responsive-container {
-      overflow-x: auto; /* Enable horizontal scroll for tables on small screens */
-      -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    input[type="text"], input[type="date"] {
+      padding: 6px 10px;
+      margin: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 15px;
-      border-radius: 10px;
-      overflow: hidden;
-      table-layout: fixed; /* Ensures columns respect specified widths */
+      margin-top: 20px;
+      background: white;
+      border-radius: 8px;
     }
     th, td {
-      border: 1px solid #e0e0e0;
-      padding: 10px 8px; /* Adjusted padding for better fit */
-      text-align: left;
-      font-size: 0.85em; /* Slightly smaller font for compactness */
-      word-wrap: break-word; /* Allow long words to break */
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+      font-size: 14px;
     }
-    /* Specific column widths for tables to prevent horizontal scroll */
-    th:nth-child(1), td:nth-child(1) { width: 15%; } /* Ref */
-    th:nth-child(2), td:nth-child(2) { width: 20%; } /* Flight Date */
-    th:nth-child(3), td:nth-child(3) { width: 25%; } /* Airline */
-    th:nth-child(4), td:nth-child(4) { width: 20%; } /* Tonnage (kg) */
-    th:nth-child(5), td:nth-child(5) { width: 20%; } /* Actions */
-
     th {
-      background-color: #f0f4f8; /* Lighter header background */
-      font-weight: 600;
-      color: #4a5568;
+      background-color: #007BFF;
+      color: white;
     }
-    tr:nth-child(even) {
-      background-color: #f8fbfd; /* Subtle zebra striping */
-    }
-    tr:hover {
-      background-color: #e6f7ff; /* Light blue hover effect */
-    }
-    .btn-action {
-      padding: 8px 15px;
-      border-radius: 8px;
-      cursor: pointer;
+    .nav button, .btn {
+      padding: 6px 12px;
+      margin: 3px;
       border: none;
-      font-weight: 600;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      white-space: nowrap; /* Prevent button text from wrapping */
-      font-size: 0.8em; /* Smaller font for buttons in table */
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
     }
-    .btn-view {
-      background-color: #34d399; /* Tailwind green-400 */
+    .nav button {
+      background-color: #28a745;
       color: white;
     }
-    .btn-view:hover {
-      background-color: #10b981; /* Tailwind green-500 */
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    .nav button:hover {
+      background-color: #218838;
     }
-    .btn-delete {
-      background-color: #ef4444; /* Tailwind red-500 */
-      color: white;
+    .btn-view { background-color: #17a2b8; color: white; }
+    .btn-delete { background-color: #dc3545; color: white; }
+    .summary {
+      text-align: right;
+      font-weight: bold;
+      margin-top: 10px;
     }
-    .btn-delete:hover {
-      background-color: #dc2626; /* Tailwind red-600 */
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-    .btn-primary-modern {
-      background-color: #3b82f6; /* Tailwind blue-500 */
-      color: white;
-      padding: 12px 25px;
-      border-radius: 10px;
-      font-weight: 700;
-      box-shadow: 0 4px 10px rgba(59,130,246,0.3);
-      transition: all 0.2s ease;
-    }
-    .btn-primary-modern:hover {
-      background-color: #2563eb; /* Tailwind blue-600 */
-      box-shadow: 0 6px 15px rgba(59,130,246,0.4);
-    }
-    .btn-secondary-modern {
-      background-color: #6b7280; /* Tailwind gray-500 */
-      color: white;
-      padding: 12px 25px;
-      border-radius: 10px;
-      font-weight: 700;
-      box-shadow: 0 4px 10px rgba(107,114,128,0.3);
-      transition: all 0.2s ease;
-    }
-    .btn-secondary-modern:hover {
-      background-color: #4b5563; /* Tailwind gray-600 */
-      box-shadow: 0 6px 15px rgba(107,114,128,0.4);
-    }
-
-    /* Modal styles (retained and slightly enhanced) */
     .modal {
       display: none;
       position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0,0,0,0.6); /* Darker overlay */
-      align-items: center;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
       justify-content: center;
-      animation: fadeIn 0.3s ease-out;
+      align-items: center;
+      z-index: 2000;
     }
     .modal-content {
-      background-color: #fefefe;
-      margin: auto;
-      padding: 35px; /* More padding */
-      border: none; /* No border */
-      width: 95%; /* Wider on small screens */
-      max-width: 900px; /* Wider max-width */
-      border-radius: 20px; /* More rounded */
-      box-shadow: 0 15px 40px rgba(0,0,0,0.4); /* Stronger shadow */
-      position: relative;
-      max-height: 95vh; /* Taller */
-      overflow-y: auto;
-      animation: slideIn 0.3s ease-out;
-    }
-    .close-button {
-      color: #9ca3af; /* Lighter grey for close button */
-      font-size: 36px; /* Larger */
-      font-weight: bold;
-      position: absolute;
-      top: 15px;
-      right: 25px;
-      transition: color 0.2s;
-    }
-    .close-button:hover,
-    .close-button:focus {
-      color: #1f2937; /* Darker on hover */
-      text-decoration: none;
-      cursor: pointer;
-    }
-    .modal-section {
-      background-color: #f9fafb; /* Very light background */
+      background: white;
       padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      border: 1px solid #e5e7eb; /* Subtle border */
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .modal-section h3 {
-      color: #1f2937;
-      margin-top: 0;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #e5e7eb;
-      font-size: 1.5em;
-      font-weight: 600;
-    }
-    .modal-section label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-      color: #4b5563;
-    }
-    .modal-section input[type="text"],
-    .modal-section input[type="email"],
-    .modal-section input[type="date"],
-    .modal-section input[type="time"],
-    .modal-section textarea,
-    .modal-section select {
-      width: 100%; /* Full width */
-      padding: 12px; /* More padding */
-      margin-bottom: 15px;
-      border: 1px solid #d1d5db; /* Neutral border */
-      border-radius: 10px; /* More rounded */
-      box-sizing: border-box;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      font-size: 1em;
-    }
-    .modal-section input[type="text"]:focus,
-    .modal-section input[type="email"]:focus,
-    .modal-section input[type="date"]:focus,
-    .modal-section input[type="time"]:focus,
-    .modal-section textarea:focus,
-    .modal-section select:focus {
-      border-color: #3b82f6; /* Blue focus */
-      box-shadow: 0 0 0 4px rgba(59,130,246,0.2); /* Blue shadow */
-      outline: none;
-    }
-    .modal-section textarea {
-      resize: vertical;
-      min-height: 100px;
-    }
-    .modal-section input[type="checkbox"] {
-      margin-right: 10px;
-      transform: scale(1.3); /* Larger checkbox */
-    }
-    .modal-buttons {
+      border-radius: 10px;
+      width: 90%;
+      max-width: 700px;
       display: flex;
-      justify-content: flex-end;
-      gap: 15px;
-      margin-top: 30px;
+      flex-wrap: wrap;
+      gap: 20px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    /* Stil für das History-Modal, damit es sich vom Detail-Modal unterscheidet */
+    #historyModal .modal-content {
+        max-width: 800px; /* Breiter für die Historie */
+        flex-direction: column; /* Elemente untereinander anordnen */
+        align-items: flex-start;
+    }
+    #historyModal .modal-content h3 {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    #historyBody ul {
+        width: 100%;
+    }
+    #historyBody li {
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid #eee;
+        border-radius: 5px;
+        background-color: #fdfdfd;
+        font-size: 0.9em;
+    }
+    #historyBody pre {
+        background-color: #eee;
+        padding: 5px;
+        border-radius: 3px;
+        overflow-x: auto;
+        font-size: 0.8em;
     }
 
-    /* Calendar styles */
-    .calendar {
-      background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%);
-      backdrop-filter: blur(8px);
-      padding: 25px;
-      margin-bottom: 25px;
-      border-radius: 16px;
-      box-shadow: 0 15px 30px rgba(0,0,0,0.25);
-      max-width: 800px; /* Increased max-width for calendar */
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      overflow: visible;
+    /* NEUE STILE FÜR STATISTIK MODAL */
+    #statisticsModal .modal-content {
+        max-width: 900px; /* Breiter für die Statistik */
+        flex-direction: column; /* Stellt sicher, dass die Elemente vertikal gestapelt werden */
+        align-items: flex-start;
     }
-    .calendar .nav {
-      display: flex;
-      justify-content: space-between;
+    #statisticsModal .modal-content h3 {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    #statisticsBody {
+        width: 100%;
+        max-height: 70vh;
+        overflow-y: auto;
+        /* Sicherstellen, dass der Inhalt vertikal gestapelt wird */
+        display: flex;
+        flex-direction: column;
+        gap: 20px; /* Abstand zwischen den Statistikbereichen */
+    }
+    #statisticsBody table {
+        width: 100%;
+        margin-top: 15px;
+    }
+    #statisticsBody th, #statisticsBody td {
+        padding: 10px;
+        border: 1px solid #ccc;
+        text-align: left;
+    }
+    #statisticsBody th {
+        background-color: #f2f2f2;
+    }
+
+    /* NEUE STILE FÜR DIAGRAMME */
+    .chart-container {
+        width: 100%;
+        background: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .chart-container canvas {
+        width: 100% !important; /* Wichtig für Responsivität von Chart.js */
+        height: 300px !important; /* Feste Höhe für die Diagramme */
+    }
+
+
+    .modal-content p {
+      flex: 1 1 45%;
+      margin: 0;
+    }
+    .modal-content input, .modal-content textarea {
       width: 100%;
-      margin-bottom: 20px;
+      padding: 6px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 13px;
     }
-    .calendar-wrapper {
+    .logo-container { /* NEU: Für das Logo */
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 10; /* Damit es über anderen Elementen liegt */
+    }
+    .logo-container img {
+        height: 50px; /* Oder die gewünschte Größe */
+        /* Optional: Schatten, Border-Radius für das Logo selbst */
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .checkbox-label {
       display: flex;
-      gap: 25px;
-      flex-wrap: wrap;
-      justify-content: center;
-      overflow: visible;
+      align-items: center;
+      gap: 6px;
+      font-weight: bold;
+      margin-top: 8px;
     }
-    .calendar-block {
-      flex: 1;
-      min-width: 300px;
-      max-width: 380px; /* Adjusted max-width for calendar block */
-      border: 1px solid #e0e0e0;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      background-color: #fff;
-      overflow: visible;
+    .checkbox-label input[type="checkbox"] {
+      transform: translateY(-1px);
     }
-    .calendar-block h3 {
-      text-align: center;
-      color: #333;
-      margin-top: 0;
-      margin-bottom: 20px;
-      font-size: 1.6em;
-      font-weight: 700;
-    }
+
+    /* KALENDER-STILE */
     .calendar-block table {
       width: 100%;
-      border-collapse: collapse;
-      overflow: visible;
-      table-layout: fixed; /* Keep fixed layout for consistent cells */
-    }
-    .calendar-block tbody {
-      overflow: visible;
+      table-layout: fixed;
     }
     .calendar-block th, .calendar-block td {
-      border: 1px solid #f0f0f0;
-      padding: 5px; /* Reduced padding for compactness */
-      text-align: center;
-      font-size: 0.8em; /* Reduced font size for compactness */
-    }
-    .calendar-block th {
-      background-color: #f5f5f5;
-      font-weight: 600;
-      color: #555;
+      width: calc(100% / 7);
+      padding: 10px 5px;
+      height: 50px;
+      vertical-align: top;
+      font-size: 14px;
+      position: relative;
+      overflow: visible; /* Wichtig für Tooltips/Icons */
     }
     .calendar-day {
       cursor: pointer;
-      transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
-      position: relative;
-      border-radius: 8px;
+      background-color: #e9ecef;
+      transition: background-color 0.2s ease;
     }
     .calendar-day:hover {
-      background-color: #e6f7ff;
-      transform: scale(1.05);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      background-color: #d1d9e0;
     }
-    .calendar-day.today {
-      background-color: #fff3e0;
-      border: 2px solid #ff0000;
-      font-weight: bold;
-    }
-    .calendar-day.has-flights {
-      background-color: #e0f7fa;
-      color: #007BFF;
-      font-weight: bold;
-    }
-    .calendar-day.empty {
-      background-color: #fcfcfc;
-      cursor: default;
-    }
-
-    /* Tooltip styles for calendar */
-    [data-tooltip] {
-      position: relative;
-    }
-    [data-tooltip]::before {
-      content: attr(data-tooltip);
-      position: absolute;
-      background-color: rgba(0, 0, 0, 0.9);
-      color: #fff;
-      padding: 10px;
-      border-radius: 6px;
-      font-size: 0.85em;
-      white-space: pre-wrap;
-      bottom: 110%;
-      left: 50%;
-      transform: translateX(-50%);
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
-      z-index: 9999;
-      min-width: 180px;
-      text-align: left;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
-    [data-tooltip]:hover::before {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    .flight-icon {
-      position: absolute;
-      bottom: 4px;
-      right: 4px;
-      font-size: 0.9em;
-      color: #ff5722;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-      .main-content-area {
-        margin: 10px;
-        padding: 15px;
-      }
-      .modal-content {
-        width: 95%;
-        padding: 20px;
-      }
-      .calendar {
-        margin: 10px;
-        padding: 15px;
-      }
-      .calendar-wrapper {
-        flex-direction: column;
-        align-items: center;
-      }
-      .calendar-block {
-        width: 95%;
-      }
-      .modal-buttons {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .modal-buttons button {
-        width: 100%;
-        margin-bottom: 10px;
-      }
-      /* For small screens, allow tables to scroll horizontally */
-      .table-responsive-container table {
-        table-layout: auto; /* Allow content to dictate width */
-        min-width: 600px; /* Minimum width to prevent excessive squeezing */
-      }
-    }
-
-    /* Statistics Modal styles */
-    .statistics-modal-content {
-        max-width: 1000px; /* Even wider for charts */
-        width: 95%;
-    }
-    .chart-container {
-        position: relative;
-        height: 400px; /* Taller charts */
-        width: 100%;
-        margin-bottom: 30px;
-        background-color: #fff;
-        padding: 25px;
-        border-radius: 15px;
-        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-    }
-    .statistics-modal-content table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .statistics-modal-content th,
-    .statistics-modal-content td {
-        border: 1px solid #e0e0e0;
-        padding: 12px;
-        text-align: left;
-    }
-    .statistics-modal-content th {
-        background-color: #f2f2f2;
-        font-weight: bold;
-    }
-    .statistics-modal-content h4 {
-        margin-top: 30px;
-        margin-bottom: 15px;
-        color: #333;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 8px;
-        font-size: 1.6em;
-        font-weight: 600;
-    }
-    .statistics-modal-content ul {
-        list-style-type: disc;
-        margin-left: 25px;
-        margin-bottom: 20px;
-    }
-    .statistics-modal-content ul li {
-        margin-bottom: 8px;
-    }
-
-    /* Calendar color coding */
+    /* NEUE KALENDER-FARBEN */
     .calendar-day.import-only {
-        background-color: #ffe0b2;
-        border: 2px solid #ff9800;
+      background-color: #ffc107; /* Gelb für Import */
+      font-weight: bold;
+      color: #333;
     }
     .calendar-day.export-only {
-        background-color: #c8e6c9;
-        border: 2px solid #66bb6a;
+      background-color: #28a745; /* Grün für Export */
+      font-weight: bold;
+      color: #fff; /* Weißer Text für bessere Lesbarkeit auf Grün */
     }
     .calendar-day.import-export {
-        background-color: #bbdefb;
-        border: 2px solid #42a5f5;
+      background: linear-gradient(to right, #ffc107 50%, #28a745 50%); /* Halb Gelb, Halb Grün */
+      font-weight: bold;
+      color: #333; /* Standardtextfarbe, da es gemischt ist */
     }
-    .today-red-text {
-        color: #d32f2f;
+    /* Bestehende has-flights Klasse, falls weder Import noch Export zutrifft */
+    .calendar-day.has-flights {
+      background-color: #add8e6; /* Hellblau als Standard für Flüge ohne spezifischen Typ */
+      font-weight: bold;
+      color: #333;
+    }
+    .calendar-day.has-flights:hover {
+      background-color: #90bed4;
+    }
+    /* Ende NEUE KALENDER-FARBEN */
+    .calendar-day.empty {
+      background-color: #f8f9fa;
+      cursor: default;
+    }
+    .flight-icon {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      font-size: 1.2em;
+      color: #007BFF;
+    }
+    /* TOOLTIP-STILE */
+    [data-tooltip] {
+      position: relative;
+      z-index: 1;
+    }
+    [data-tooltip]:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 5px);
+      left: 50%; /* Zentriert über dem Element */
+      transform: translateX(-50%); /* Korrigiert die Zentrierung */
+      background-color: rgba(0, 0, 0, 0.9);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      white-space: pre-wrap; /* Zeilenumbrüche im Tooltip erlauben */
+      z-index: 1000;
+      min-width: 180px;
+      max-width: 300px; /* Breitere Tooltips erlauben */
+      text-align: left;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    [data-tooltip]:hover::before { /* Dreieck für den Tooltip */
+        content: '';
+        position: absolute;
+        bottom: calc(100% + 2px); /* Direkt unter dem Textblock */
+        left: 50%;
+        transform: translateX(-50%);
+        border-width: 5px;
+        border-style: solid;
+        border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
+        z-index: 1001;
     }
 
-    /* Keyframe Animations */
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+    /* Stil für das E-Mail Bestätigungsmodal */
+    #emailConfirmationModal .modal-content, #emailPreviewModal .modal-content {
+        max-width: 600px;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
     }
-    @keyframes slideIn {
-      from { transform: translateY(-50px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
+    #emailConfirmationModal h3, #emailPreviewModal h3 {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    #emailConfirmationModal label, #emailConfirmationModal input[type="text"],
+    #emailPreviewModal label, #emailPreviewModal div {
+        width: 100%;
+    }
+    #emailPreviewContent {
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 5px;
+        min-height: 200px;
+        overflow-y: auto;
+        width: 100%;
+    }
+    .modal-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 20px;
+        width: 100%;
+    }
+    .btn-email-action {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .btn-email-action.send {
+        background-color: #007BFF;
+        color: white;
+    }
+    .btn-email-action.cancel {
+        background-color: #6c757d;
+        color: white;
+    }
+    .btn-manual-sent { /* NEU: Stil für den "Manuell gesendet" Button */
+        background-color: #28a745; /* Grüner Hintergrund */
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9em;
+    }
+    .btn-manual-sent:hover {
+        background-color: #218838;
     }
 
-    /* Specific modal section colors */
-    .modal-section.bg-blue-50 {
-        background-color: #e3f2fd;
-        border: 1px solid #90caf9;
+    /* NEUE STILE FÜR TABELLEN-TEILUNG */
+    .table-section {
+      margin-bottom: 40px; /* Abstand zwischen den Tabellenbereichen */
+      padding: 20px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
     }
-    .modal-section.bg-green-50 {
-        background-color: #e8f5e9;
-        border: 1px solid #a5d6a7;
-    }
-    .modal-section.bg-yellow-50 {
-        background-color: #fffde7;
-        border: 1px solid #fff176;
-    }
-
-    /* Email input field enhancement */
-    #recipientEmailInput {
-        border: 2px solid #3b82f6; /* Tailwind blue-500 */
-        box-shadow: 0 0 10px rgba(59,130,246,0.3);
-        padding: 15px; /* More padding */
-        font-size: 1.2em; /* Larger font */
-        border-radius: 10px;
-    }
-
-    /* Background colors for Unconfirmed/Confirmed Flights cards */
-    #unconfirmedFlightsCard {
-        background-color: #ffebee;
-        border: 1px solid #ef9a9a;
-    }
-    #confirmedFlightsCard {
-        background-color: #e8f5e9;
-        border: 1px solid #a5d6a7;
+    .table-section h2 {
+      font-size: 1.8em;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 20px;
+      text-align: center;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #eee;
     }
   </style>
-  <!-- PWA Manifest Link -->
-  <link rel="manifest" href="/manifest.json">
 </head>
-<body class="flex flex-col md:flex-row min-h-screen font-inter">
-  <!-- Sidebar / Navigation -->
-  <div class="w-full md:w-64 bg-gray-900 text-white flex flex-col p-6 shadow-xl">
-    <div class="text-3xl font-extrabold mb-8 text-center text-blue-300">Charter Hub</div>
+<body class="flex min-h-screen">
+  <div class="w-64 bg-gray-800 text-white flex flex-col p-5 shadow-lg">
+    <div class="mb-8 text-center">
+      <h2 class="text-2xl font-bold text-indigo-300">Charter Admin</h2>
+    </div>
     <nav class="flex-1">
-      <ul class="space-y-3">
-        <li>
-          <a href="#" class="flex items-center px-4 py-3 rounded-xl hover:bg-gray-700 transition-colors text-lg font-medium" onclick="createNewRequest()">
-            <svg class="w-6 h-6 mr-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+      <ul>
+        <li class="mb-4">
+          <a href="#" class="flex items-center p-3 rounded-lg text-lg font-medium bg-gray-700 hover:bg-gray-600 transition-colors">
+            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m0 0l7 7m-11-7v10a1 1 0 001 1h3"></path></svg>
+            Dashboard
+          </a>
+        </li>
+        <li class="mb-4">
+          <a href="#" onclick="openModal(-1)" class="flex items-center p-3 rounded-lg text-lg font-medium hover:bg-gray-700 transition-colors">
+            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
             Neue Anfrage
           </a>
         </li>
-        <li>
-          <a href="#" class="flex items-center px-4 py-3 rounded-xl hover:bg-gray-700 transition-colors text-lg font-medium" onclick="openStatisticsModal()">
-            <svg class="w-6 h-6 mr-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+        <li class="mb-4 admin-only" style="display:none;">
+          <a href="#" onclick="openStatisticsModal()" class="flex items-center p-3 rounded-lg text-lg font-medium hover:bg-gray-700 transition-colors">
+            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.055 3.055L10 13H3.055A9.002 9.002 0 0110.055 3.055z"></path></svg>
             Statistiken
           </a>
         </li>
-        <li>
-          <a href="#" class="flex items-center px-4 py-3 rounded-xl hover:bg-gray-700 transition-colors text-lg font-medium" onclick="openProfileModal()">
-            <svg class="w-6 h-6 mr-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        <li class="mb-4">
+          <a href="#" onclick="openProfileModal()" class="flex items-center p-3 rounded-lg text-lg font-medium hover:bg-gray-700 transition-colors">
+            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             Profil
-          </a>
-        </li>
-        <li>
-          <a href="#" class="flex items-center px-4 py-3 rounded-xl hover:bg-gray-700 transition-colors text-lg font-medium" onclick="logoutUser()">
-            <svg class="w-6 h-6 mr-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-            Logout
           </a>
         </li>
       </ul>
     </nav>
-    <div class="mt-auto text-sm text-gray-400 border-t border-gray-700 pt-4">
-      <p>Angemeldet als: <span id="loggedInUsername" class="font-semibold text-white"></span></p>
-      <p>Rolle: <span id="loggedInUserRole" class="font-semibold text-white"></span></p>
-      <p id="currentDate" class="mt-2"></p>
-      <p id="clock"></p>
+    <div class="mt-auto text-center">
+      <p class="text-sm">Angemeldet als: <span id="loggedInUsername" class="font-bold"></span> (<span id="loggedInUserRole"></span>)</p>
+      <button onclick="logoutUser()" class="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+        Logout
+      </button>
     </div>
   </div>
 
-  <!-- Main Content Area -->
-  <div class="flex-1 p-5 overflow-auto flex flex-col items-center">
-    <div class="main-content-area w-full max-w-7xl"> <!-- Increased max-width -->
-      <h1 class="text-4xl font-extrabold text-gray-900 mb-8 text-center">Charter Dashboard</h1>
-
-      <!-- Calendar Section - Moved to top -->
-      <div class="calendar w-full max-w-4xl mx-auto mb-8"> <!-- Added mx-auto for centering -->
-        <div class="nav flex justify-between items-center mb-6">
-          <button onclick="shiftCalendar(-1)" class="btn-primary-modern px-6 py-3">← Zurück</button>
-          <h2 class="text-3xl font-bold text-gray-800">Flugkalender</h2>
-          <button onclick="shiftCalendar(1)" class="btn-primary-modern px-6 py-3">Weiter →</button>
-        </div>
-        <div id="calendarArea" class="calendar-wrapper"></div>
+  <div class="flex-grow flex">
+    <div class="main p-8 flex flex-col">
+      <div class="logo-container">
+        <img src="https://charter-dashboard.de/wp-content/uploads/2024/04/air-cargo-charter-logo-300x129.png" alt="Air Cargo Charter Logo">
       </div>
 
-      <!-- Filter Section -->
-      <div class="card-modern bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-2xl font-semibold text-gray-800 mb-5">Filter Flüge</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          <input type="text" id="refSearch" onkeyup="filterTable()" placeholder="Suche nach Ref" class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent">
-          <input type="text" id="airlineSearch" onkeyup="filterTable()" placeholder="Suche nach Airline" class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent">
-          <input type="text" id="flightNumberSearch" onkeyup="filterTable()" placeholder="Suche nach Flugnummer" class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent">
-          <label class="flex items-center space-x-3 text-gray-700 text-lg">
-            <input type="checkbox" id="archiveCheckbox" class="form-checkbox h-6 w-6 text-blue-600 rounded-md focus:ring-2 focus:ring-blue-400">
-            <span>Archiv anzeigen (Vergangene Flüge)</span>
-          </label>
-          <div class="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-              <label for="fromDate" class="block text-sm font-medium text-gray-700 mb-1">Von Datum:</label>
-              <input type="date" id="fromDate" onchange="filterTable()" class="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-blue-400 focus:border-transparent">
-            </div>
-            <div>
-              <label for="toDate" class="block text-sm font-medium text-gray-700 mb-1">Bis Datum:</label>
-              <input type="date" id="toDate" onchange="filterTable()" class="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-blue-400 focus:border-transparent">
-            </div>
-          </div>
-        </div>
+      <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">Charter Dashboard</h1>
+
+      <div class="filters flex flex-wrap gap-4 mb-6 justify-center">
+        <input type="text" id="refSearch" placeholder="Suche nach Ref..." onkeyup="filterTable()" class="p-2 border border-gray-300 rounded-lg">
+        <input type="text" id="airlineSearch" placeholder="Suche nach Airline..." onkeyup="filterTable()" class="p-2 border border-gray-300 rounded-lg">
+        <input type="text" id="flightNumberSearch" placeholder="Suche nach Flugnummer..." onkeyup="filterTable()" class="p-2 border border-gray-300 rounded-lg">
+        <input type="date" id="fromDate" onchange="filterTable()" class="p-2 border border-gray-300 rounded-lg">
+        <input type="date" id="toDate" onchange="filterTable()" class="p-2 border border-gray-300 rounded-lg">
+        <label for="archiveCheckbox" class="flex items-center gap-2">
+          <input type="checkbox" id="archiveCheckbox" onchange="filterTable()" class="form-checkbox h-5 w-5 text-blue-600">
+          <span class="text-gray-700 font-medium">Archiv anzeigen</span>
+        </label>
       </div>
 
-      <!-- Tables Section (Side-by-side on larger screens, stacked on smaller) -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="card-modern" id="unconfirmedFlightsCard">
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">Unbestätigte Flüge</h2>
-          <p id="summaryInfoUnconfirmed" class="text-md font-medium text-gray-700 mb-4"></p>
-          <div class="table-responsive-container">
-            <table id="dataTableUnconfirmed" class="min-w-full bg-white">
-              <thead>
-                <tr>
-                  <th>Ref</th>
-                  <th>Flugdatum</th>
-                  <th>Airline</th>
-                  <th>Tonnage (kg)</th>
-                  <th>Aktionen</th>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- Data will be loaded here -->
-              </tbody>
+      <div class="table-section">
+        <h2>Unbestätigte Charteranfragen</h2>
+        <div class="overflow-x-auto">
+            <table id="unconfirmedDataTable" class="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
+                <thead>
+                    <tr>
+                        <th>Ref</th>
+                        <th>Flight Date</th>
+                        <th>Airline</th>
+                        <th>Tonnage (kg)</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
             </table>
-          </div>
         </div>
-
-        <div class="card-modern" id="confirmedFlightsCard">
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">Bestätigte Flüge</h2>
-          <p id="summaryInfoConfirmed" class="text-md font-medium text-gray-700 mb-4"></p>
-          <div class="table-responsive-container">
-            <table id="dataTableConfirmed" class="min-w-full bg-white">
-              <thead>
-                <tr>
-                  <th>Ref</th>
-                  <th>Flugdatum</th>
-                  <th>Airline</th>
-                  <th>Tonnage (kg)</th>
-                  <th>Aktionen</th>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- Data will be loaded here -->
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <p id="unconfirmedSummaryInfo" class="summary"></p>
       </div>
 
-      <!-- Summary Section - Moved below tables -->
-      <div class="card-modern bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg">
-        <h2 class="text-2xl font-semibold mb-4">Zusammenfassung</h2>
-        <p id="summaryInfo" class="text-xl font-bold"></p>
+      <div class="table-section mt-8">
+        <h2>Bestätigte Charteranfragen</h2>
+        <div class="overflow-x-auto">
+            <table id="confirmedDataTable" class="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
+                <thead>
+                    <tr>
+                        <th>Ref</th>
+                        <th>Flight Date</th>
+                        <th>Airline</th>
+                        <th>Tonnage (kg)</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
+        <p id="confirmedSummaryInfo" class="summary"></p>
       </div>
 
     </div>
+    <div class="calendar">
+      <div class="nav">
+        <button onclick="shiftCalendar(-1)">← Back</button>
+        <button onclick="shiftCalendar(1)">Forward →</button>
+      </div>
+      <div id="calendarArea" class="calendar-wrapper"></div>
+    </div>
 
-    <!-- Detail Modal -->
     <div class="modal" id="detailModal">
-      <div class="modal-content">
-        <span class="close-button" onclick="closeModal()">&times;</span>
-        <h2 class="text-3xl font-bold text-gray-800 mb-6">Anfragedetails</h2>
-        <div id="modalBody">
-          <!-- Form fields will be loaded here by JavaScript -->
+        <div class="modal-content" id="modalContent">
+            <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeModal()">✖</span>
+            <div id="flightRadar24Search" style="width:100%; margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
+                <h3 style="margin-top: 0; text-align: center; color: #333;">FlightRadar24 Suche</h3>
+                <input type="text" id="callSignSearchInput" placeholder="Call Sign eingeben..." style="width:calc(100% - 100px); display:inline-block; margin-right: 10px;">
+                <button onclick="searchFlightRadar24()" class="btn" style="background-color: #007BFF; color: white;">Suchen</button>
+            </div>
+            <div id="modalBody" class="flex flex-wrap gap-x-5 gap-y-2" style="width:100%;">
+                </div>
         </div>
-      </div>
     </div>
 
-    <!-- History Modal -->
-    <div class="modal" id="historyModal">
-      <div class="modal-content">
-        <span class="close-button" onclick="closeHistoryModal()">&times;</span>
-        <h2 class="text-3xl font-bold text-gray-800 mb-6">Historie für Referenz: <span id="historyRef" class="text-blue-600"></span></h2>
-        <div id="historyBody" class="mt-4">
-          <!-- History logs will be loaded here by JavaScript -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Profile Modal -->
     <div class="modal" id="profileModal">
         <div class="modal-content">
-            <span class="close-button" onclick="closeProfileModal()">&times;</span>
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">Benutzerprofil</h2>
-            <div class="modal-section bg-gray-50">
-                <h3>Benutzerinformationen</h3>
-                <p><span class="detail-label">Benutzername:</span> <span id="loggedInUsernameProfile"></span></p>
-                <p><span class="detail-label">Rolle:</span> <span id="loggedInUserRoleProfile"></span></p>
-            </div>
-            <div class="modal-section bg-yellow-50">
-                <h3>Passwort ändern</h3>
+            <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeProfileModal()">✖</span>
+            <h3 style="width:100%; text-align:center;">Profil von <span id="loggedInUsernameProfile"></span> (<span id="loggedInUserRoleProfile"></span>)</h3>
+            <div style="width:100%;">
                 <label for="newPasswordInput">Neues Passwort:</label>
-                <input type="password" id="newPasswordInput" placeholder="Neues Passwort eingeben">
-                <label for="confirmPasswordInput">Neues Passwort bestätigen:</label>
-                <input type="password" id="confirmPasswordInput" placeholder="Neues Passwort bestätigen">
-                <p id="passwordChangeMessage" class="text-red-500 mt-3"></p>
-                <button class="btn-primary-modern mt-5" onclick="changePassword()">Passwort ändern</button>
+                <input type="password" id="newPasswordInput" placeholder="Neues Passwort">
+            </div>
+            <div style="width:100%;">
+                <label for="confirmPasswordInput">Passwort bestätigen:</label>
+                <input type="password" id="confirmPasswordInput" placeholder="Passwort bestätigen">
+            </div>
+            <p id="passwordChangeMessage" style="width:100%; text-align:center; margin-top:10px; font-weight:bold;"></p>
+            <div class="modal-buttons">
+                <button class="btn" onclick="changePassword()" style="background-color: #28a745; color: white;">Passwort ändern</button>
+                <button class="btn" onclick="closeProfileModal()" style="background-color: #6c757d; color: white;">Schließen</button>
             </div>
         </div>
     </div>
 
-    <!-- Statistics Modal -->
-    <div class="modal" id="statisticsModal">
-        <div class="modal-content statistics-modal-content">
-            <span class="close-button" onclick="closeStatisticsModal()">&times;</span>
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">Statistik Übersicht</h2>
-            <div class="card-modern bg-white p-6 rounded-lg shadow-md mb-6">
-                <h3 class="text-xl font-semibold text-gray-700 mb-4">Datumsbereich auswählen</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                        <label for="statFromDate" class="block text-sm font-medium text-gray-700 mb-1">Von Datum:</label>
-                        <input type="date" id="statFromDate" class="p-3 border border-gray-300 rounded-lg w-full" onchange="generateStatistics()">
-                    </div>
-                    <div>
-                        <label for="statToDate" class="block text-sm font-medium text-gray-700 mb-1">Bis Datum:</label>
-                        <input type="date" id="statToDate" class="p-3 border border-gray-300 rounded-lg w-full" onchange="generateStatistics()">
-                    </div>
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeHistoryModal()">✖</span>
+            <h3>Änderungshistorie für Referenz: <span id="historyRef"></span></h3>
+            <div id="historyBody">
                 </div>
-                <div class="flex justify-end gap-3 mt-5">
-                    <button class="btn-primary-modern" onclick="generateStatistics()">Statistik generieren</button>
-                    <button class="btn-secondary-modern" onclick="downloadStatisticsToCSV()">CSV herunterladen</button>
-                </div>
+            <div class="modal-buttons">
+                <button class="btn" onclick="closeHistoryModal()" style="background-color: #6c757d; color: white;">Schließen</button>
             </div>
+        </div>
+    </div>
+
+    <div class="modal" id="statisticsModal">
+        <div class="modal-content">
+            <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeStatisticsModal()">✖</span>
+            <h3>Statistiken</h3>
             <div id="statisticsBody">
-                <!-- Statistics content and charts will be loaded here -->
                 <div class="chart-container">
-                    <h4>Tonnage pro Monat</h4>
+                    <h4>Gesamte Tonnage pro Monat</h4>
                     <canvas id="tonnagePerMonthChart"></canvas>
                 </div>
                 <div class="chart-container">
-                    <h4>Tonnage pro Kunde</h4>
+                    <h4>Tonnage pro Kunde (Top 10)</h4>
                     <canvas id="tonnagePerCustomerChart"></canvas>
                 </div>
+                </div>
+            <div class="modal-buttons">
+                <button class="btn" onclick="downloadStatisticsToCSV()" style="background-color: #007BFF; color: white;">Statistiken als CSV herunterladen</button>
+                <button class="btn" onclick="closeStatisticsModal()" style="background-color: #6c757d; color: white;">Schließen</button>
             </div>
         </div>
     </div>
 
-    <!-- E-Mail Bestätigungsmodal -->
     <div class="modal" id="emailConfirmationModal">
         <div class="modal-content">
-            <span style="position:absolute; top:15px; right:25px; cursor:pointer; font-size:36px; color:#9ca3af;" onclick="closeEmailConfirmationModal()">✖</span>
-            <h3 class="text-2xl font-bold text-gray-800 mb-4">Charter Bestätigung senden</h3>
-            <p class="text-gray-700 mb-4">Bitte geben Sie die E-Mail-Adresse des Empfängers ein:</p>
-            <input type="email" id="recipientEmailInput" placeholder="Empfänger E-Mail" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400">
-            <p id="emailConfirmationMessage" class="text-red-500 mt-3"></p>
+            <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeEmailConfirmationModal()">✖</span>
+            <h3>Final Charter Confirmation senden</h3>
+            <p>Möchten Sie die Final Charter Confirmation für Referenz: <strong id="confirmRef"></strong> an <strong id="confirmEmail"></strong> senden?</p>
+            <input type="text" id="additionalEmail" placeholder="Zusätzliche E-Mail-Adresse (optional)">
+            <p style="font-size:0.9em; color:#666;">Standardmäßig wird die E-Mail an die Adresse gesendet, die unter "Contact E-Mail Invoicing" hinterlegt ist.</p>
             <div class="modal-buttons">
-                <button class="btn-primary-modern" id="sendEmailConfirmBtn">Senden</button>
-                <button class="btn-secondary-modern" id="previewEmailBtn">Vorschau</button>
-                <button class="btn-secondary-modern" onclick="closeEmailConfirmationModal()">Abbrechen</button>
+                <button class="btn-email-action send" id="sendEmailConfirmBtn">Senden</button>
+                <button class="btn-email-action cancel" onclick="closeEmailConfirmationModal()">Abbrechen</button>
             </div>
         </div>
     </div>
 
-    <!-- E-Mail Vorschau Modal -->
     <div class="modal" id="emailPreviewModal">
         <div class="modal-content">
-            <span style="position:absolute; top:15px; right:25px; cursor:pointer; font-size:36px; color:#9ca3af;" onclick="closeEmailPreviewModal()">✖</span>
-            <h3 class="text-2xl font-bold text-gray-800 mb-4">E-Mail Vorschau für Referenz: <span id="previewRef" class="text-blue-600"></span></h3>
-            <div id="emailPreviewContent" class="bg-gray-100 p-5 rounded-lg mt-4 max-h-96 overflow-y-auto border border-gray-200">
-                <!-- E-Mail Inhalt wird hier geladen -->
-            </div>
-            <div class="modal-buttons mt-6">
-                <button class="btn-primary-modern" id="markAsSentBtn">Charter Confirmation gesendet (manuell)</button>
-                <button class="btn-secondary-modern" onclick="closeEmailPreviewModal()">Schließen</button>
+            <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeEmailPreviewModal()">✖</span>
+            <h3>E-Mail Vorschau für Referenz: <span id="previewRef"></span></h3>
+            <div id="emailPreviewContent"></div> 
+            <div class="modal-buttons">
+                <button class="btn-manual-sent" id="markAsSentBtn">Charter Confirmation gesendet</button> <button class="btn-email-action cancel" onclick="closeEmailPreviewModal()">Schließen</button>
             </div>
         </div>
     </div>
 
   </div>
-  <!-- IMPORTANT CORRECTION: script.js moved here and 'defer' removed -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="script.js"></script>
-
-  <!-- Service Worker Registration -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(registration => {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-          })
-          .catch(err => {
-            console.log('ServiceWorker registration failed: ', err);
-          });
-      });
-    }
-  </script>
+  <div class="calendar">
+    <div class="nav">
+      <button onclick="shiftCalendar(-1)">← Back</button>
+      <button onclick="shiftCalendar(1)">Forward →</button>
+    </div>
+    <div id="calendarArea" class="calendar-wrapper"></div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <script src="script.js"></script>
 </body>
 </html>
