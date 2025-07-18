@@ -375,6 +375,7 @@ function filterTable() {
 
 // === MODAL FUNKTIONEN ===
 function openModal(originalIndex) {
+  console.log("openModal called. currentUser:", currentUser); // Debug: Check currentUser
   if (!currentUser) {
       console.error("Versuch, Modal ohne angemeldeten Benutzer zu öffnen. Weiterleitung zum Login.");
       // Using a custom alert/message box instead of window.alert
@@ -882,11 +883,11 @@ function showSaveFeedback(message, isSuccess) {
         div.style.transform = 'translateX(-50%)';
         div.style.padding = '10px 20px';
         div.style.borderRadius = '8px';
-        div.style.zIndex = '3000';
         div.style.color = 'white';
         div.style.textAlign = 'center';
         div.style.opacity = '0';
         div.style.transition = 'opacity 0.5s ease-in-out';
+        div.style.zIndex = '3000'; // Sicherstellen, dass es über anderen Inhalten liegt
         mainContent.appendChild(div);
         feedbackElement = div;
     } else {
@@ -916,7 +917,7 @@ function renderCalendars() {
   const calendarArea = document.getElementById("calendarArea");
   calendarArea.innerHTML = "";
 
-  // Monate für die Anzeige festlegen (aktueller, vorheriger, nächster Monat)
+  // Monate für die Anzeige festlegen (aktueller und nächster Monat)
   const monthsToShow = [
     new Date(baseYear, baseMonth),     // Aktueller Monat
     new Date(baseYear, baseMonth + 1)  // Nächster Monat
@@ -985,7 +986,6 @@ function createMonthCalendar(date) {
 
         let hasImport = false;
         let hasExport = false;
-        let hasOther = false;
         let tooltipContent = [];
 
         flightsOnDay.forEach(flight => {
@@ -995,15 +995,28 @@ function createMonthCalendar(date) {
             if (String(flight['Flight Type Export']).toLowerCase() === 'ja') {
                 hasExport = true;
             }
-            if (String(flight['Flight Type Import']).toLowerCase() !== 'ja' && String(flight['Flight Type Export']).toLowerCase() !== 'ja') {
-                hasOther = true;
-            }
 
             // Tooltip-Inhalt erstellen
-            const flightTime = flight['Abflugzeit'] ? ` (${flight['Abflugzeit']} Uhr)` : '';
-            const flightInfo = `${flight.Ref} - ${flight.Airline} - ${flight.Flugnummer || 'N/A'}${flightTime} - ${parseFloat(String(flight.Tonnage).replace(',', '.') || "0").toLocaleString('de-DE')} kg`;
-            tooltipContent.push(flightInfo);
+            tooltipContent.push(`Ref: ${flight.Ref || '-'}`);
+            tooltipContent.push(`Airline: ${flight.Airline || '-'}`);
+            tooltipContent.push(`Flugnummer: ${flight.Flugnummer || '-'}`);
+            tooltipContent.push(`Call Sign: ${flight['Call Sign'] || '-'}`);
+            tooltipContent.push(`Abflugzeit: ${flight['Abflugzeit'] || '-'}`);
+
+            if (String(flight['Flight Type Import']).toLowerCase() === 'ja' && flight.Origin) {
+                tooltipContent.push(`Origin: ${flight.Origin}`);
+            } else if (String(flight['Flight Type Export']).toLowerCase() === 'ja' && flight.Destination) {
+                tooltipContent.push(`Destination: ${flight.Destination}`);
+            } else {
+                tooltipContent.push(`Typ: N/A`); // Wenn weder Import noch Export
+            }
+            tooltipContent.push(`Tonnage: ${parseFloat(String(flight.Tonnage).replace(',', '.') || "0").toLocaleString('de-DE')} kg`);
+            tooltipContent.push('---'); // Trennlinie zwischen Flügen
         });
+
+        if (tooltipContent.length > 0) {
+            tooltipContent.pop(); // Entferne die letzte Trennlinie
+        }
 
 
         cell.textContent = currentDay;
@@ -1147,6 +1160,7 @@ function closeHistoryModal() {
 
 // === STATISTIK FUNKTIONEN ===
 function openStatisticsModal() {
+    console.log("openStatisticsModal called. Opening statistics modal."); // Debug: Check if function is called
     document.getElementById('statisticsModal').style.display = 'flex';
     // Set default dates if not already set
     const statFromDateInput = document.getElementById('statFromDate');
@@ -1799,6 +1813,12 @@ function updateClock() {
   const now = new Date();
   document.getElementById("currentDate").textContent = `Datum: ${now.toLocaleDateString('de-DE')}`;
   document.getElementById("clock").textContent = `Uhrzeit: ${now.toLocaleTimeString('de-DE')}`;
+}
+
+// Funktion zum Erstellen einer neuen Charteranfrage
+function createNewRequest() {
+    console.log("createNewRequest called."); // Debugging-Ausgabe
+    openModal(-1); // Öffne das Modal mit leeren Feldern für eine neue Anfrage
 }
 
 // --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
