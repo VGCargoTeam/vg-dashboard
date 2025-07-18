@@ -29,33 +29,74 @@
       background-position: center;
       background-attachment: fixed;
     }
-    .main-content-area {
-      flex: 1;
-      background: rgba(255,255,255,0.95); /* Slightly less transparent */
-      backdrop-filter: blur(10px); /* Stronger blur */
-      padding: 30px;
-      margin: 20px;
-      border-radius: 20px; /* More rounded corners */
-      box-shadow: 0 20px 40px rgba(0,0,0,0.3); /* Deeper shadow */
+    /* Define the main layout containers */
+    .dashboard-container {
+      display: flex;
+      flex-direction: column; /* Stacks columns on small screens */
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+    }
+
+    @media (min-width: 768px) { /* md breakpoint for desktop layout */
+      .dashboard-container {
+        flex-direction: row; /* Arranges columns side-by-side on larger screens */
+      }
+    }
+
+    /* Styles for the main content area (left/center column) */
+    .main-content-column {
+      flex: 1; /* Takes up available space */
+      padding: 20px; /* Adjusted padding */
+      overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 25px; /* More space between sections */
-      overflow-y: auto;
+      align-items: center;
     }
+
+    /* Styles for the calendar column (right column) */
+    .calendar-column {
+      width: 100%; /* Full width on small screens */
+      padding: 20px; /* Adjusted padding */
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    @media (min-width: 768px) { /* md breakpoint for desktop layout */
+      .calendar-column {
+        width: 380px; /* Fixed width for the calendar column on desktop */
+        flex-shrink: 0; /* Prevent shrinking */
+      }
+    }
+
+    .main-content-area { /* This will be the content inside the main-content-column */
+      width: 100%;
+      max-width: 1000px; /* Max width for the content within the left column */
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+    }
+
     .card-modern {
       background: #fff;
       padding: 25px;
-      border-radius: 15px; /* Modern rounded corners */
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1); /* Soft shadow */
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
       transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     }
     .card-modern:hover {
-      transform: translateY(-8px); /* More pronounced lift */
-      box-shadow: 0 12px 25px rgba(0,0,0,0.15); /* Stronger shadow on hover */
+      transform: translateY(-8px);
+      box-shadow: 0 12px 25px rgba(0,0,0,0.15);
     }
     .table-responsive-container {
-      overflow-x: auto; /* Enable horizontal scroll for tables on small screens */
-      -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
     table {
       width: 100%;
@@ -63,32 +104,31 @@
       margin-top: 15px;
       border-radius: 10px;
       overflow: hidden;
-      table-layout: fixed; /* Ensures columns respect specified widths */
+      table-layout: fixed;
     }
     th, td {
       border: 1px solid #e0e0e0;
-      padding: 10px 8px; /* Adjusted padding for better fit */
+      padding: 10px 8px;
       text-align: left;
-      font-size: 0.85em; /* Slightly smaller font for compactness */
-      word-wrap: break-word; /* Allow long words to break */
+      font-size: 0.85em;
+      word-wrap: break-word;
     }
-    /* Specific column widths for tables to prevent horizontal scroll */
-    th:nth-child(1), td:nth-child(1) { width: 15%; } /* Ref */
-    th:nth-child(2), td:nth-child(2) { width: 20%; } /* Flight Date */
-    th:nth-child(3), td:nth-child(3) { width: 25%; } /* Airline */
-    th:nth-child(4), td:nth-child(4) { width: 20%; } /* Tonnage (kg) */
-    th:nth-child(5), td:nth-child(5) { width: 20%; } /* Actions */
+    th:nth-child(1), td:nth-child(1) { width: 15%; }
+    th:nth-child(2), td:nth-child(2) { width: 20%; }
+    th:nth-child(3), td:nth-child(3) { width: 25%; }
+    th:nth-child(4), td:nth-child(4) { width: 20%; }
+    th:nth-child(5), td:nth-child(5) { width: 20%; }
 
     th {
-      background-color: #f0f4f8; /* Lighter header background */
+      background-color: #f0f4f8;
       font-weight: 600;
       color: #4a5568;
     }
     tr:nth-child(even) {
-      background-color: #f8fbfd; /* Subtle zebra striping */
+      background-color: #f8fbfd;
     }
     tr:hover {
-      background-color: #e6f7ff; /* Light blue hover effect */
+      background-color: #e6f7ff;
     }
     .btn-action {
       padding: 8px 15px;
@@ -98,27 +138,27 @@
       font-weight: 600;
       transition: all 0.2s ease;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      white-space: nowrap; /* Prevent button text from wrapping */
-      font-size: 0.8em; /* Smaller font for buttons in table */
+      white-space: nowrap;
+      font-size: 0.8em;
     }
     .btn-view {
-      background-color: #34d399; /* Tailwind green-400 */
+      background-color: #34d399;
       color: white;
     }
     .btn-view:hover {
-      background-color: #10b981; /* Tailwind green-500 */
+      background-color: #10b981;
       box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
     .btn-delete {
-      background-color: #ef4444; /* Tailwind red-500 */
+      background-color: #ef4444;
       color: white;
     }
     .btn-delete:hover {
-      background-color: #dc2626; /* Tailwind red-600 */
+      background-color: #dc2626;
       box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
     .btn-primary-modern {
-      background-color: #3b82f6; /* Tailwind blue-500 */
+      background-color: #3b82f6;
       color: white;
       padding: 12px 25px;
       border-radius: 10px;
@@ -127,11 +167,11 @@
       transition: all 0.2s ease;
     }
     .btn-primary-modern:hover {
-      background-color: #2563eb; /* Tailwind blue-600 */
+      background-color: #2563eb;
       box-shadow: 0 6px 15px rgba(59,130,246,0.4);
     }
     .btn-secondary-modern {
-      background-color: #6b7280; /* Tailwind gray-500 */
+      background-color: #6b7280;
       color: white;
       padding: 12px 25px;
       border-radius: 10px;
@@ -140,11 +180,11 @@
       transition: all 0.2s ease;
     }
     .btn-secondary-modern:hover {
-      background-color: #4b5563; /* Tailwind gray-600 */
+      background-color: #4b5563;
       box-shadow: 0 6px 15px rgba(107,114,128,0.4);
     }
 
-    /* Modal styles (retained and slightly enhanced) */
+    /* Modal styles */
     .modal {
       display: none;
       position: fixed;
@@ -154,7 +194,7 @@
       width: 100%;
       height: 100%;
       overflow: auto;
-      background-color: rgba(0,0,0,0.6); /* Darker overlay */
+      background-color: rgba(0,0,0,0.6);
       align-items: center;
       justify-content: center;
       animation: fadeIn 0.3s ease-out;
@@ -162,20 +202,20 @@
     .modal-content {
       background-color: #fefefe;
       margin: auto;
-      padding: 35px; /* More padding */
-      border: none; /* No border */
-      width: 95%; /* Wider on small screens */
-      max-width: 900px; /* Wider max-width */
-      border-radius: 20px; /* More rounded */
-      box-shadow: 0 15px 40px rgba(0,0,0,0.4); /* Stronger shadow */
+      padding: 35px;
+      border: none;
+      width: 95%;
+      max-width: 900px;
+      border-radius: 20px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.4);
       position: relative;
-      max-height: 95vh; /* Taller */
+      max-height: 95vh;
       overflow-y: auto;
       animation: slideIn 0.3s ease-out;
     }
     .close-button {
-      color: #9ca3af; /* Lighter grey for close button */
-      font-size: 36px; /* Larger */
+      color: #9ca3af;
+      font-size: 36px;
       font-weight: bold;
       position: absolute;
       top: 15px;
@@ -184,16 +224,16 @@
     }
     .close-button:hover,
     .close-button:focus {
-      color: #1f2937; /* Darker on hover */
+      color: #1f2937;
       text-decoration: none;
       cursor: pointer;
     }
     .modal-section {
-      background-color: #f9fafb; /* Very light background */
+      background-color: #f9fafb;
       padding: 20px;
       border-radius: 12px;
       margin-bottom: 20px;
-      border: 1px solid #e5e7eb; /* Subtle border */
+      border: 1px solid #e5e7eb;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     .modal-section h3 {
@@ -217,11 +257,11 @@
     .modal-section input[type="time"],
     .modal-section textarea,
     .modal-section select {
-      width: 100%; /* Full width */
-      padding: 12px; /* More padding */
+      width: 100%;
+      padding: 12px;
       margin-bottom: 15px;
-      border: 1px solid #d1d5db; /* Neutral border */
-      border-radius: 10px; /* More rounded */
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
       box-sizing: border-box;
       transition: border-color 0.2s, box-shadow 0.2s;
       font-size: 1em;
@@ -232,8 +272,8 @@
     .modal-section input[type="time"]:focus,
     .modal-section textarea:focus,
     .modal-section select:focus {
-      border-color: #3b82f6; /* Blue focus */
-      box-shadow: 0 0 0 4px rgba(59,130,246,0.2); /* Blue shadow */
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59,130,246,0.2);
       outline: none;
     }
     .modal-section textarea {
@@ -242,7 +282,7 @@
     }
     .modal-section input[type="checkbox"] {
       margin-right: 10px;
-      transform: scale(1.3); /* Larger checkbox */
+      transform: scale(1.3);
     }
     .modal-buttons {
       display: flex;
@@ -259,7 +299,7 @@
       margin-bottom: 25px;
       border-radius: 16px;
       box-shadow: 0 15px 30px rgba(0,0,0,0.25);
-      max-width: 800px; /* Increased max-width for calendar */
+      width: 100%; /* Take full width of its column */
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -273,15 +313,14 @@
     }
     .calendar-wrapper {
       display: flex;
+      flex-direction: column; /* Explicitly stack months vertically */
       gap: 25px;
-      flex-wrap: wrap;
       justify-content: center;
       overflow: visible;
     }
     .calendar-block {
       flex: 1;
-      min-width: 300px;
-      max-width: 380px; /* Adjusted max-width for calendar block */
+      width: 100%; /* Take full width of the calendar-wrapper */
       border: 1px solid #e0e0e0;
       border-radius: 12px;
       padding: 20px;
@@ -301,16 +340,16 @@
       width: 100%;
       border-collapse: collapse;
       overflow: visible;
-      table-layout: fixed; /* Keep fixed layout for consistent cells */
+      table-layout: fixed;
     }
     .calendar-block tbody {
       overflow: visible;
     }
     .calendar-block th, .calendar-block td {
       border: 1px solid #f0f0f0;
-      padding: 5px; /* Reduced padding for compactness */
+      padding: 5px;
       text-align: center;
-      font-size: 0.8em; /* Reduced font size for compactness */
+      font-size: 0.8em;
     }
     .calendar-block th {
       background-color: #f5f5f5;
@@ -411,19 +450,19 @@
       }
       /* For small screens, allow tables to scroll horizontally */
       .table-responsive-container table {
-        table-layout: auto; /* Allow content to dictate width */
-        min-width: 600px; /* Minimum width to prevent excessive squeezing */
+        table-layout: auto;
+        min-width: 600px;
       }
     }
 
     /* Statistics Modal styles */
     .statistics-modal-content {
-        max-width: 1000px; /* Even wider for charts */
+        max-width: 1000px;
         width: 95%;
     }
     .chart-container {
         position: relative;
-        height: 400px; /* Taller charts */
+        height: 400px;
         width: 100%;
         margin-bottom: 30px;
         background-color: #fff;
@@ -509,10 +548,10 @@
 
     /* Email input field enhancement */
     #recipientEmailInput {
-        border: 2px solid #3b82f6; /* Tailwind blue-500 */
+        border: 2px solid #3b82f6;
         box-shadow: 0 0 10px rgba(59,130,246,0.3);
-        padding: 15px; /* More padding */
-        font-size: 1.2em; /* Larger font */
+        padding: 15px;
+        font-size: 1.2em;
         border-radius: 10px;
     }
 
@@ -529,7 +568,7 @@
   <!-- PWA Manifest Link -->
   <link rel="manifest" href="/manifest.json">
 </head>
-<body class="flex flex-col md:flex-row min-h-screen font-inter">
+<body class="dashboard-container">
   <!-- Sidebar / Navigation -->
   <div class="w-full md:w-64 bg-gray-900 text-white flex flex-col p-6 shadow-xl">
     <div class="text-3xl font-extrabold mb-8 text-center text-blue-300">Charter Hub</div>
@@ -569,20 +608,10 @@
     </div>
   </div>
 
-  <!-- Main Content Area -->
-  <div class="flex-1 p-5 overflow-auto flex flex-col items-center">
-    <div class="main-content-area w-full max-w-7xl"> <!-- Increased max-width -->
+  <!-- Main Content Column -->
+  <div class="main-content-column">
+    <div class="main-content-area">
       <h1 class="text-4xl font-extrabold text-gray-900 mb-8 text-center">Charter Dashboard</h1>
-
-      <!-- Calendar Section - Moved to top -->
-      <div class="calendar w-full max-w-4xl mx-auto mb-8"> <!-- Added mx-auto for centering -->
-        <div class="nav flex justify-between items-center mb-6">
-          <button onclick="shiftCalendar(-1)" class="btn-primary-modern px-6 py-3">← Zurück</button>
-          <h2 class="text-3xl font-bold text-gray-800">Flugkalender</h2>
-          <button onclick="shiftCalendar(1)" class="btn-primary-modern px-6 py-3">Weiter →</button>
-        </div>
-        <div id="calendarArea" class="calendar-wrapper"></div>
-      </div>
 
       <!-- Filter Section -->
       <div class="card-modern bg-white p-6 rounded-lg shadow-md">
@@ -658,121 +687,132 @@
         <h2 class="text-2xl font-semibold mb-4">Zusammenfassung</h2>
         <p id="summaryInfo" class="text-xl font-bold"></p>
       </div>
-
     </div>
-
-    <!-- Detail Modal -->
-    <div class="modal" id="detailModal">
-      <div class="modal-content">
-        <span class="close-button" onclick="closeModal()">&times;</span>
-        <h2 class="text-3xl font-bold text-gray-800 mb-6">Anfragedetails</h2>
-        <div id="modalBody">
-          <!-- Form fields will be loaded here by JavaScript -->
-        </div>
-      </div>
-    </div>
-
-    <!-- History Modal -->
-    <div class="modal" id="historyModal">
-      <div class="modal-content">
-        <span class="close-button" onclick="closeHistoryModal()">&times;</span>
-        <h2 class="text-3xl font-bold text-gray-800 mb-6">Historie für Referenz: <span id="historyRef" class="text-blue-600"></span></h2>
-        <div id="historyBody" class="mt-4">
-          <!-- History logs will be loaded here by JavaScript -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Profile Modal -->
-    <div class="modal" id="profileModal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeProfileModal()">&times;</span>
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">Benutzerprofil</h2>
-            <div class="modal-section bg-gray-50">
-                <h3>Benutzerinformationen</h3>
-                <p><span class="detail-label">Benutzername:</span> <span id="loggedInUsernameProfile"></span></p>
-                <p><span class="detail-label">Rolle:</span> <span id="loggedInUserRoleProfile"></span></p>
-            </div>
-            <div class="modal-section bg-yellow-50">
-                <h3>Passwort ändern</h3>
-                <label for="newPasswordInput">Neues Passwort:</label>
-                <input type="password" id="newPasswordInput" placeholder="Neues Passwort eingeben">
-                <label for="confirmPasswordInput">Neues Passwort bestätigen:</label>
-                <input type="password" id="confirmPasswordInput" placeholder="Neues Passwort bestätigen">
-                <p id="passwordChangeMessage" class="text-red-500 mt-3"></p>
-                <button class="btn-primary-modern mt-5" onclick="changePassword()">Passwort ändern</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Statistics Modal -->
-    <div class="modal" id="statisticsModal">
-        <div class="modal-content statistics-modal-content">
-            <span class="close-button" onclick="closeStatisticsModal()">&times;</span>
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">Statistik Übersicht</h2>
-            <div class="card-modern bg-white p-6 rounded-lg shadow-md mb-6">
-                <h3 class="text-xl font-semibold text-gray-700 mb-4">Datumsbereich auswählen</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                        <label for="statFromDate" class="block text-sm font-medium text-gray-700 mb-1">Von Datum:</label>
-                        <input type="date" id="statFromDate" class="p-3 border border-gray-300 rounded-lg w-full" onchange="generateStatistics()">
-                    </div>
-                    <div>
-                        <label for="statToDate" class="block text-sm font-medium text-gray-700 mb-1">Bis Datum:</label>
-                        <input type="date" id="statToDate" class="p-3 border border-gray-300 rounded-lg w-full" onchange="generateStatistics()">
-                    </div>
-                </div>
-                <div class="flex justify-end gap-3 mt-5">
-                    <button class="btn-primary-modern" onclick="generateStatistics()">Statistik generieren</button>
-                    <button class="btn-secondary-modern" onclick="downloadStatisticsToCSV()">CSV herunterladen</button>
-                </div>
-            </div>
-            <div id="statisticsBody">
-                <!-- Statistics content and charts will be loaded here -->
-                <div class="chart-container">
-                    <h4>Tonnage pro Monat</h4>
-                    <canvas id="tonnagePerMonthChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <h4>Tonnage pro Kunde</h4>
-                    <canvas id="tonnagePerCustomerChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- E-Mail Bestätigungsmodal -->
-    <div class="modal" id="emailConfirmationModal">
-        <div class="modal-content">
-            <span style="position:absolute; top:15px; right:25px; cursor:pointer; font-size:36px; color:#9ca3af;" onclick="closeEmailConfirmationModal()">✖</span>
-            <h3 class="text-2xl font-bold text-gray-800 mb-4">Charter Bestätigung senden</h3>
-            <p class="text-gray-700 mb-4">Bitte geben Sie die E-Mail-Adresse des Empfängers ein:</p>
-            <input type="email" id="recipientEmailInput" placeholder="Empfänger E-Mail" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400">
-            <p id="emailConfirmationMessage" class="text-red-500 mt-3"></p>
-            <div class="modal-buttons">
-                <button class="btn-primary-modern" id="sendEmailConfirmBtn">Senden</button>
-                <button class="btn-secondary-modern" id="previewEmailBtn">Vorschau</button>
-                <button class="btn-secondary-modern" onclick="closeEmailConfirmationModal()">Abbrechen</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- E-Mail Vorschau Modal -->
-    <div class="modal" id="emailPreviewModal">
-        <div class="modal-content">
-            <span style="position:absolute; top:15px; right:25px; cursor:pointer; font-size:36px; color:#9ca3af;" onclick="closeEmailPreviewModal()">✖</span>
-            <h3 class="text-2xl font-bold text-gray-800 mb-4">E-Mail Vorschau für Referenz: <span id="previewRef" class="text-blue-600"></span></h3>
-            <div id="emailPreviewContent" class="bg-gray-100 p-5 rounded-lg mt-4 max-h-96 overflow-y-auto border border-gray-200">
-                <!-- E-Mail Inhalt wird hier geladen -->
-            </div>
-            <div class="modal-buttons mt-6">
-                <button class="btn-primary-modern" id="markAsSentBtn">Charter Confirmation gesendet (manuell)</button>
-                <button class="btn-secondary-modern" onclick="closeEmailPreviewModal()">Schließen</button>
-            </div>
-        </div>
-    </div>
-
   </div>
+
+  <!-- Right Calendar Column -->
+  <div class="calendar-column">
+    <div class="calendar">
+      <div class="nav flex justify-between items-center mb-6">
+        <button onclick="shiftCalendar(-1)" class="btn-primary-modern px-6 py-3">← Zurück</button>
+        <h2 class="text-3xl font-bold text-gray-800">Flugkalender</h2>
+        <button onclick="shiftCalendar(1)" class="btn-primary-modern px-6 py-3">Weiter →</button>
+      </div>
+      <div id="calendarArea" class="calendar-wrapper"></div>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal" id="detailModal">
+    <div class="modal-content">
+      <span class="close-button" onclick="closeModal()">&times;</span>
+      <h2 class="text-3xl font-bold text-gray-800 mb-6">Anfragedetails</h2>
+      <div id="modalBody">
+        <!-- Form fields will be loaded here by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- History Modal -->
+  <div class="modal" id="historyModal">
+    <div class="modal-content">
+      <span class="close-button" onclick="closeHistoryModal()">&times;</span>
+      <h2 class="text-3xl font-bold text-gray-800 mb-6">Historie für Referenz: <span id="historyRef" class="text-blue-600"></span></h2>
+      <div id="historyBody" class="mt-4">
+        <!-- History logs will be loaded here by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Modal -->
+  <div class="modal" id="profileModal">
+      <div class="modal-content">
+          <span class="close-button" onclick="closeProfileModal()">&times;</span>
+          <h2 class="text-3xl font-bold text-gray-800 mb-6">Benutzerprofil</h2>
+          <div class="modal-section bg-gray-50">
+              <h3>Benutzerinformationen</h3>
+              <p><span class="detail-label">Benutzername:</span> <span id="loggedInUsernameProfile"></span></p>
+              <p><span class="detail-label">Rolle:</span> <span id="loggedInUserRoleProfile"></span></p>
+          </div>
+          <div class="modal-section bg-yellow-50">
+              <h3>Passwort ändern</h3>
+              <label for="newPasswordInput">Neues Passwort:</label>
+              <input type="password" id="newPasswordInput" placeholder="Neues Passwort eingeben">
+              <label for="confirmPasswordInput">Neues Passwort bestätigen:</label>
+              <input type="password" id="confirmPasswordInput" placeholder="Neues Passwort bestätigen">
+              <p id="passwordChangeMessage" class="text-red-500 mt-3"></p>
+              <button class="btn-primary-modern mt-5" onclick="changePassword()">Passwort ändern</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- Statistics Modal -->
+  <div class="modal" id="statisticsModal">
+      <div class="modal-content statistics-modal-content">
+          <span class="close-button" onclick="closeStatisticsModal()">&times;</span>
+          <h2 class="text-3xl font-bold text-gray-800 mb-6">Statistik Übersicht</h2>
+          <div class="card-modern bg-white p-6 rounded-lg shadow-md mb-6">
+              <h3 class="text-xl font-semibold text-gray-700 mb-4">Datumsbereich auswählen</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                      <label for="statFromDate" class="block text-sm font-medium text-gray-700 mb-1">Von Datum:</label>
+                      <input type="date" id="statFromDate" class="p-3 border border-gray-300 rounded-lg w-full" onchange="generateStatistics()">
+                  </div>
+                  <div>
+                      <label for="statToDate" class="block text-sm font-medium text-gray-700 mb-1">Bis Datum:</label>
+                      <input type="date" id="statToDate" class="p-3 border border-gray-300 rounded-lg w-full" onchange="generateStatistics()">
+                  </div>
+              </div>
+              <div class="flex justify-end gap-3 mt-5">
+                  <button class="btn-primary-modern" onclick="generateStatistics()">Statistik generieren</button>
+                  <button class="btn-secondary-modern" onclick="downloadStatisticsToCSV()">CSV herunterladen</button>
+              </div>
+          </div>
+          <div id="statisticsBody">
+              <!-- Statistics content and charts will be loaded here -->
+              <div class="chart-container">
+                  <h4>Tonnage pro Monat</h4>
+                  <canvas id="tonnagePerMonthChart"></canvas>
+              </div>
+              <div class="chart-container">
+                  <h4>Tonnage pro Kunde</h4>
+                  <canvas id="tonnagePerCustomerChart"></canvas>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <!-- E-Mail Bestätigungsmodal -->
+  <div class="modal" id="emailConfirmationModal">
+      <div class="modal-content">
+          <span style="position:absolute; top:15px; right:25px; cursor:pointer; font-size:36px; color:#9ca3af;" onclick="closeEmailConfirmationModal()">✖</span>
+          <h3 class="text-2xl font-bold text-gray-800 mb-4">Charter Bestätigung senden</h3>
+          <p class="text-gray-700 mb-4">Bitte geben Sie die E-Mail-Adresse des Empfängers ein:</p>
+          <input type="email" id="recipientEmailInput" placeholder="Empfänger E-Mail" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400">
+          <p id="emailConfirmationMessage" class="text-red-500 mt-3"></p>
+          <div class="modal-buttons">
+              <button class="btn-primary-modern" id="sendEmailConfirmBtn">Senden</button>
+              <button class="btn-secondary-modern" id="previewEmailBtn">Vorschau</button>
+              <button class="btn-secondary-modern" onclick="closeEmailConfirmationModal()">Abbrechen</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- E-Mail Vorschau Modal -->
+  <div class="modal" id="emailPreviewModal">
+      <div class="modal-content">
+          <span style="position:absolute; top:15px; right:25px; cursor:pointer; font-size:36px; color:#9ca3af;" onclick="closeEmailPreviewModal()">✖</span>
+          <h3 class="text-2xl font-bold text-gray-800 mb-4">E-Mail Vorschau für Referenz: <span id="previewRef" class="text-blue-600"></span></h3>
+          <div id="emailPreviewContent" class="bg-gray-100 p-5 rounded-lg mt-4 max-h-96 overflow-y-auto border border-gray-200">
+              <!-- E-Mail Inhalt wird hier geladen -->
+          </div>
+          <div class="modal-buttons mt-6">
+              <button class="btn-primary-modern" id="markAsSentBtn">Charter Confirmation gesendet (manuell)</button>
+              <button class="btn-secondary-modern" onclick="closeEmailPreviewModal()">Schließen</button>
+          </div>
+      </div>
+  </div>
+
   <!-- IMPORTANT CORRECTION: script.js moved here and 'defer' removed -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="script.js"></script>
