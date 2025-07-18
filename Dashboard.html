@@ -327,12 +327,11 @@
       color: #2D3748;
     }
     .calendar {
-      width: auto; /* Allow it to take content width */
+      width: 700px; /* Erhöhte Breite für den Kalenderbereich */
       display: flex;
-      flex-direction: column; /* Keep internal elements stacked */
+      flex-direction: column; /* Behält interne Elemente gestapelt */
       align-items: center;
       gap: 15px;
-      /* Removed background, backdrop-filter, padding, margin, border-radius, box-shadow */
       overflow-y: auto; /* Ermöglicht Scrollen im Kalender */
       flex-shrink: 0; /* Verhindert, dass der Kalender schrumpft */
     }
@@ -363,8 +362,8 @@
       width: 100%; /* Stellt sicher, dass der Wrapper die volle Breite des Kalender-Containers einnimmt */
     }
     .calendar-block {
-      width: calc(50% - 5px); /* Für zwei Spalten mit 10px Gap dazwischen */
-      min-width: 180px; /* Mindestbreite, damit es nicht zu klein wird */
+      width: calc(50% - 10px); /* Für zwei Spalten mit 10px Gap dazwischen */
+      min-width: 340px; /* Erhöhte Mindestbreite für größere Darstellung */
       background-color: white;
       border-radius: 8px;
       padding: 15px;
