@@ -256,7 +256,7 @@
       background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%);
       backdrop-filter: blur(8px);
       padding: 25px;
-      margin: 20px;
+      margin-bottom: 25px; /* Adjusted margin for spacing below calendar */
       border-radius: 16px;
       box-shadow: 0 15px 30px rgba(0,0,0,0.25);
       max-width: 650px;
@@ -573,6 +573,16 @@
     <div class="main-content-area w-full max-w-7xl"> <!-- Increased max-width -->
       <h1 class="text-4xl font-extrabold text-gray-900 mb-8 text-center">Charter Dashboard</h1>
 
+      <!-- Calendar Section - Moved to top -->
+      <div class="calendar w-full max-w-4xl mx-auto mb-8"> <!-- Added mx-auto for centering -->
+        <div class="nav flex justify-between items-center mb-6">
+          <button onclick="shiftCalendar(-1)" class="btn-primary-modern px-6 py-3">← Zurück</button>
+          <h2 class="text-3xl font-bold text-gray-800">Flugkalender</h2>
+          <button onclick="shiftCalendar(1)" class="btn-primary-modern px-6 py-3">Weiter →</button>
+        </div>
+        <div id="calendarArea" class="calendar-wrapper"></div>
+      </div>
+
       <!-- Filter Section -->
       <div class="card-modern bg-white p-6 rounded-lg shadow-md">
         <h2 class="text-2xl font-semibold text-gray-800 mb-5">Filter Flüge</h2>
@@ -647,16 +657,6 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Calendar Section -->
-    <div class="calendar w-full max-w-4xl mt-8">
-      <div class="nav flex justify-between items-center mb-6">
-        <button onclick="shiftCalendar(-1)" class="btn-primary-modern px-6 py-3">← Zurück</button>
-        <h2 class="text-3xl font-bold text-gray-800">Flugkalender</h2>
-        <button onclick="shiftCalendar(1)" class="btn-primary-modern px-6 py-3">Weiter →</button>
-      </div>
-      <div id="calendarArea" class="calendar-wrapper"></div>
     </div>
 
     <!-- Detail Modal -->
