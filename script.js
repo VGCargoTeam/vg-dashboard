@@ -590,19 +590,20 @@ function openModal(originalIndex) {
   buttonContainer.style.marginTop = "20px";
 
   // Speichern-Button ist für alle eingeloggten Benutzer verfügbar
-  if (currentUser) {
-    const saveButton = document.createElement("button");
-    saveButton.textContent = "Speichern";
-    saveButton.onclick = saveDetails;
-    saveButton.style.padding = "10px 20px";
-    saveButton.style.fontWeight = "bold";
-    saveButton.style.backgroundColor = "#28a745";
-    saveButton.style.color = "white";
-    saveButton.style.border = "none";
-    saveButton.style.borderRadius = "6px";
-    saveButton.style.cursor = "pointer";
-    buttonContainer.appendChild(saveButton);
-  }
+  // Der Speichern-Button ist bereits im HTML des Modals vorhanden, daher hier nicht mehr dynamisch hinzufügen.
+  // if (currentUser) {
+  //   const saveButton = document.createElement("button");
+  //   saveButton.textContent = "Speichern";
+  //   saveButton.onclick = saveDetails;
+  //   saveButton.style.padding = "10px 20px";
+  //   saveButton.style.fontWeight = "bold";
+  //   saveButton.style.backgroundColor = "#28a745";
+  //   saveButton.style.color = "white";
+  //   saveButton.style.border = "none";
+  //   saveButton.style.borderRadius = "6px";
+  //   saveButton.style.cursor = "pointer";
+  //   buttonContainer.appendChild(saveButton);
+  // }
 
   const historyButton = document.createElement("button");
   historyButton.textContent = "History";
@@ -626,8 +627,21 @@ function openModal(originalIndex) {
     sendConfirmationButton.style.border = "none";
     sendConfirmationButton.style.borderRadius = "6px";
     sendConfirmationButton.style.cursor = "pointer";
-    sendConfirmationButton.onclick = () => openEmailConfirmationModal(r); // Übergabe der aktuellen Daten
+    sendConfirmationButton.onclick = () => sendFinalConfirmationEmail(r); // Ruft neue Funktion auf, die direkt sendet
     buttonContainer.appendChild(sendConfirmationButton);
+
+    // NEU: Button für E-Mail Vorschau hinzufügen
+    const previewEmailButton = document.createElement("button");
+    previewEmailButton.textContent = "E-Mail Vorschau anzeigen";
+    previewEmailButton.style.padding = "10px 20px";
+    previewEmailButton.style.fontWeight = "bold";
+    previewEmailButton.style.backgroundColor = "#6c757d"; // Grau für Vorschau
+    previewEmailButton.style.color = "white";
+    previewEmailButton.style.border = "none";
+    previewEmailButton.style.borderRadius = "6px";
+    previewEmailButton.style.cursor = "pointer";
+    previewEmailButton.onclick = () => generateEmailPreview(r); // Ruft Vorschau-Funktion auf
+    buttonContainer.appendChild(previewEmailButton);
   }
 
   if (currentUser && currentUser.role === 'admin' && originalIndex !== -1) {
@@ -706,6 +720,11 @@ function closeModal() {
   document.getElementById("detailModal").style.display = "none";
 }
 
+// NEU: Funktion zum Schließen des Tagesübersicht-Modals
+function closeDayOverviewModal() {
+    document.getElementById('dayOverviewModal').style.display = 'none';
+}
+
 // Event Listener für ESC-Taste zum Schließen aller Modals
 document.addEventListener('keydown', (e) => {
   if (e.key === "Escape") {
@@ -715,6 +734,7 @@ document.addEventListener('keydown', (e) => {
     closeStatisticsModal();
     closeEmailConfirmationModal();
     closeEmailPreviewModal();
+    closeDayOverviewModal(); // NEU: Auch das Tagesübersicht-Modal schließen
   }
 });
 
@@ -1061,15 +1081,15 @@ function shiftCalendar(direction) {
 }
 
 function openDayOverview(dateString, flights) {
-    const historyModal = document.getElementById('historyModal');
-    const historyRefSpan = document.getElementById('historyRef');
-    const historyBody = document.getElementById('historyBody');
+    const dayOverviewModal = document.getElementById('dayOverviewModal'); // NEU: Referenz auf das neue Modal
+    const dayOverviewDateSpan = document.getElementById('dayOverviewDate'); // NEU: Referenz auf den Datums-Span
+    const dayOverviewBody = document.getElementById('dayOverviewBody'); // NEU: Referenz auf den Body
 
-    historyRefSpan.textContent = `Flüge am ${new Date(dateString).toLocaleDateString('de-DE')}`;
-    historyBody.innerHTML = ''; // Alten Inhalt leeren
+    dayOverviewDateSpan.textContent = new Date(dateString).toLocaleDateString('de-DE');
+    dayOverviewBody.innerHTML = ''; // Alten Inhalt leeren
 
     if (flights.length === 0) {
-        historyBody.innerHTML = '<p>Keine Flüge für dieses Datum.</p>';
+        dayOverviewBody.innerHTML = '<p>Keine Flüge für dieses Datum.</p>';
     } else {
         const ul = document.createElement('ul');
         flights.forEach(flight => {
@@ -1091,13 +1111,13 @@ function openDayOverview(dateString, flights) {
                 link.addEventListener('click', (event) => {
                     event.preventDefault();
                     openModal(parseInt(event.target.dataset.index));
-                    closeHistoryModal();
+                    closeDayOverviewModal(); // NEU: Tagesübersicht-Modal schließen
                 });
             }
         });
-        historyBody.appendChild(ul);
+        dayOverviewBody.appendChild(ul);
     }
-    historyModal.style.display = 'flex';
+    dayOverviewModal.style.display = 'flex'; // NEU: Das Tagesübersicht-Modal anzeigen
 }
 
 
@@ -1654,7 +1674,7 @@ function openEmailConfirmationModal(data) {
     additionalEmailInput.value = ''; // Zusätzliches E-Mail-Feld leeren
 
     // Event Listener neu zuweisen, um sicherzustellen, dass er die aktuelle `data` erfasst
-    sendEmailConfirmBtn.onclick = () => generateEmailPreview(data);
+    sendEmailConfirmBtn.onclick = () => sendFinalConfirmationEmail(data); // Ruft direkt die Sende-Funktion auf
 
     document.getElementById('emailConfirmationModal').style.display = 'flex';
 }
@@ -1665,8 +1685,62 @@ function closeEmailConfirmationModal() {
     document.getElementById('emailConfirmationMessage').textContent = ''; // Nachricht leeren
 }
 
+// NEU: Funktion zum direkten Senden der E-Mail
+async function sendFinalConfirmationEmail(data) {
+    const additionalEmail = document.getElementById('additionalEmail').value.trim();
+    const recipientEmail = additionalEmail || data['Contact E-Mail Invoicing'];
+    const emailMessageElem = document.getElementById('emailConfirmationMessage');
+
+    if (!recipientEmail) {
+        emailMessageElem.textContent = "Keine E-Mail-Adresse für den Empfänger gefunden. Bitte geben Sie eine zusätzliche E-Mail ein.";
+        emailMessageElem.style.color = 'red';
+        return;
+    }
+
+    emailMessageElem.textContent = "Sende E-Mail...";
+    emailMessageElem.style.color = 'blue';
+
+    const payload = {
+        mode: 'markAsSent', // Dies wird die E-Mail senden und den Status aktualisieren
+        ref: data.Ref,
+        user: currentUser ? currentUser.name : "Unknown",
+        sendEmail: true, // Explizit zum Senden der E-Mail
+        recipient: recipientEmail
+    };
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(payload).toString(),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'success') {
+            emailMessageElem.textContent = "E-Mail erfolgreich gesendet und als 'Final Confirmation Sent' markiert!";
+            emailMessageElem.style.color = 'green';
+            setTimeout(() => {
+                closeEmailConfirmationModal();
+                closeModal(); // Detailansicht schließen, da Bestätigung abgeschlossen
+                fetchData(); // Daten neu laden, um den Status-Update anzuzeigen
+            }, 1500);
+        } else {
+            emailMessageElem.textContent = result.message || "Fehler beim Senden der E-Mail.";
+            emailMessageElem.style.color = 'red';
+        }
+    } catch (error) {
+        console.error('Fehler beim Senden der E-Mail:', error);
+        emailMessageElem.textContent = 'Ein Fehler ist beim Senden der E-Mail aufgetreten. Bitte versuchen Sie es später erneut.';
+        emailMessageElem.style.color = 'red';
+    }
+}
+
+
 async function generateEmailPreview() {
-    document.getElementById('emailConfirmationModal').style.display = 'none'; // Bestätigungsmodal schließen
+    closeEmailConfirmationModal(); // Bestätigungsmodal schließen
 
     const previewRefSpan = document.getElementById('previewRef');
     const emailPreviewContentDiv = document.getElementById('emailPreviewContent');
@@ -1686,7 +1760,7 @@ async function generateEmailPreview() {
     const payload = {
         mode: 'generateEmailPreview',
         ref: currentModalData.Ref,
-        recipient: recipientEmail
+        recipient: recipientEmail // Empfänger für die Vorschau
     };
 
     try {
@@ -1702,18 +1776,18 @@ async function generateEmailPreview() {
 
         if (response.ok && result.status === 'success' && result.htmlContent) {
             emailPreviewContentDiv.innerHTML = result.htmlContent;
-            // Markierungsbutton für manuelles Senden aktualisieren
-            markAsSentBtn.onclick = () => markAsSentManually(currentModalData.Ref, true); // Übergibt 'true' für "als gesendet markieren"
+            // markAsSentBtn soll die E-Mail senden und markieren
+            markAsSentBtn.onclick = () => markAsSentManually(currentModalData.Ref, true);
             document.getElementById('emailPreviewModal').style.display = 'flex';
         } else {
             emailPreviewContentDiv.innerHTML = `<p style="color: red;">Fehler beim Laden der E-Mail-Vorschau: ${result.message || 'Unbekannter Fehler'}</p>`;
-            markAsSentBtn.onclick = () => markAsSentManually(currentModalData.Ref, false); // "als gesendet markieren" ohne Vorschau
+            markAsSentBtn.onclick = () => markAsSentManually(currentModalData.Ref, false); // Nur markieren, wenn Vorschau fehlschlägt
             document.getElementById('emailPreviewModal').style.display = 'flex';
         }
     } catch (error) {
         console.error('Fehler beim Abrufen der E-Mail-Vorschau:', error);
         emailPreviewContentDiv.innerHTML = `<p style="color: red;">Ein Netzwerkfehler ist aufgetreten: ${error.message}</p>`;
-        markAsSentBtn.onclick = () => markAsSentManually(currentModalData.Ref, false); // "als gesendet markieren" ohne Vorschau
+        markAsSentBtn.onclick = () => markAsSentManually(currentModalData.Ref, false); // Nur markieren, wenn Vorschau fehlschlägt
         document.getElementById('emailPreviewModal').style.display = 'flex';
     }
 }
@@ -1722,7 +1796,7 @@ function closeEmailPreviewModal() {
     document.getElementById('emailPreviewModal').style.display = 'none';
 }
 
-// NEU: Funktion zum manuellen Markieren als gesendet (oder tatsächlich senden)
+// Funktion zum manuellen Markieren als gesendet (oder tatsächlich senden)
 async function markAsSentManually(ref, sendEmail = false) {
     let payload = {
         mode: 'markAsSent',
@@ -1733,12 +1807,14 @@ async function markAsSentManually(ref, sendEmail = false) {
 
     // Wenn die E-Mail gesendet werden soll, fügen Sie die Empfänger hinzu
     if (sendEmail) {
-        const additionalEmail = document.getElementById('additionalEmail').value.trim();
-        payload.recipient = additionalEmail || currentModalData['Contact E-Mail Invoicing'];
-        if (!payload.recipient) {
+        // Hier sollte die E-Mail-Adresse aus dem currentModalData oder einem zusätzlichen Feld kommen
+        // Da dies aus dem Preview-Modal aufgerufen wird, nehmen wir die E-Mail aus currentModalData
+        const recipientEmail = currentModalData['Contact E-Mail Invoicing'];
+        if (!recipientEmail) {
             showSaveFeedback("Keine E-Mail-Adresse für den Empfänger gefunden. E-Mail kann nicht gesendet werden.", false);
             return;
         }
+        payload.recipient = recipientEmail;
     }
 
     try {
@@ -1795,15 +1871,18 @@ document.addEventListener('DOMContentLoaded', () => {
   statToDateInput.value = today.toISOString().split('T')[0];
 
   // Event Listener für den Vorschau-Button im E-Mail Bestätigungsmodal
-  const previewEmailBtn = document.getElementById('previewEmailBtn');
-  if (previewEmailBtn) {
-      previewEmailBtn.addEventListener('click', generateEmailPreview);
-  }
+  // Dieser Button wurde jetzt in die Detailansicht verschoben und direkt dort behandelt.
+  // const previewEmailBtn = document.getElementById('previewEmailBtn');
+  // if (previewEmailBtn) {
+  //     previewEmailBtn.addEventListener('click', generateEmailPreview);
+  // }
 
-  // Event Listener für den "Charter Confirmation gesendet" Button im E-Mail Vorschau Modal
+  // Event Listener für den "E-Mail senden" Button im E-Mail Vorschau Modal
   const markAsSentBtn = document.getElementById('markAsSentBtn');
   if (markAsSentBtn) {
-      markAsSentBtn.addEventListener('click', () => markAsSentManually(currentModalData.Ref, true)); // Standardmäßig E-Mail senden
+      // Die Logik für diesen Button wird jetzt in generateEmailPreview gesetzt,
+      // um sicherzustellen, dass currentModalData korrekt ist.
+      // markAsSentBtn.addEventListener('click', () => markAsSentManually(currentModalData.Ref, true));
   }
 });
 
@@ -1840,7 +1919,8 @@ window.saveDetails = saveDetails;
 window.deleteRow = deleteRow;
 window.shiftCalendar = shiftCalendar;
 window.renderCalendars = renderCalendars;
-window.openDayOverview = openDayOverview; // Geändert von openCalendarDayFlights
+window.openDayOverview = openDayOverview;
+window.closeDayOverviewModal = closeDayOverviewModal; // NEU: Global für das neue Modal
 window.createMonthCalendar = createMonthCalendar; // Muss auch global sein, da es von renderCalendars aufgerufen wird
 window.generateReference = generateReference;
 window.createNewRequest = createNewRequest; // Button "Charter Anfrage erstellen"
@@ -1855,6 +1935,7 @@ window.renderTonnagePerCustomerChart = renderTonnagePerCustomerChart;
 window.downloadStatisticsToCSV = downloadStatisticsToCSV;
 window.openEmailConfirmationModal = openEmailConfirmationModal;
 window.closeEmailConfirmationModal = closeEmailConfirmationModal;
+window.sendFinalConfirmationEmail = sendFinalConfirmationEmail; // NEU: Direkte Sende-Funktion
 window.toggleOriginDestinationFields = toggleOriginDestinationFields;
 window.generateEmailPreview = generateEmailPreview;
 window.closeEmailPreviewModal = closeEmailPreviewModal;
