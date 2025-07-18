@@ -1094,8 +1094,12 @@ function openDayOverview(dateString, flights) {
         const ul = document.createElement('ul');
         flights.forEach(flight => {
             const li = document.createElement('li');
+            // Find the original index of the flight in requestData
+            const originalIndex = requestData.findIndex(item => item.Ref === flight.Ref);
+            console.log(`Debug: Flight Ref: ${flight.Ref}, Original Index: ${originalIndex}`); // Debugging line
+
             li.innerHTML = `
-                <strong>Ref:</strong> <a href="javascript:void(0);" class="open-modal-link" data-index="${requestData.findIndex(item => item.Ref === flight.Ref)}">${flight.Ref}</a><br>
+                <strong>Ref:</strong> <a href="javascript:void(0);" class="open-modal-link" data-index="${originalIndex}">${flight.Ref}</a><br>
                 <strong>Airline:</strong> ${flight.Airline || '-'}<br>
                 <strong>Flugnummer:</strong> ${flight.Flugnummer || '-'}<br>
                 <strong>Call Sign:</strong> ${flight['Call Sign'] || '-'}<br>
@@ -1110,8 +1114,14 @@ function openDayOverview(dateString, flights) {
             if (link) {
                 link.addEventListener('click', (event) => {
                     event.preventDefault();
-                    openModal(parseInt(event.target.dataset.index));
-                    closeDayOverviewModal(); // NEU: Tagesübersicht-Modal schließen
+                    const indexToOpen = parseInt(event.target.dataset.index);
+                    if (indexToOpen !== -1 && !isNaN(indexToOpen)) {
+                        openModal(indexToOpen);
+                        closeDayOverviewModal(); // NEU: Tagesübersicht-Modal schließen
+                    } else {
+                        console.error("Ungültiger Index für openModal aus Tagesübersicht:", indexToOpen);
+                        showSaveFeedback("Fehler: Konnte Details für diesen Flug nicht laden.", false);
+                    }
                 });
             }
         });
@@ -1247,6 +1257,8 @@ function generateStatistics() {
         return flightDateObj >= fromDate && flightDateObj <= toDate;
     });
 
+    console.log("Filtered Data for Statistics:", filteredData); // Debugging: Check filtered data
+
     // Statistiken initialisieren
     let totalFlights = filteredData.length;
     let totalTonnage = 0;
@@ -1290,6 +1302,10 @@ function generateStatistics() {
         const customerName = item['Billing Company'] || 'Unbekannt';
         tonnagePerCustomer[customerName] = (tonnagePerCustomer[customerName] || 0) + tonnage;
     });
+
+    console.log("Tonnage per Month:", tonnagePerMonth); // Debugging: Check aggregated data
+    console.log("Tonnage per Customer:", tonnagePerCustomer); // Debugging: Check aggregated data
+
 
     // --- TEXT-BASIERTE STATISTIKEN RENDERN ---
     let statsHTML = '<div class="statistics-section"><h4>Gesamtübersicht</h4>';
@@ -1758,7 +1774,7 @@ async function generateEmailPreview() {
     }
 
     const payload = {
-        mode: 'generateEmailPreview',
+        mode: 'generateEmailPreview', // Diese Aktion muss in Ihrem Google Apps Script Backend implementiert sein!
         ref: currentModalData.Ref,
         recipient: recipientEmail // Empfänger für die Vorschau
     };
@@ -1776,17 +1792,22 @@ async function generateEmailPreview() {
 
         if (response.ok && result.status === 'success' && result.htmlContent) {
             emailPreviewContentDiv.innerHTML = result.htmlContent;
-            // markAsSentBtn soll die E-Mail senden und markieren
-            markAsSentBtn.onclick = () => markAsSentManually(currentModalData.Ref, true);
+            // Der Button im Vorschau-Modal soll die Anfrage MANUELL als gesendet markieren, ohne eine weitere E-Mail zu senden
+            markAsSentBtn.textContent = "Anfrage manuell senden"; // Textänderung hier
+            markAsSentBtn.onclick = () => markAsSentManually(currentModalData.Ref, false); // sendEmail auf false setzen
             document.getElementById('emailPreviewModal').style.display = 'flex';
         } else {
-            emailPreviewContentDiv.innerHTML = `<p style="color: red;">Fehler beim Laden der E-Mail-Vorschau: ${result.message || 'Unbekannter Fehler'}</p>`;
+            emailPreviewContentDiv.innerHTML = `<p style="color: red;">Fehler beim Laden der E-Mail-Vorschau: ${result.message || 'Unbekannter Fehler'}<br>
+            <strong>Bitte stellen Sie sicher, dass Ihr Google Apps Script Backend die 'generateEmailPreview'-Aktion korrekt verarbeitet.</strong></p>`;
+            markAsSentBtn.textContent = "Anfrage manuell senden"; // Textänderung auch bei Fehler
             markAsSentBtn.onclick = () => markAsSentManually(currentModalData.Ref, false); // Nur markieren, wenn Vorschau fehlschlägt
             document.getElementById('emailPreviewModal').style.display = 'flex';
         }
     } catch (error) {
         console.error('Fehler beim Abrufen der E-Mail-Vorschau:', error);
-        emailPreviewContentDiv.innerHTML = `<p style="color: red;">Ein Netzwerkfehler ist aufgetreten: ${error.message}</p>`;
+        emailPreviewContentDiv.innerHTML = `<p style="color: red;">Ein Netzwerkfehler ist aufgetreten: ${error.message}<br>
+        <strong>Bitte stellen Sie sicher, dass Ihr Google Apps Script Backend die 'generateEmailPreview'-Aktion korrekt verarbeitet.</strong></p>`;
+        markAsSentBtn.textContent = "Anfrage manuell senden"; // Textänderung auch bei Fehler
         markAsSentBtn.onclick = () => markAsSentManually(currentModalData.Ref, false); // Nur markieren, wenn Vorschau fehlschlägt
         document.getElementById('emailPreviewModal').style.display = 'flex';
     }
