@@ -37,7 +37,7 @@
       border-radius: 12px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
       display: flex;
-      flex-direction: column;
+      flex-direction: column; /* Behält die Hauptausrichtung als Spalte */
       gap: 20px;
       overflow-y: auto; /* Für Scrollbarkeit im Hauptbereich */
     }
@@ -112,13 +112,24 @@
       font-weight: 600;
       color: #2D3748;
     }
+    .dashboard-header-and-calendar-wrapper {
+      display: flex;
+      justify-content: space-between; /* Schiebt Überschrift und Kalender zu den Enden */
+      align-items: flex-start; /* Richtet sie oben aus */
+      gap: 20px; /* Abstand zwischen ihnen */
+      width: 100%; /* Nimmt die volle Breite des Hauptbereichs ein */
+      flex-wrap: wrap; /* Ermöglicht Umbruch auf kleineren Bildschirmen */
+    }
     .header {
       display: flex;
+      flex-direction: column; /* Stellt sicher, dass Datum/Uhrzeit unter der Überschrift stehen */
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start; /* Links ausrichten */
       margin-bottom: 20px;
       padding-bottom: 10px;
       border-bottom: 1px solid #eee;
+      flex-grow: 1; /* Lässt den Header wachsen */
+      min-width: 250px; /* Mindestbreite für den Header */
     }
     .search-filter-bar {
       display: flex;
@@ -320,7 +331,7 @@
       background: rgba(255,255,255,0.9);
       backdrop-filter: blur(8px);
       padding: 20px;
-      margin: 20px;
+      /* margin: 20px; <-- Entfernt, da es jetzt im Flex-Container ist */
       border-radius: 12px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
       display: flex;
@@ -328,6 +339,7 @@
       align-items: center;
       gap: 15px;
       overflow-y: auto; /* Ermöglicht Scrollen im Kalender */
+      flex-shrink: 0; /* Verhindert, dass der Kalender schrumpft */
     }
     .calendar .nav {
       display: flex;
@@ -626,12 +638,22 @@
         border-radius: 0 0 12px 12px;
         padding-bottom: 0;
       }
-      .main, .calendar {
+      .main {
         margin: 10px;
         width: auto;
       }
+      .dashboard-header-and-calendar-wrapper {
+        flex-direction: column; /* Stack header and calendar vertically */
+        align-items: center; /* Center them when stacked */
+      }
+      .header {
+        width: 100%; /* Full width when stacked */
+        align-items: center; /* Center content within header */
+        margin-bottom: 10px; /* Reduce margin when stacked */
+      }
       .calendar {
-        width: auto; /* Anpassung der Breite für kleinere Bildschirme */
+        width: 100%; /* Full width when stacked */
+        margin-top: 10px; /* Add some top margin */
       }
       .search-filter-bar {
         flex-direction: column;
@@ -689,11 +711,21 @@
     </aside>
 
     <main class="main">
-      <div class="header">
-        <h1 class="text-3xl font-bold text-gray-800">Charter Dashboard</h1>
-        <div class="text-right text-gray-600">
-          <div id="currentDate">Datum:</div>
-          <div id="clock">Uhrzeit:</div>
+      <div class="dashboard-header-and-calendar-wrapper">
+        <div class="header">
+          <h1 class="text-3xl font-bold text-gray-800">Charter Dashboard</h1>
+          <div class="text-right text-gray-600">
+            <div id="currentDate">Datum:</div>
+            <div id="clock">Uhrzeit:</div>
+          </div>
+        </div>
+        <!-- Calendar moved here -->
+        <div class="calendar">
+          <div class="nav">
+            <button onclick="shiftCalendar(-1)">← Back</button>
+            <button onclick="shiftCalendar(1)">Forward →</button>
+          </div>
+          <div id="calendarArea" class="calendar-wrapper"></div>
         </div>
       </div>
 
@@ -866,13 +898,6 @@
         </div>
     </div>
 
-  </div>
-  <div class="calendar">
-    <div class="nav">
-      <button onclick="shiftCalendar(-1)">← Back</button>
-      <button onclick="shiftCalendar(1)">Forward →</button>
-    </div>
-    <div id="calendarArea" class="calendar-wrapper"></div>
   </div>
   <!-- WICHTIGE KORREKTUR: script.js hierher verschoben und 'defer' entfernt -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js CDN hinzufügen -->
