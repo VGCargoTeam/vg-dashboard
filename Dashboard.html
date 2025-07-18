@@ -399,6 +399,13 @@
       padding-bottom: 10px;
       border-bottom: 2px solid #eee;
     }
+    /* Borders for table sections */
+    .table-section.unconfirmed-border {
+        border: 2px solid #dc3545; /* Red border */
+    }
+    .table-section.confirmed-border {
+        border: 2px solid #28a745; /* Green border */
+    }
   </style>
 </head>
 <body class="flex min-h-screen">
@@ -444,10 +451,6 @@
 
   <div class="flex-grow flex">
     <div class="main p-8 flex flex-col">
-      <div class="logo-container">
-        <img src="https://charter-dashboard.de/wp-content/uploads/2024/04/air-cargo-charter-logo-300x129.png" alt="Air Cargo Charter Logo">
-      </div>
-
       <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">Charter Dashboard</h1>
 
       <div class="filters flex flex-wrap gap-4 mb-6 justify-center">
@@ -462,7 +465,7 @@
         </label>
       </div>
 
-      <div class="table-section">
+      <div class="table-section unconfirmed-border">
         <h2>Unbestätigte Charteranfragen</h2>
         <div class="overflow-x-auto">
             <table id="unconfirmedDataTable" class="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
@@ -482,7 +485,7 @@
         <p id="unconfirmedSummaryInfo" class="summary"></p>
       </div>
 
-      <div class="table-section mt-8">
+      <div class="table-section mt-8 confirmed-border">
         <h2>Bestätigte Charteranfragen</h2>
         <div class="overflow-x-auto">
             <table id="confirmedDataTable" class="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
@@ -602,13 +605,6 @@
         </div>
     </div>
 
-  </div>
-  <div class="calendar">
-    <div class="nav">
-      <button onclick="shiftCalendar(-1)">← Back</button>
-      <button onclick="shiftCalendar(1)">Forward →</button>
-    </div>
-    <div id="calendarArea" class="calendar-wrapper"></div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <script src="script.js"></script>
 </body>
