@@ -311,6 +311,14 @@
       width: 100%;
       margin-bottom: 20px;
     }
+    /* Specific styling for calendar navigation buttons */
+    .calendar .nav button {
+      padding: 8px 15px; /* Smaller padding */
+      font-size: 0.9em; /* Smaller font size */
+      border-radius: 8px; /* Slightly less rounded */
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
     .calendar-wrapper {
       display: flex;
       flex-direction: column; /* Explicitly stack months vertically */
@@ -350,6 +358,7 @@
       padding: 8px; /* Increased padding */
       text-align: center;
       font-size: 0.9em; /* Increased font size */
+      box-sizing: border-box; /* Ensure padding is included in the element's total width and height */
     }
     .calendar-block th {
       background-color: #f5f5f5;
@@ -361,6 +370,12 @@
       transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
       position: relative;
       border-radius: 8px;
+      /* Ensure content is centered and wraps if necessary */
+      display: flex;
+      flex-direction: column; /* Stack day number and icon */
+      justify-content: center;
+      align-items: center;
+      min-height: 40px; /* Ensure a minimum height for cells */
     }
     .calendar-day:hover {
       background-color: #e6f7ff;
@@ -380,6 +395,12 @@
     .calendar-day.empty {
       background-color: #fcfcfc;
       cursor: default;
+    }
+
+    /* Adjust font size for the day number within the calendar cell */
+    .calendar-day .day-number {
+        font-size: 1em; /* Relative to parent TD's font-size (0.9em) */
+        font-weight: bold;
     }
 
     /* Tooltip styles for calendar */
