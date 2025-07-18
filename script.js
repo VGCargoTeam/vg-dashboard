@@ -194,28 +194,22 @@ function fetchData() {
     });
 }
 
-// Geänderte renderTable Funktion
-function renderTable(dataToRender = requestData) {
-  const tbodyUnconfirmed = document.querySelector("#dataTableUnconfirmed tbody");
-  const tbodyConfirmed = document.querySelector("#dataTableConfirmed tbody");
-  
-  tbodyUnconfirmed.innerHTML = "";
-  tbodyConfirmed.innerHTML = "";
+function renderTables(unconfirmedData, confirmedData) { // Erlaubt das Rendern von gefilterten Daten
+  const unconfirmedTbody = document.querySelector("#unconfirmedDataTable tbody");
+  const confirmedTbody = document.querySelector("#confirmedDataTable tbody");
+  unconfirmedTbody.innerHTML = "";
+  confirmedTbody.innerHTML = "";
 
-  let totalFlights = 0;
-  let totalWeight = 0;
-  let unconfirmedFlightsCount = 0;
-  let unconfirmedTonnage = 0;
-  let confirmedFlightsCount = 0;
-  let confirmedTonnage = 0;
+  let totalUnconfirmedFlights = 0;
+  let totalUnconfirmedWeight = 0;
+  let totalConfirmedFlights = 0;
+  let totalConfirmedWeight = 0;
 
-  dataToRender.forEach((r) => {
+  // Render Unconfirmed Table
+  unconfirmedData.forEach((r) => {
     const row = document.createElement("tr");
     const ton = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0;
-
     const originalIndex = requestData.findIndex(item => item.Ref === r.Ref);
-    console.log(`[DEBUG] renderTable: Processing Ref: ${r.Ref}, Found originalIndex: ${originalIndex}`); // Debug-Log
-
     let displayFlightDate = r['Flight Date'] || "-";
     if (displayFlightDate !== "-") {
         try {
@@ -229,54 +223,81 @@ function renderTable(dataToRender = requestData) {
                 dateObj = new Date('Invalid Date');
             }
             dateObj.setHours(0, 0, 0, 0);
-
             if (!isNaN(dateObj.getTime())) {
                 displayFlightDate = dateObj.toLocaleDateString('de-DE');
             }
         } catch (e) {
-             console.error("Fehler bei der Datumskonvertierung für die Anzeige in Tabelle:", displayFlightDate, e);
+             console.error("Fehler bei der Datumskonvertierung für die Anzeige in Unconfirmed Tabelle:", displayFlightDate, e);
         }
     }
-
     const deleteButtonHTML = (currentUser && currentUser.role === 'admin') ? `<button class="btn btn-delete admin-only" onclick="deleteRow(this)">Delete</button>` : '';
 
-    const isConfirmed = String(r['Final Confirmation Sent'] || '').toLowerCase() === 'ja';
-    const confirmationIcon = isConfirmed ? '<span class="text-green-500 ml-1">&#10004;</span>' : ''; // Grünes Häkchen
-
     row.innerHTML = `
-      <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})">${r.Ref}</a>${confirmationIcon}</td>
+      <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})">${r.Ref}</a></td>
       <td>${displayFlightDate}</td>
       <td>${r.Airline || "-"}</td>
-      <td>${ton.toLocaleString('de-DE')}</td> <td>
+      <td>${ton.toLocaleString('de-DE')}</td>
+      <td>
         <button class="btn btn-view" onclick="openModal(${originalIndex})">View</button>
         ${deleteButtonHTML}
       </td>
     `;
-    
-    if (isConfirmed) {
-      tbodyConfirmed.appendChild(row);
-      confirmedFlightsCount++;
-      confirmedTonnage += ton;
-    } else {
-      tbodyUnconfirmed.appendChild(row);
-      unconfirmedFlightsCount++;
-      unconfirmedTonnage += ton;
-    }
-    totalFlights++;
-    totalWeight += ton;
+    unconfirmedTbody.appendChild(row);
+    totalUnconfirmedFlights++;
+    totalUnconfirmedWeight += ton;
   });
 
-  document.getElementById("summaryInfo").textContent =
-    `Total Flights: ${totalFlights} | Total Tonnage: ${totalWeight.toLocaleString('de-DE')} kg`;
-  
-  document.getElementById("summaryInfoUnconfirmed").textContent =
-    `Nicht bestätigte Flüge: ${unconfirmedFlightsCount} | Tonnage: ${unconfirmedTonnage.toLocaleString('de-DE')} kg`;
-  
-  document.getElementById("summaryInfoConfirmed").textContent =
-    `Bestätigte Flüge: ${confirmedFlightsCount} | Tonnage: ${confirmedTonnage.toLocaleString('de-DE')} kg`;
+  document.getElementById("unconfirmedSummaryInfo").textContent =
+    `Total Flights: ${totalUnconfirmedFlights} | Total Tonnage: ${totalUnconfirmedWeight.toLocaleString('de-DE')} kg`;
+
+  // Render Confirmed Table
+  confirmedData.forEach((r) => {
+    const row = document.createElement("tr");
+    const ton = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0;
+    const originalIndex = requestData.findIndex(item => item.Ref === r.Ref);
+    let displayFlightDate = r['Flight Date'] || "-";
+    if (displayFlightDate !== "-") {
+        try {
+            let dateObj;
+            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const parts = displayFlightDate.split('-');
+                dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            } else if (displayFlightDate instanceof Date) {
+                dateObj = new Date(displayFlightDate.getFullYear(), displayDate.getMonth(), displayFlightDate.getDate());
+            } else {
+                dateObj = new Date('Invalid Date');
+            }
+            dateObj.setHours(0, 0, 0, 0);
+            if (!isNaN(dateObj.getTime())) {
+                displayFlightDate = dateObj.toLocaleDateString('de-DE');
+            }
+        } catch (e) {
+             console.error("Fehler bei der Datumskonvertierung für die Anzeige in Confirmed Tabelle:", displayFlightDate, e);
+        }
+    }
+    const deleteButtonHTML = (currentUser && currentUser.role === 'admin') ? `<button class="btn btn-delete admin-only" onclick="deleteRow(this)">Delete</button>` : '';
+
+    row.innerHTML = `
+      <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})">${r.Ref}</a><span class="text-green-500 ml-1">&#10004;</span></td>
+      <td>${displayFlightDate}</td>
+      <td>${r.Airline || "-"}</td>
+      <td>${ton.toLocaleString('de-DE')}</td>
+      <td>
+        <button class="btn btn-view" onclick="openModal(${originalIndex})">View</button>
+        ${deleteButtonHTML}
+      </td>
+    `;
+    confirmedTbody.appendChild(row);
+    totalConfirmedFlights++;
+    totalConfirmedWeight += ton;
+  });
+
+  document.getElementById("confirmedSummaryInfo").textContent =
+    `Total Flights: ${totalConfirmedFlights} | Total Tonnage: ${totalConfirmedWeight.toLocaleString('de-DE')} kg`;
 
   updateUIBasedOnUserRole();
 }
+
 
 function filterTable() {
   const refSearch = document.getElementById("refSearch").value.toLowerCase();
@@ -296,34 +317,25 @@ function filterTable() {
     let isPastOrTodayAndGoneFlight = false;
 
     let flightDateFromData = r['Flight Date'];
-    let dateObj; // Declared here
+    let flightDateObj;
 
-    // Attempt to parse flightDateFromData into a Date object
-    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
+    // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
+    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
         const parts = flightDateFromData.split('-');
-        dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     } else if (flightDateFromData instanceof Date) { // Falls es direkt ein Date-Objekt ist
-        dateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
+        flightDateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
     } else {
-        // If flightDateFromData is not a string in YYYY-MM-DD format or a Date object,
-        // assign an invalid Date object to dateObj.
-        dateObj = new Date('Invalid Date');
+        flightDateObj = new Date('Invalid Date'); // Ungültiges Datum
     }
+    flightDateObj.setHours(0, 0, 0, 0); // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist
+    console.log(`[filterTable] Original: "${flightDateFromData}", Geparsed (Lokal): ${flightDateObj}`);
 
-    // Now, dateObj is guaranteed to be a Date object (possibly invalid).
-    // Perform operations only if it's a valid date.
-    if (dateObj && !isNaN(dateObj.getTime())) {
-        dateObj.setHours(0, 0, 0, 0); // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist
-    } else {
-        // If date is invalid, it cannot be a past/today flight for time-based filtering
-        isPastOrTodayAndGoneFlight = false;
-        matchesDateRange = false; // An invalid date cannot match any date range
-    }
 
-    if (dateObj && !isNaN(dateObj.getTime())) { // Re-check validity before using for comparisons
-      if (dateObj < today) {
+    if (flightDateObj && !isNaN(flightDateObj.getTime())) {
+      if (flightDateObj < today) {
           isPastOrTodayAndGoneFlight = true;
-      } else if (dateObj.getTime() === today.getTime()) {
+      } else if (flightDateObj.getTime() === today.getTime()) {
           const abflugzeit = r['Abflugzeit'];
           if (abflugzeit) {
               // Abflugzeit muss auch als lokaler Zeitpunkt für den Vergleich geparst werden
@@ -352,30 +364,32 @@ function filterTable() {
           const fromDateParts = fromDateInput.split('-');
           const fromDateObj = new Date(parseInt(fromDateParts[0]), parseInt(fromDateParts[1]) - 1, parseInt(fromDateParts[2]));
           fromDateObj.setHours(0,0,0,0); // Auch Filterdatum auf Mitternacht setzen
-          if (dateObj < fromDateObj) matchesDateRange = false;
+          if (flightDateObj < fromDateObj) matchesDateRange = false;
       }
       if (toDateInput) {
           const toDateParts = toDateInput.split('-');
           const toDateObj = new Date(parseInt(toDateParts[0]), parseInt(toDateParts[1]) - 1, parseInt(toDateParts[2]));
           toDateObj.setHours(0,0,0,0); // Auch Filterdatum auf Mitternacht setzen
-          if (dateObj > toDateObj) matchesDateRange = false; // Korrektur: matchesDateObj zu matchesDateRange
+          if (flightDateObj > toDateObj) matchesDateRange = false;
       }
     } else {
         isPastOrTodayAndGoneFlight = false;
-        matchesDateRange = false;
     }
 
     const passesPastFlightFilter = showArchive || !isPastOrTodayAndGoneFlight;
 
     return matchesRef && matchesAirline && matchesFlightNumber && matchesDateRange && passesPastFlightFilter;
   });
-  renderTable(filtered);
+
+  const unconfirmedFiltered = filtered.filter(r => String(r['Final Confirmation Sent'] || '').toLowerCase() !== 'ja');
+  const confirmedFiltered = filtered.filter(r => String(r['Final Confirmation Sent'] || '').toLowerCase() === 'ja');
+
+  renderTables(unconfirmedFiltered, confirmedFiltered);
   renderCalendars();
 }
 
 // === MODAL FUNKTIONEN ===
 function openModal(originalIndex) {
-  console.log(`[DEBUG] openModal called with originalIndex: ${originalIndex}`); // Debug-Log
   if (!currentUser) {
       console.error("Versuch, Modal ohne angemeldeten Benutzer zu öffnen. Weiterleitung zum Login.");
       // Using a custom alert/message box instead of window.alert
@@ -389,7 +403,8 @@ function openModal(originalIndex) {
     'Created At': new Date().toLocaleString('de-DE'),
     'Billing Company': "", 'Billing Address': "", 'Tax Number': "",
     'Contact Name Invoicing': "", 'Contact E-Mail Invoicing': "",
-    'Airline': "", 'Aircraft Type': "", 'Flugnummer': "", 'Call Sign': "", // NEU: Call Sign hier initialisieren
+    'Airline': "", 'Aircraft Type': "", 'Flugnummer': "",
+    'Call Sign': "", // NEU: Call Sign hinzugefügt
     'Flight Date': "", 'Abflugzeit': "", 'Tonnage': "",
     'Rate': "", 'Security charges': "", "Dangerous Goods": "Nein", // Standardwert "Nein"
     '10ft consumables': "", '20ft consumables': "",
@@ -408,16 +423,15 @@ function openModal(originalIndex) {
   // Speichere die aktuellen Daten im Modal, um sie später für die E-Mail zu verwenden
   currentModalData = r;
 
-  // --- DEBUGGING-LOGS START ---
-  console.log("Debug: Data for modal (r):", r);
-  console.log("Debug: Flugnummer:", r.Flugnummer, "Typ:", typeof r.Flugnummer);
-  console.log("Debug: Call Sign:", r['Call Sign'], "Typ:", typeof r['Call Sign']); // Debug-Log für Call Sign
-  console.log("Debug: Flight Date:", r['Flight Date'], "Typ:", typeof r['Flight Date']);
-  // --- DEBUGGING-LOGS END ---
-
   const modal = document.getElementById("detailModal");
   const modalBody = document.getElementById("modalBody");
   modalBody.innerHTML = "";
+
+  // Set the Call Sign input in the FlightRadar24 search section
+  const callSignSearchInput = document.getElementById('callSignSearchInput');
+  if (callSignSearchInput) {
+      callSignSearchInput.value = r['Call Sign'] || '';
+  }
 
   // Modifizierte section Funktion, um eine Farbklasse zu akzeptieren
   const section = (title, contentHTML, colorClass = '') => {
@@ -426,30 +440,6 @@ function openModal(originalIndex) {
     wrap.innerHTML = `<h3>${title}</h3>` + contentHTML;
     return wrap;
   };
-
-  // NEU: FlightRadar24 Link-Bereich
-  let flightRadarLinkHTML = '';
-  // Verwende 'Call Sign'
-  const searchIdentifier = r['Call Sign']; // Korrekte Zuweisung
-
-  if (searchIdentifier) { // Verwende searchIdentifier
-      const flightRadarUrl = `https://www.flightradar24.com/${encodeURIComponent(searchIdentifier)}`; // Verwende searchIdentifier
-      flightRadarLinkHTML = `
-          <div class="modal-section bg-purple-50" style="margin-bottom: 20px;">
-              <h3>Flug auf FlightRadar24 anzeigen</h3>
-              <p>Klicken Sie hier, um den Flug auf FlightRadar24 zu verfolgen.</p>
-              <p class="text-sm text-gray-600 mt-1">Hinweis: Die Suche auf FlightRadar24 erfolgt ausschließlich über das 'Call Sign'.</p>
-              <a href="${flightRadarUrl}" target="_blank" rel="noopener noreferrer" 
-                 style="display: inline-block; padding: 10px 15px; background-color: #8A2BE2; color: white; border-radius: 6px; text-decoration: none; font-weight: bold;">
-                  Flug ${searchIdentifier} auf FlightRadar24 öffnen
-              </a>
-          </div>
-      `;
-  } else {
-      console.log("Debug: Call Sign ist leer, FlightRadar24 Link wird nicht generiert."); // Debugging-Log
-  }
-  modalBody.insertAdjacentHTML('afterbegin', flightRadarLinkHTML); // Füge den Link am Anfang des Modal-Bodys ein
-
 
   const renderFields = (fields) => {
     return fields.map(({ label, key, type }) => {
@@ -487,10 +477,10 @@ function openModal(originalIndex) {
         if (value) {
             try {
                 // Parsen des Datums, um es im Input korrekt darzustellen (YYYY-MM-DD Format)
-                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
+                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
                     dateValue = value;
                 } else if (value instanceof Date) {
-                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu YYYY-MM-DD
+                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu竭-MM-DD
                 }
             } catch (e) {
                 console.error("Fehler beim Parsen des Flugdatums für Modal-Input:", value, e);
@@ -556,7 +546,7 @@ function openModal(originalIndex) {
     { label: "Airline", key: "Airline" },
     { label: "Aircraft Type", key: "Aircraft Type" },
     { label: "Flugnummer", key: "Flugnummer" },
-    { label: "Call Sign", key: "Call Sign" }, // NEU: Call Sign Feld hinzugefügt
+    { label: "Call Sign", key: "Call Sign" }, // NEU: Call Sign hinzugefügt
     { label: "Flight Date", key: "Flight Date" },
     { label: "Abflugzeit", key: "Abflugzeit" },
     { label: "Tonnage", key: "Tonnage" },
@@ -641,17 +631,17 @@ function openModal(originalIndex) {
   buttonContainer.appendChild(historyButton);
 
   if (currentUser && originalIndex !== -1) { // Button für alle Rollen, wenn ein Eintrag geöffnet ist
-      const sendConfirmationButton = document.createElement("button");
-      sendConfirmationButton.textContent = "Final Charter Confirmation senden";
-      sendConfirmationButton.style.padding = "10px 20px";
-      sendConfirmationButton.style.fontWeight = "bold";
-      sendConfirmationButton.style.backgroundColor = "#007BFF"; // Blau für Senden
-      sendConfirmationButton.style.color = "white";
-      sendConfirmationButton.style.border = "none";
-      sendConfirmationButton.style.borderRadius = "6px";
-      sendConfirmationButton.style.cursor = "pointer";
-      sendConfirmationButton.onclick = () => openEmailConfirmationModal(r); // Übergabe der aktuellen Daten
-      buttonContainer.appendChild(sendConfirmationButton);
+    const sendConfirmationButton = document.createElement("button");
+    sendConfirmationButton.textContent = "Final Charter Confirmation senden";
+    sendConfirmationButton.style.padding = "10px 20px";
+    sendConfirmationButton.style.fontWeight = "bold";
+    sendConfirmationButton.style.backgroundColor = "#007BFF"; // Blau für Senden
+    sendConfirmationButton.style.color = "white";
+    sendConfirmationButton.style.border = "none";
+    sendConfirmationButton.style.borderRadius = "6px";
+    sendConfirmationButton.style.cursor = "pointer";
+    sendConfirmationButton.onclick = () => openEmailConfirmationModal(r); // Übergabe der aktuellen Daten
+    buttonContainer.appendChild(sendConfirmationButton);
   }
 
   if (currentUser && currentUser.role === 'admin' && originalIndex !== -1) {
@@ -670,8 +660,17 @@ function openModal(originalIndex) {
   }
 
   modalBody.appendChild(buttonContainer);
-
   modal.style.display = "flex";
+}
+
+// NEU: Funktion zum Suchen auf FlightRadar24
+function searchFlightRadar24() {
+    const callSign = document.getElementById('callSignSearchInput').value.trim();
+    if (callSign) {
+        window.open(`https://www.flightradar24.com/${callSign}`, '_blank');
+    } else {
+        showSaveFeedback("Bitte geben Sie ein Call Sign ein, um auf FlightRadar24 zu suchen.", false);
+    }
 }
 
 // NEU: Funktion zum Umschalten der Origin/Destination Felder basierend auf Checkbox
@@ -699,6 +698,7 @@ function toggleOriginDestinationFields(checkbox, fieldType) {
             newInput.value = currentModalData[fieldType] || ''; // Vorhandenen Wert setzen
             newInput.style.cssText = 'width: 100%; padding: 6px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;';
 
+            // Füge das Label und Input nach der Checkbox hinzu
             parentLabel.parentNode.insertBefore(newLabel, parentLabel.nextSibling);
             newLabel.parentNode.insertBefore(newInput, newLabel.nextSibling);
         } else {
@@ -712,517 +712,443 @@ function toggleOriginDestinationFields(checkbox, fieldType) {
             inputElement.style.display = 'none';
             inputElement.previousElementSibling.style.display = 'none'; // Label auch verstecken
         }
-        // Optional: Den Wert des Feldes leeren, wenn es ausgeblendet wird
-        if (currentModalData) {
-            currentModalData[fieldType] = '';
-        }
     }
 }
 
-
-// Neue Funktion, die vom Modal aus den Löschvorgang startet und dann das Modal schließt
-async function deleteRowFromModal(ref) {
-  // Statt alert() eine benutzerdefinierte Bestätigung verwenden, da alert() in iframes nicht gut funktioniert
-  const isConfirmed = confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`);
-  if (!isConfirmed) {
-    return;
-  }
-
-  const data = {
-    Ref: ref,
-    mode: "delete",
-    user: currentUser.name
-  };
-
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-      body: new URLSearchParams(data)
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
-    }
-    const responseData = await response.json();
-
-    if (responseData && responseData.status === "success") {
-      showSaveFeedback("Eintrag gelöscht!", true);
-    } else {
-      showSaveFeedback(`Fehler beim Löschen des Eintrags! ${responseData.message || ''}`, false);
-      console.error("Löschen fehlgeschlagen:", responseData);
-    }
-    closeModal();
-    fetchData();
-  } catch (err) {
-    showSaveFeedback("Fehler beim Löschen!", false);
-    console.error(err);
-  }
-}
 
 function closeModal() {
   document.getElementById("detailModal").style.display = "none";
 }
 
-document.addEventListener('keydown', (e) => {
-  if (e.key === "Escape") {
-    closeModal();
-    closeHistoryModal();
-    closeProfileModal();
-    closeStatisticsModal(); // NEU: Statistik Modal schließen
-    closeEmailConfirmationModal(); // NEU: E-Mail Bestätigungsmodal schließen
-    closeEmailPreviewModal(); // NEU: E-Mail Vorschau Modal schließen
-  }
-});
-
+// === DATEN SPEICHERN ===
 async function saveDetails() {
-  // Statt alert() eine benutzerdefinierte Bestätigung verwenden
-  const isConfirmed = confirm('Sind Sie sicher, dass Sie diese Änderungen speichern möchten?');
-  if (!isConfirmed) {
-    return;
-  }
-
-  const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled]), #modalBody select[name]:not([disabled])");
+  const modal = document.getElementById("detailModal");
+  const inputs = modal.querySelectorAll("input, select, textarea");
   const data = {};
-  inputs.forEach(i => {
-    if (i.name === "Flight Date") {
-        data[i.name] = i.value;
-    } else if (['Tonnage', 'Rate', 'Security charges', '10ft consumables', '20ft consumables'].includes(i.name)) {
-        // Tonnage und Preis-Felder: Kommas durch Punkte ersetzen und Euro-Symbol sowie Leerzeichen entfernen
-        data[i.name] = i.value.replace(/,/g, '.').replace('€', '').trim() || "";
-    } else { // Wichtig: Für 'Zusatzkosten' (textarea) kommt der Wert einfach als String.
-        if (i.type === "checkbox") {
-            data[i.name] = i.checked ? "Ja" : "Nein";
-        } else {
-            data[i.name] = i.value;
-        }
+  inputs.forEach((input) => {
+    let key = input.name;
+    let value;
+
+    if (input.type === 'checkbox') {
+        value = input.checked ? 'Ja' : 'Nein';
+    } else if (input.tagName === 'SELECT') {
+        value = input.value;
     }
+    else {
+        value = input.value;
+    }
+    data[key] = value;
   });
 
-  const refValue = document.querySelector("#modalBody input[name='Ref']").value;
-  data.mode = "write";
-  data.user = currentUser.name;
-
-  console.log('Payload for saving:', data);
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-      body: new URLSearchParams(data)
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
-    }
-    const responseData = await response.json();
-
-    if (responseData && responseData.status === "success") {
-      showSaveFeedback("Gespeichert!", true);
-    } else {
-      showSaveFeedback(`Fehler beim Speichern! ${responseData.message || ''}`, false);
-      console.error("Speichern fehlgeschlagen:", responseData);
-    }
-    closeModal();
-    fetchData();
-  } catch (err) {
-    showSaveFeedback("Fehler beim Speichern!", false);
-    console.error(err);
-  }
-}
-
-async function deleteRow(btn) {
-  const ref = btn.closest("tr").querySelector("a").textContent;
-
-  // Statt alert() eine benutzerdefinierte Bestätigung verwenden
-  const isConfirmed = confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`);
-  if (!isConfirmed) {
-    return;
+  // Überprüfe Pflichtfelder (Beispiel: Airline, Flugnummer, Flight Date, Tonnage)
+  const requiredFields = ['Airline', 'Flugnummer', 'Flight Date', 'Tonnage'];
+  for (const field of requiredFields) {
+      if (!data[field] || String(data[field]).trim() === '') {
+          showSaveFeedback(`Fehler: Das Feld '${field}' ist ein Pflichtfeld.`, false);
+          return; // Abbruch bei fehlendem Pflichtfeld
+      }
   }
 
-  const data = {
-    Ref: ref,
-    mode: "delete",
-    user: currentUser.name
+  // Zusätzliche Prüfungen für 'Flight Type Import' und 'Flight Type Export'
+  if (data['Flight Type Import'] === 'Ja' && (!data['Origin'] || String(data['Origin']).trim() === '')) {
+      showSaveFeedback('Fehler: Wenn "Flight Type Import" ausgewählt ist, muss "Origin" ausgefüllt sein.', false);
+      return;
+  }
+  if (data['Flight Type Export'] === 'Ja' && (!data['Destination'] || String(data['Destination']).trim() === '')) {
+      showSaveFeedback('Fehler: Wenn "Flight Type Export" ausgewählt ist, muss "Destination" ausgefüllt sein.', false);
+      return;
+  }
+
+  // Ref und Created At sollten nicht änderbar sein
+  data.Ref = currentModalData.Ref; // Stelle sicher, dass die Referenz beibehalten wird
+  data['Created At'] = currentModalData['Created At'];
+
+  const payload = {
+    mode: "write",
+    data: data,
+    user: currentUser ? currentUser.name : "Unknown", // Benutzername für Audit-Log
   };
 
   try {
     const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-      body: new URLSearchParams(data)
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams(payload).toString(),
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
-    }
-    const responseData = await response.json();
+    const result = await response.json();
 
-    if (responseData && responseData.status === "success") {
-      showSaveFeedback("Eintrag gelöscht!", true);
+    if (response.ok && result.status === "success") {
+      showSaveFeedback("Daten erfolgreich gespeichert!", true);
+      closeModal();
+      fetchData(); // Daten neu laden und Tabelle aktualisieren
     } else {
-      showSaveFeedback(`Fehler beim Löschen des Eintrags! ${responseData.message || ''}`, false);
-      console.error("Löschen fehlgeschlagen:", responseData);
+      showSaveFeedback(
+        result.message || "Fehler beim Speichern der Daten!",
+        false
+      );
     }
-    fetchData();
-  } catch (err) {
-    showSaveFeedback("Fehler beim Löschen!", false);
-    console.error(err);
+  } catch (error) {
+    console.error("Speicherfehler:", error);
+    showSaveFeedback("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.", false);
   }
 }
 
+async function deleteRow(buttonElement) {
+  if (!currentUser || currentUser.role !== 'admin') {
+      showSaveFeedback("Sie haben keine Berechtigung, Daten zu löschen.", false);
+      return;
+  }
+
+  if (!confirm("Sind Sie sicher, dass Sie diesen Eintrag löschen möchten?")) {
+    return;
+  }
+
+  const row = buttonElement.closest("tr");
+  const ref = row.cells[0].textContent.replace('✔', '').trim(); // Ref aus erster Zelle holen, Haken entfernen
+
+  await deleteData(ref);
+}
+
+async function deleteRowFromModal(ref) {
+  if (!currentUser || currentUser.role !== 'admin') {
+      showSaveFeedback("Sie haben keine Berechtigung, Daten zu löschen.", false);
+      return;
+  }
+
+  if (!confirm(`Sind Sie sicher, dass Sie den Eintrag mit Referenz "${ref}" löschen möchten?`)) {
+    return;
+  }
+
+  await deleteData(ref);
+  closeModal(); // Modal schließen nach dem Löschen
+}
+
+async function deleteData(ref) {
+  const payload = {
+    mode: "delete",
+    ref: ref,
+    user: currentUser ? currentUser.name : "Unknown", // Benutzername für Audit-Log
+  };
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams(payload).toString(),
+    });
+
+    const result = await response.json();
+
+    if (response.ok && result.status === "success") {
+      showSaveFeedback("Eintrag erfolgreich gelöscht!", true);
+      fetchData(); // Daten neu laden und Tabelle aktualisieren
+    } else {
+      showSaveFeedback(
+        result.message || "Fehler beim Löschen des Eintrags!",
+        false
+      );
+    }
+  } catch (error) {
+    console.error("Löschfehler:", error);
+    showSaveFeedback("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.", false);
+  }
+}
+
+function generateReference() {
+  const date = new Date();
+  const year = String(date.getFullYear()).slice(-2);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  const random = String(Math.floor(Math.random() * 10000)).padStart(4, '0'); // 4 zufällige Ziffern
+  return `REF-${year}${month}${day}-${hours}${minutes}${seconds}-${random}`;
+}
+
+
+function showSaveFeedback(message, isSuccess) {
+  const feedbackElement = document.getElementById("saveFeedback");
+  if (!feedbackElement) {
+    // Wenn das Feedback-Element nicht existiert, erstellen wir es
+    const mainContent = document.querySelector('.main');
+    if (mainContent) {
+        const div = document.createElement('div');
+        div.id = 'saveFeedback';
+        div.style.position = 'fixed';
+        div.style.bottom = '20px';
+        div.style.left = '50%';
+        div.style.transform = 'translateX(-50%)';
+        div.style.padding = '10px 20px';
+        div.style.borderRadius = '8px';
+        div.style.zIndex = '3000';
+        div.style.color = 'white';
+        div.style.textAlign = 'center';
+        div.style.opacity = '0';
+        div.style.transition = 'opacity 0.5s ease-in-out';
+        mainContent.appendChild(div);
+        feedbackElement = div;
+    } else {
+        console.warn("Feedback-Element und .main-Container nicht gefunden. Feedback kann nicht angezeigt werden.");
+        return;
+    }
+  }
+
+  feedbackElement.textContent = message;
+  feedbackElement.style.backgroundColor = isSuccess ? "#28a745" : "#dc3545";
+  feedbackElement.style.opacity = '1';
+  feedbackElement.style.display = 'block'; // Sicherstellen, dass es sichtbar ist
+
+  setTimeout(() => {
+    feedbackElement.style.opacity = '0';
+    // Warte, bis die Transition beendet ist, bevor display auf 'none' gesetzt wird
+    feedbackElement.addEventListener('transitionend', function handler() {
+        feedbackElement.style.display = 'none';
+        feedbackElement.removeEventListener('transitionend', handler);
+    }, { once: true });
+  }, 3000);
+}
+
+
 // === KALENDER FUNKTIONEN ===
-function shiftCalendar(offset) {
-  baseMonth += offset;
-  if (baseMonth < 0) { baseMonth += 12; baseYear--; }
-  if (baseMonth > 11) { baseMonth -= 12; baseYear++; }
+function renderCalendars() {
+  const calendarArea = document.getElementById("calendarArea");
+  calendarArea.innerHTML = "";
+
+  // Monate für die Anzeige festlegen (aktueller, vorheriger, nächster Monat)
+  const monthsToShow = [
+    new Date(baseYear, baseMonth - 1), // Vorheriger Monat
+    new Date(baseYear, baseMonth),     // Aktueller Monat
+    new Date(baseYear, baseMonth + 1)  // Nächster Monat
+  ];
+
+  monthsToShow.forEach(date => {
+    calendarArea.appendChild(createMonthCalendar(date));
+  });
+}
+
+function createMonthCalendar(date) {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const monthName = date.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0); // Letzter Tag des Monats
+  const daysInMonth = lastDay.getDate();
+
+  const calendarBlock = document.createElement("div");
+  calendarBlock.className = "calendar-block";
+  calendarBlock.innerHTML = `
+    <h4>${monthName}</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>Mo</th><th>Di</th><th>Mi</th><th>Do</th><th>Fr</th><th>Sa</th><th>So</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  `;
+
+  const tbody = calendarBlock.querySelector("tbody");
+  let dayCounter = 1;
+  const startDay = (firstDay.getDay() + 6) % 7; // Montag = 0, Sonntag = 6
+
+  for (let i = 0; i < 6; i++) { // Max 6 Wochen im Monat
+    const row = document.createElement("tr");
+    for (let j = 0; j < 7; j++) {
+      const cell = document.createElement("td");
+      if (i === 0 && j < startDay) {
+        cell.className = "calendar-day empty";
+      } else if (dayCounter > daysInMonth) {
+        cell.className = "calendar-day empty";
+      } else {
+        const currentDay = dayCounter;
+        const fullDate = new Date(year, month, currentDay);
+        fullDate.setHours(0,0,0,0); // Zeit auf Mitternacht setzen
+
+        // Filter Flüge für diesen Tag und erfasse Typen
+        const flightsOnDay = requestData.filter(d => {
+            let flightDateObj;
+            if (typeof d['Flight Date'] === 'string' && d['Flight Date'].match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const parts = d['Flight Date'].split('-');
+                flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            } else if (d['Flight Date'] instanceof Date) {
+                flightDateObj = d['Flight Date'];
+            } else {
+                flightDateObj = new Date('Invalid Date');
+            }
+            flightDateObj.setHours(0,0,0,0); // Auch Flugdatum auf Mitternacht setzen
+            return flightDateObj.getTime() === fullDate.getTime();
+        });
+
+        let hasImport = false;
+        let hasExport = false;
+        let hasOther = false;
+        let tooltipContent = [];
+
+        flightsOnDay.forEach(flight => {
+            if (String(flight['Flight Type Import']).toLowerCase() === 'ja') {
+                hasImport = true;
+            }
+            if (String(flight['Flight Type Export']).toLowerCase() === 'ja') {
+                hasExport = true;
+            }
+            if (String(flight['Flight Type Import']).toLowerCase() !== 'ja' && String(flight['Flight Type Export']).toLowerCase() !== 'ja') {
+                hasOther = true;
+            }
+
+            // Tooltip-Inhalt erstellen
+            const flightTime = flight['Abflugzeit'] ? ` (${flight['Abflugzeit']} Uhr)` : '';
+            const flightInfo = `${flight.Ref} - ${flight.Airline} - ${flight.Flugnummer || 'N/A'}${flightTime} - ${parseFloat(String(flight.Tonnage).replace(',', '.') || "0").toLocaleString('de-DE')} kg`;
+            tooltipContent.push(flightInfo);
+        });
+
+
+        cell.textContent = currentDay;
+        cell.className = "calendar-day";
+        cell.onclick = () => openDayOverview(fullDate.toDateString(), flightsOnDay);
+
+
+        if (flightsOnDay.length > 0) {
+            cell.dataset.tooltip = tooltipContent.join('\n'); // Füge alle Flüge zum Tooltip hinzu
+            if (hasImport && hasExport) {
+                cell.classList.add('import-export');
+            } else if (hasImport) {
+                cell.classList.add('import-only');
+            } else if (hasExport) {
+                cell.classList.add('export-only');
+            } else {
+                cell.classList.add('has-flights'); // Bestehende Klasse für andere Flüge
+            }
+        }
+        dayCounter++;
+      }
+      row.appendChild(cell);
+    }
+    tbody.appendChild(row);
+    if (dayCounter > daysInMonth) break; // Schleife beenden, wenn alle Tage des Monats gerendert wurden
+  }
+
+  return calendarBlock;
+}
+
+
+function shiftCalendar(direction) {
+  baseMonth += direction;
+  if (baseMonth > 11) {
+    baseMonth = 0;
+    baseYear++;
+  } else if (baseMonth < 0) {
+    baseMonth = 11;
+    baseYear--;
+  }
   renderCalendars();
 }
 
-function renderCalendars() {
-  const container = document.getElementById("calendarArea");
-  container.innerHTML = "";
-  for (let i = 0; i < 2; i++) {
-    const m = baseMonth + i;
-    const y = baseYear + Math.floor(m / 12);
-    const month = (m % 12 + 12) % 12;
-    container.innerHTML += generateCalendarHTML(y, month);
-  }
-}
+function openDayOverview(dateString, flights) {
+    const historyModal = document.getElementById('historyModal');
+    const historyRefSpan = document.getElementById('historyRef');
+    const historyBody = document.getElementById('historyBody');
 
-function openCalendarDayFlights(year, month, day) {
-  console.log(`Clicked on calendar day: Jahr ${year}, Monat ${month + 1}, Tag ${day}`);
+    historyRefSpan.textContent = `Flüge am ${new Date(dateString).toLocaleDateString('de-DE')}`;
+    historyBody.innerHTML = ''; // Alten Inhalt leeren
 
-  // Erstelle das Vergleichsdatum als String (YYYY-MM-DD)
-  const clickedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-
-  const flightsOnThisDay = requestData.filter(r => {
-    let flightDateFromData = r['Flight Date']; // Dies ist bereits YYYY-MM-DD vom Backend
-
-    // Einfacher String-Vergleich
-    const isMatch = flightDateFromData === clickedDateStr;
-    console.log(`  Vergleich: Flugdatum "${flightDateFromData}" vs. geklicktes Datum "${clickedDateStr}" -> Match: ${isMatch}`);
-    return isMatch;
-  });
-
-  console.log(`Gefundene Flüge für diesen Tag (${clickedDateStr}):`, flightsOnThisDay);
-
-  if (flightsOnThisDay.length > 0) {
-    // Wenn mehrere Flüge am selben Tag, öffne den ersten gefundenen.
-    // Optimal wäre eine Liste oder Auswahl, aber für den Anfang öffnen wir den ersten.
-    const firstFlight = flightsOnThisDay[0];
-    const originalIndex = requestData.findIndex(item => item.Ref === firstFlight.Ref);
-    console.log(`Erster Flug Ref: ${firstFlight.Ref}, Original Index: ${originalIndex}`);
-
-    if (originalIndex !== -1) {
-      openModal(originalIndex);
+    if (flights.length === 0) {
+        historyBody.innerHTML = '<p>Keine Flüge für dieses Datum.</p>';
     } else {
-      console.warn("Konnte den Originalindex des Fluges nicht finden:", firstFlight);
-    }
-  } else {
-      console.log("Keine Flüge für diesen Tag gefunden.");
-  }
-}
-
-function generateCalendarHTML(year, month) {
-  const firstDayOfMonthWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const monthName = new Date(year, month).toLocaleString('de-DE', { month: 'long' });
-  let html = `<div class="calendar-block"><h3>${monthName} ${year}</h3><table><thead><tr><th>Mo</th><th>Di</th><th>Mi</th><th>Do</th><th>Fr</th><th>Sa</th><th>So</th></tr></thead><tbody>`;
-  let day = 1;
-
-  const today = new Date(); // Get today's date
-  today.setHours(0, 0, 0, 0); // Reset time for accurate date comparison
-
-  const flightsByDay = new Map();
-  requestData.forEach((r) => {
-    let flightDate = r['Flight Date'];
-    if (typeof flightDate === 'string' && flightDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const [fYear, fMonth, fDay] = flightDate.split('-').map(Number);
-        if (fYear === year && (fMonth - 1) === month) {
-            if (!flightsByDay.has(fDay)) {
-              flightsByDay.set(fDay, []);
-            }
-            flightsByDay.get(fDay).push(r);
-        }
-    }
-  });
-
-  for (let i = 0; i < 6; i++) {
-    html += "<tr>";
-    for (let j = 0; j < 7; j++) {
-      if ((i === 0 && j < firstDayOfMonthWeekday) || day > daysInMonth) {
-        html += "<td class='empty'></td>";
-      } else {
-        const currentCalendarDayForCell = new Date(year, month, day);
-        currentCalendarDayForCell.setHours(0,0,0,0);
-
-        const flightsForDay = flightsByDay.get(day) || [];
-        let cellClasses = ['calendar-day'];
-        let tooltipContentArray = [];
-        let simpleTitleContent = '';
-        let dayHasVorfeldbegleitung = false;
-
-        // NEU: Import/Export Status für den Tag
-        let hasImport = false;
-        let hasExport = false;
-
-
-        // Check if current day is today and add 'today' class
-        if (currentCalendarDayForCell.getTime() === today.getTime()) {
-            cellClasses.push('today');
-        }
-
-        if (flightsForDay.length > 0) {
-          // Entferne 'has-flights' da wir spezifischere Klassen verwenden
-          // cellClasses.push('has-flights');
-
-          flightsForDay.forEach(f => {
-            const tonnageValue = parseFloat(String(f.Tonnage).replace(',', '.') || "0") || 0;
-
-            let formattedAbflugzeit = f['Abflugzeit'] || '-';
-            if (typeof formattedAbflugzeit === 'string' && formattedAbflugzeit.match(/^\d{2}:\d{2}$/)) {
-            } else if (formattedAbflugzeit instanceof Date) {
-                formattedAbflugzeit = formattedAbflugzeit.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-            } else if (typeof formattedAbflugzeit === 'string' && formattedAbflugzeit.includes('T')) {
-                try {
-                    const timeObj = new Date(formattedAbflugzeit);
-                    if (!isNaN(timeObj.getTime())) {
-                        formattedAbflugzeit = timeObj.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-                    }
-                } catch (e) {
-                    console.error("Fehler beim Formatieren der Abflugzeit für Tooltip:", formattedAbflugzeit, e);
-                }
-            }
-
-
-            tooltipContentArray.push(
-              `Ref: ${f.Ref || '-'}` +
-              `\nAirline: ${f.Airline || '-'}` +
-              `\nFlugnummer: ${f.Flugnummer || '-'}` +
-              `\nCall Sign: ${f['Call Sign'] || '-'}` + // NEU: Call Sign zum Tooltip
-              `\nAbflugzeit: ${formattedAbflugzeit}` +
-              `\nTonnage: ${tonnageValue.toLocaleString('de-DE')} kg`
-            );
-            if (f.Origin) { // NEU: Origin zum Tooltip hinzufügen
-                tooltipContentArray[tooltipContentArray.length - 1] += `\nOrigin: ${f.Origin}`;
-            }
-            if (f.Destination) { // NEU: Destination zum Tooltip hinzufügen
-                tooltipContentArray[tooltipContentArray.length - 1] += `\nDestination: ${f.Destination}`;
-            }
-
-            if (f['Vorfeldbegleitung'] && String(f['Vorfeldbegleitung']).toLowerCase() === 'ja') {
-              dayHasVorfeldbegleitung = true;
-            }
-            // NEU: Import/Export Status prüfen
-            if (String(f['Flight Type Import'] || '').toLowerCase() === 'ja') {
-                hasImport = true;
-            }
-            if (String(f['Flight Type Export'] || '').toLowerCase() === 'ja') {
-                hasExport = true;
-            }
-          });
-          simpleTitleContent = `Flüge: ${flightsForDay.length}`;
-        }
-
-        // NEU: Klassen für Kalenderfarben hinzufügen
-        if (hasImport && hasExport) {
-            cellClasses.push('import-export');
-        } else if (hasImport) {
-            cellClasses.push('import-only'); // Orange
-        } else if (hasExport) {
-            cellClasses.push('export-only'); // Grün
-        } else if (flightsForDay.length > 0) {
-            // Wenn Flüge da sind, aber weder Import noch Export markiert, Standardfarbe für Flüge
-            cellClasses.push('has-flights'); // Blau
-        }
-
-
-        const dataTooltipContent = tooltipContentArray.join('\n\n').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
-        const flightIcon = dayHasVorfeldbegleitung ? ' <span class="flight-icon">&#9992;</span>' : '';
-
-        // Added styling for 'today' class here
-        let dayNumberClass = '';
-        if (currentCalendarDayForCell.getTime() === today.getTime()) {
-            dayNumberClass = 'font-bold text-lg today-red-text'; // NEU: Klasse für rote Farbe
-        } else {
-            dayNumberClass = 'font-bold text-lg'; // Standardklasse für die Zahl
-        }
-
-
-        html += `<td class='${cellClasses.join(' ')}' title='${simpleTitleContent}' data-tooltip='${dataTooltipContent}' onclick="openCalendarDayFlights(${year}, ${month}, ${day})"><div class="${dayNumberClass}">${day}</div>${flightIcon}</td>`;
-        day++;
-      }
-    }
-    html += "</tr>";
-    if (day > daysInMonth) break;
-  }
-  html += "</tbody></table></div>";
-  return html;
-}
-
-// === UHRZEIT UND DATUM ===
-document.addEventListener("DOMContentLoaded", () => {
-  checkAuthStatus();
-  updateClock();
-  setInterval(updateClock, 1000);
-
-  // Das Event-Listener für archiveCheckbox muss hier bleiben, da es keine globale Funktion ist.
-  const archiveCheckbox = document.getElementById("archiveCheckbox");
-  if (archiveCheckbox) {
-      archiveCheckbox.addEventListener('change', filterTable);
-  }
-});
-
-function updateClock() {
-  const now = new Date();
-  document.getElementById('currentDate').textContent = "Date: " + now.toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' });
-  document.getElementById('clock').textContent = "Time: " + now.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
-}
-
-// === NEUE ANFRAGE ERSTELLEN ===
-function generateReference() {
-  const now = new Date();
-  const timestamp = now.toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\./g, '').replace(/\//g, '');
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `CC-${timestamp}-${random}`;
-}
-
-function createNewRequest() {
-  openModal(-1);
-}
-
-// === FEEDBACK ANZEIGEN ===
-function showSaveFeedback(message, success) {
-  const feedback = document.createElement("div");
-  feedback.textContent = message;
-  feedback.style.position = "fixed";
-  feedback.style.top = "20px";
-  feedback.style.right = "20px";
-  feedback.style.backgroundColor = success ? "#4CAF50" : "#f44336";
-  feedback.style.color = "#fff";
-  feedback.style.padding = "10px 16px";
-  feedback.style.borderRadius = "8px";
-  feedback.style.boxShadow = "0 8px 10px rgba(0,0,0,0.2)";
-  feedback.style.zIndex = "9999";
-  document.body.appendChild(feedback);
-  setTimeout(() => feedback.remove(), 3000);
-}
-
-// NEUE FUNKTIONEN FÜR HISTORY MODAL
-async function showHistory(ref) {
-  const historyModal = document.getElementById("historyModal");
-  const historyBody = document.getElementById("historyBody");
-  const historyRefSpan = document.getElementById("historyRef");
-
-  historyRefSpan.textContent = ref;
-  historyBody.innerHTML = '<p style="text-align: center;">Lade Verlauf...</p>';
-  historyModal.style.display = "flex";
-
-  try {
-    const response = await fetch(API_URL + "?mode=readAuditLog");
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-    const auditResult = await response.json();
-
-    const filteredLogs = auditResult.data.filter(log => log.Reference === ref);
-
-    if (filteredLogs.length === 0) {
-      historyBody.innerHTML = '<p style="text-align: center;">Kein Verlauf für diese Referenz gefunden.</p>';
-      return;
-    }
-
-    let historyHTML = '<ul style="list-style-type: none; padding: 0;">';
-    filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp)).forEach(log => {
-      let detailsContent = log.Details || '-';
-
-      // Nur für Viewer-Rolle sensible Informationen schwärzen (dieser Teil bleibt, da es um History geht)
-      if (currentUser && currentUser.role === 'viewer' && typeof detailsContent === 'string') {
-        const sensitiveFieldPrefixes = [
-          'Rate:',
-          'Security charges:',
-          'Dangerous Goods:',
-          '10ft consumables:',
-          '20ft consumables:',
-          'Zusatzkosten:'
-        ];
-
-        let processedDetailsParts = [];
-        const detailParts = detailsContent.split(';').map(part => part.trim()).filter(part => part !== '');
-
-        detailParts.forEach(part => {
-            let redactedPart = part;
-            for (const prefix of sensitiveFieldPrefixes) {
-                if (part.startsWith(prefix)) {
-                    redactedPart = `${prefix} [GESCHWÄRZT]`;
-                    break;
-                }
-            }
-            processedDetailsParts.push(redactedPart);
+        const ul = document.createElement('ul');
+        flights.forEach(flight => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <strong>Ref:</strong> <a href="javascript:void(0);" onclick="openModal(${requestData.findIndex(item => item.Ref === flight.Ref)}); closeHistoryModal();">${flight.Ref}</a><br>
+                <strong>Airline:</strong> ${flight.Airline || '-'}<br>
+                <strong>Flugnummer:</strong> ${flight.Flugnummer || '-'}<br>
+                <strong>Call Sign:</strong> ${flight['Call Sign'] || '-'}<br>
+                <strong>Tonnage:</strong> ${parseFloat(String(flight.Tonnage).replace(',', '.') || "0").toLocaleString('de-DE')} kg<br>
+                <strong>Abflugzeit:</strong> ${flight['Abflugzeit'] || '-'}<br>
+                <strong>Bestätigt:</strong> ${String(flight['Final Confirmation Sent']).toLowerCase() === 'ja' ? 'Ja' : 'Nein'}
+            `;
+            ul.appendChild(li);
         });
-        detailsContent = processedDetailsParts.join('; ');
-      }
-
-      try {
-          const parsedDetails = JSON.parse(detailsContent);
-          if (typeof parsedDetails === 'object' && parsedDetails !== null) {
-              detailsContent = 'Gelöschte Daten: <pre>' + JSON.stringify(parsedDetails, null, 2) + '</pre>';
-          }
-      } catch (e) {
-          // Nicht-JSON-Strings werden direkt als Details angezeigt
-      }
+        historyBody.appendChild(ul);
+    }
+    historyModal.style.display = 'flex';
+}
 
 
-      historyHTML += `
-        <li style="background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; padding: 15px;">
-          <strong style="color: #007BFF;">Timestamp:</strong> ${log.Timestamp || '-'} <br>
-          <strong style="color: #007BFF;">User:</strong> ${log.User || '-'} <br>
-          <strong style="color: #007BFF;">Action:</strong> ${log.Action || '-'} <br>
-          <strong style="color: #007BFF;">Details:</strong> ${detailsContent}
-        </li>
-      `;
-    });
-    historyHTML += '</ul>';
-    historyBody.innerHTML = historyHTML;
+function showHistory(ref) {
+    const historyModal = document.getElementById('historyModal');
+    const historyRefSpan = document.getElementById('historyRef');
+    const historyBody = document.getElementById('historyBody');
 
-  } catch (error) {
-    console.error("Fehler beim Abrufen des Audit-Logs:", error);
-    historyBody.innerHTML = '<p style="color: red; text-align: center;">Fehler beim Laden des Verlaufs: ' + error.message + '</p>';
-  }
+    historyRefSpan.textContent = ref;
+    historyBody.innerHTML = 'Lade Historie...';
+
+    fetch(`${API_URL}?mode=history&ref=${encodeURIComponent(ref)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            historyBody.innerHTML = ''; // Alten Inhalt leeren
+            if (data.history && data.history.length > 0) {
+                const ul = document.createElement('ul');
+                data.history.reverse().forEach(entry => { // Neueste zuerst
+                    const li = document.createElement('li');
+                    const timestamp = new Date(entry.timestamp).toLocaleString('de-DE');
+                    const user = entry.user || 'System';
+                    let changes = '';
+                    try {
+                        const parsedChanges = JSON.parse(entry.changes);
+                        changes = Object.entries(parsedChanges).map(([key, value]) => {
+                            if (typeof value === 'object' && value !== null && 'old' in value && 'new' in value) {
+                                return `<li><strong>${key}:</strong> von "${value.old}" zu "${value.new}"</li>`;
+                            }
+                            return `<li><strong>${key}:</strong> ${JSON.stringify(value)}</li>`; // Fallback für andere Formate
+                        }).join('');
+                        changes = `<ul>${changes}</ul>`;
+                    } catch (e) {
+                        changes = `<pre>${entry.changes}</pre>`; // Rohtext, wenn JSON-Parsing fehlschlägt
+                    }
+                    li.innerHTML = `<strong>${timestamp}</strong> by <i>${user}</i>:<br>${changes}`;
+                    ul.appendChild(li);
+                });
+                historyBody.appendChild(ul);
+            } else {
+                historyBody.innerHTML = '<p>Keine Historie für diese Referenz gefunden.</p>';
+            }
+            historyModal.style.display = 'flex';
+        })
+        .catch(error => {
+            console.error('Fehler beim Laden der Historie:', error);
+            historyBody.innerHTML = `<p style="color: red;">Fehler beim Laden der Historie: ${error.message}</p>`;
+            historyModal.style.display = 'flex';
+        });
 }
 
 function closeHistoryModal() {
-  document.getElementById("historyModal").style.display = "none";
+    document.getElementById('historyModal').style.display = 'none';
 }
 
-// === NEUE STATISTIK-FUNKTIONEN ===
+
+// === STATISTIK FUNKTIONEN ===
 function openStatisticsModal() {
-    const statisticsModal = document.getElementById('statisticsModal');
-    if (statisticsModal) {
-        statisticsModal.style.display = 'flex';
-        // Set default date range to current month if not already set
-        const statFromDateInput = document.getElementById('statFromDate');
-        const statToDateInput = document.getElementById('statToDate');
-        if (!statFromDateInput.value || !statToDateInput.value) {
-            const now = new Date();
-            // Erster Tag des aktuellen Monats
-            const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-            // Letzter Tag des aktuellen Monats (geht zum nächsten Monat und dann zum 0. Tag)
-            const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-
-            statFromDateInput.value = firstDayOfMonth;
-            statToDateInput.value = lastDayOfMonth;
-        }
-
-        generateStatistics(); // Statistik beim Öffnen generieren
-    } else {
-        console.warn("Statistik-Modal (id='statisticsModal') not found.");
-    }
+    document.getElementById('statisticsModal').style.display = 'flex';
+    generateStatistics(); // Statistiken generieren, wenn das Modal geöffnet wird
 }
 
 function closeStatisticsModal() {
-    document.getElementById("statisticsModal").style.display = "none";
-    // Optional: Zerstöre die Charts beim Schließen des Modals, um Speicher freizugeben
+    document.getElementById('statisticsModal').style.display = 'none';
+    // Charts zerstören, um Speicherlecks zu vermeiden und bei erneutem Öffnen neu zu rendern
     if (tonnagePerMonthChartInstance) {
         tonnagePerMonthChartInstance.destroy();
         tonnagePerMonthChartInstance = null;
@@ -1234,264 +1160,62 @@ function closeStatisticsModal() {
 }
 
 function generateStatistics() {
-    const statFromDateInput = document.getElementById('statFromDate').value;
-    const statToDateInput = document.getElementById('statToDate').value;
-    const statisticsBody = document.getElementById('statisticsBody');
+    const confirmedRequests = requestData.filter(r => String(r['Final Confirmation Sent'] || '').toLowerCase() === 'ja');
 
-    // Entferne alte nicht-Diagramm-Inhalte, um Platz für neue Statistiken zu schaffen
-    // ACHTUNG: Hier werden nur die dynamisch hinzugefügten Elemente entfernt.
-    // Die statischen Chart-Container bleiben bestehen.
-    const elementsToRemove = statisticsBody.querySelectorAll('h4, p, ul, table');
-    elementsToRemove.forEach(el => {
-        // Stelle sicher, dass nur die von generateStatistics hinzugefügten Elemente entfernt werden
-        // und nicht die statischen Chart-Container
-        if (!el.classList.contains('chart-container') && el.tagName !== 'CANVAS') {
-            el.remove();
+    // Tonnage pro Monat
+    const tonnageByMonth = {};
+    confirmedRequests.forEach(r => {
+        const flightDate = r['Flight Date'];
+        const tonnage = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0;
+        if (flightDate) {
+            const date = new Date(flightDate);
+            const monthYear = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+            tonnageByMonth[monthYear] = (tonnageByMonth[monthYear] || 0) + tonnage;
         }
     });
 
+    const sortedMonths = Object.keys(tonnageByMonth).sort();
+    const tonnageMonthLabels = sortedMonths.map(my => {
+        const [year, month] = my.split('-');
+        return new Date(year, month - 1).toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
+    });
+    const tonnageMonthData = sortedMonths.map(my => tonnageByMonth[my]);
 
-    if (!statFromDateInput || !statToDateInput) {
-        statisticsBody.insertAdjacentHTML('beforeend', '<p style="text-align: center; color: red;">Bitte wählen Sie einen Start- und Enddatum für die Statistik.</p>');
-        return;
-    }
+    renderTonnagePerMonthChart(tonnageMonthLabels, tonnageMonthData);
 
-    const fromDate = new Date(statFromDateInput);
-    fromDate.setHours(0, 0, 0, 0);
-    const toDate = new Date(statToDateInput);
-    toDate.setHours(23, 59, 59, 999); // Setze auf Ende des Tages für inklusiven Bereich
-
-    const filteredData = requestData.filter(r => {
-        let flightDateFromData = r['Flight Date'];
-        let flightDateObj;
-
-        if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            const parts = flightDateFromData.split('-');
-            flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        } else if (flightDateFromData instanceof Date) {
-            flightDateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
-        } else {
-            flightDateObj = new Date('Invalid Date');
-        }
-        flightDateObj.setHours(0, 0, 0, 0); // Normalisiere für den Vergleich
-
-        return flightDateObj >= fromDate && flightDateObj <= toDate;
+    // Tonnage pro Kunde (Top 10)
+    const tonnageByCustomer = {};
+    confirmedRequests.forEach(r => {
+        const customer = r['Billing Company'] || 'Unbekannt';
+        const tonnage = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0;
+        tonnageByCustomer[customer] = (tonnageByCustomer[customer] || 0) + tonnage;
     });
 
-    // Statistiken initialisieren
-    let totalFlights = filteredData.length;
-    let totalTonnage = 0;
-    // Finanzstatistiken entfernt:
-    // let totalRate = 0;
-    // let totalSecurityCharges = 0;
-    // let total10ftConsumables = 0;
-    // let total20ftConsumables = 0;
-    const dangerousGoodsCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
-    const VorfeldbegleitungCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
-    const airlineStats = {}; // { AirlineName: { totalTonnage: X, totalFlights: Y } } - totalRevenue entfernt
-    const tonnagePerMonth = {}; // { "YYYY-MM": totalTonnage }
-    const tonnagePerCustomer = {}; // { CustomerName: totalTonnage }
+    const sortedCustomers = Object.entries(tonnageByCustomer)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 10); // Top 10
 
+    const tonnageCustomerLabels = sortedCustomers.map(entry => entry[0]);
+    const tonnageCustomerData = sortedCustomers.map(entry => entry[1]);
 
-    filteredData.forEach(item => {
-        const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
-        
-        totalTonnage += tonnage;
-
-        // Dangerous Goods Statistik
-        // Sicherstellen, dass item['Dangerous Goods'] immer ein String ist, bevor toLowerCase aufgerufen wird
-        const dgStatus = String(item['Dangerous Goods'] || '').toLowerCase() === 'ja' ? 'Ja' : (String(item['Dangerous Goods'] || '').toLowerCase() === 'nein' ? 'Nein' : 'N/A');
-        dangerousGoodsCount[dgStatus]++;
-
-        // Vorfeldbegleitung Statistik
-        const vbStatus = String(item['Vorfeldbegleitung'] || '').toLowerCase() === 'ja' ? 'Ja' : (String(item['Vorfeldbegleitung'] || '').toLowerCase() === 'nein' ? 'Nein' : 'N/A');
-        VorfeldbegleitungCount[vbStatus]++;
-
-        // Airline-spezifische Statistik
-        const airlineName = item.Airline || 'Unbekannt';
-        if (!airlineStats[airlineName]) {
-            airlineStats[airlineName] = { totalTonnage: 0, totalFlights: 0 }; // totalRevenue entfernt
-        }
-        airlineStats[airlineName].totalTonnage += tonnage;
-        airlineStats[airlineName].totalFlights++;
-
-        // Tonnage pro Monat Statistik
-        const flightDate = item['Flight Date'];
-        if (flightDate && typeof flightDate === 'string' && flightDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            const yearMonth = flightDate.substring(0, 7); // "YYYY-MM"
-            const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
-            tonnagePerMonth[yearMonth] = (tonnagePerMonth[yearMonth] || 0) + tonnage;
-        }
-
-        // Tonnage pro Kunde Statistik (nutzt 'Billing Company' als Kunde)
-        const customerName = item['Billing Company'] || 'Unbekannt';
-        tonnagePerCustomer[customerName] = (tonnagePerCustomer[customerName] || 0) + tonnage;
-    });
-
-    // --- TEXT-BASIERTE STATISTIKEN RENDERN ---
-    let statsHTML = '<h4>Gesamtübersicht</h4>';
-    statsHTML += `<p>Gesamtzahl Flüge: <strong>${totalFlights}</strong></p>`;
-    statsHTML += `<p>Gesamte Tonnage: <strong>${totalTonnage.toLocaleString('de-DE', { maximumFractionDigits: 2 })} kg</strong></p>`;
-
-
-    statsHTML += '<h4>Dangerous Goods Statistik</h4>';
-    statsHTML += `<ul>`;
-    statsHTML += `<li>Ja: ${dangerousGoodsCount["Ja"]} (${(dangerousGoodsCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
-    statsHTML += `<li>Nein: ${dangerousGoodsCount["Nein"]} (${(dangerousGoodsCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
-    if (dangerousGoodsCount["N/A"] > 0) {
-        statsHTML += `<li>Nicht angegeben: ${dangerousGoodsCount["N/A"]} (${(dangerousGoodsCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
-    }
-    statsHTML += `</ul>`;
-
-    statsHTML += '<h4>Vorfeldbegleitung Statistik</h4>';
-    statsHTML += `<ul>`;
-    statsHTML += `<li>Ja: ${VorfeldbegleitungCount["Ja"]} (${(VorfeldbegleitungCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
-    statsHTML += `<li>Nein: ${VorfeldbegleitungCount["Nein"]} (${(VorfeldbegleitungCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
-    if (VorfeldbegleitungCount["N/A"] > 0) {
-        statsHTML += `<li>Nicht angegeben: ${VorfeldbegleitungCount["N/A"]} (${(VorfeldbegleitungCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
-    }
-    statsHTML += `</ul>`;
-
-
-    statsHTML += '<h4>Statistik nach Airline</h4>';
-    if (Object.keys(airlineStats).length > 0) {
-        statsHTML += `<table><thead><tr><th>Airline</th><th>Flüge</th><th>Tonnage (kg)</th>`;
-        statsHTML += `</tr></thead><tbody>`;
-
-        // Sortiere Airlines nach Gesamtflügen absteigend
-        const sortedAirlines = Object.entries(airlineStats).sort(([, a], [, b]) => b.totalFlights - a.totalFlights);
-
-        sortedAirlines.forEach(([airlineName, stats]) => {
-            statsHTML += `<tr>`;
-            statsHTML += `<td>${airlineName}</td>`;
-            statsHTML += `<td>${stats.totalFlights}</td>`;
-            statsHTML += `<td>${stats.totalTonnage.toLocaleString('de-DE', { maximumFractionDigits: 2 })}</td>`;
-            statsHTML += `</tr>`;
-        });
-        statsHTML += `</tbody></table>`;
-    } else {
-        statsHTML += '<p>Keine Flüge für die ausgewählten Daten gefunden.</p>';
-    }
-
-    // Füge die textbasierten Statistiken vor den Diagrammen ein
-    // Finden Sie das erste Chart-Container-Element und fügen Sie die Statistiken davor ein.
-    // Wenn keine Chart-Container gefunden werden (was nicht passieren sollte, aber als Fallfall), fügen Sie sie ans Ende.
-    const firstChartContainer = statisticsBody.querySelector('.chart-container');
-    if (firstChartContainer) {
-        firstChartContainer.insertAdjacentHTML('beforebegin', statsHTML);
-    } else {
-        statisticsBody.insertAdjacentHTML('beforeend', statsHTML);
-    }
-
-    // --- DIAGRAMME RENDERN ---
-    renderTonnagePerMonthChart(tonnagePerMonth);
-    renderTonnagePerCustomerChart(tonnagePerCustomer);
+    renderTonnagePerCustomerChart(tonnageCustomerLabels, tonnageCustomerData);
 }
 
-function renderTonnagePerMonthChart(data) {
-    const ctx = document.getElementById('tonnagePerMonthChart');
-    if (!ctx) {
-        console.error("Canvas element 'tonnagePerMonthChart' not found.");
-        return;
-    }
-    const chartCtx = ctx.getContext('2d');
 
-    // Zerstöre die vorherige Chart-Instanz, falls vorhanden
+function renderTonnagePerMonthChart(labels, data) {
+    const ctx = document.getElementById('tonnagePerMonthChart').getContext('2d');
     if (tonnagePerMonthChartInstance) {
         tonnagePerMonthChartInstance.destroy();
     }
-
-    const labels = Object.keys(data).sort(); // Sortiere nach Monat (YYYY-MM)
-    const tonnageValues = labels.map(label => data[label]);
-
-    tonnagePerMonthChartInstance = new Chart(chartCtx, {
-        type: 'bar', // Balkendiagramm
+    tonnagePerMonthChartInstance = new Chart(ctx, {
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
                 label: 'Tonnage (kg)',
-                data: tonnageValues,
+                data: data,
                 backgroundColor: 'rgba(75, 192, 192, 0.6)',
                 borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false, // Wichtig für feste Höhe des Canvas
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Tonnage (kg)'
-                    }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Monat'
-                    }
-                }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            if (context.parsed.y !== null) {
-                                label += context.parsed.y.toLocaleString('de-DE') + ' kg';
-                            }
-                            return label;
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
-
-function renderTonnagePerCustomerChart(data) {
-    const ctx = document.getElementById('tonnagePerCustomerChart');
-    if (!ctx) {
-        console.error("Canvas element 'tonnagePerCustomerChart' not found.");
-        return;
-    }
-    const chartCtx = ctx.getContext('2d');
-
-    // Zerstöre die vorherige Chart-Instanz, falls vorhanden
-    if (tonnagePerCustomerChartInstance) {
-        tonnagePerCustomerChartInstance.destroy();
-    }
-
-    // Sortiere Kunden nach Tonnage (absteigend) und zeige nur die Top X (z.B. Top 10)
-    const sortedCustomers = Object.entries(data).sort(([, tonnageA], [, tonnageB]) => tonnageB - tonnageA);
-    const topCustomers = sortedCustomers.slice(0, 10); // Zeige nur die Top 10 Kunden
-
-    const labels = topCustomers.map(([customer]) => customer);
-    const tonnageValues = topCustomers.map(([, tonnage]) => tonnage);
-
-    // Farben für die Balken generieren
-    const backgroundColors = [
-        'rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)', 'rgba(255, 206, 86, 0.6)',
-        'rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)', 'rgba(255, 159, 64, 0.6)',
-        'rgba(199, 199, 199, 0.6)', 'rgba(83, 102, 255, 0.6)', 'rgba(40, 159, 64, 0.6)',
-        'rgba(210, 50, 50, 0.6)'
-    ];
-    const borderColors = backgroundColors.map(color => color.replace('0.6', '1')); // Feste Ränder
-
-    tonnagePerCustomerChartInstance = new Chart(chartCtx, {
-        type: 'bar', // Balkendiagramm
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Tonnage (kg)',
-                data: tonnageValues,
-                backgroundColor: backgroundColors.slice(0, labels.length),
-                borderColor: borderColors.slice(0, labels.length),
                 borderWidth: 1
             }]
         },
@@ -1509,26 +1233,54 @@ function renderTonnagePerCustomerChart(data) {
                 x: {
                     title: {
                         display: true,
-                        text: 'Kunde'
-                    },
-                    // Optional: Labels drehen, wenn sie zu lang sind
-                    ticks: {
-                        autoSkip: false,
-                        maxRotation: 90,
-                        minRotation: 45
+                        text: 'Monat'
                     }
                 }
             },
             plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function renderTonnagePerCustomerChart(labels, data) {
+    const ctx = document.getElementById('tonnagePerCustomerChart').getContext('2d');
+    if (tonnagePerCustomerChartInstance) {
+        tonnagePerCustomerChartInstance.destroy();
+    }
+    tonnagePerCustomerChartInstance = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Tonnage (kg)',
+                data: data,
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                    '#FF9F40', '#E7E9ED', '#8AC926', '#1982C4', '#6A4C93'
+                ],
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            let label = context.dataset.label || '';
+                            let label = context.label || '';
                             if (label) {
                                 label += ': ';
                             }
-                            if (context.parsed.y !== null) {
-                                label += context.parsed.y.toLocaleString('de-DE') + ' kg';
+                            if (context.parsed !== null) {
+                                label += new Intl.NumberFormat('de-DE', { style: 'decimal' }).format(context.parsed) + ' kg';
                             }
                             return label;
                         }
@@ -1540,238 +1292,104 @@ function renderTonnagePerCustomerChart(data) {
 }
 
 function downloadStatisticsToCSV() {
-    const statFromDateInput = document.getElementById('statFromDate').value;
-    const statToDateInput = document.getElementById('statToDate').value;
+    const confirmedRequests = requestData.filter(r => String(r['Final Confirmation Sent'] || '').toLowerCase() === 'ja');
 
-    if (!statFromDateInput || !statToDateInput) {
-        showSaveFeedback("Bitte wählen Sie einen Start- und Enddatum für den Download aus.", false);
+    if (confirmedRequests.length === 0) {
+        showSaveFeedback("Keine bestätigten Daten zum Exportieren vorhanden.", false);
         return;
     }
 
-    const fromDate = new Date(statFromDateInput);
-    fromDate.setHours(0, 0, 0, 0);
-    const toDate = new Date(statToDateInput);
-    toDate.setHours(23, 59, 59, 999);
+    const headers = [
+        "Ref", "Created At", "Billing Company", "Billing Address", "Tax Number",
+        "Contact Name Invoicing", "Contact E-Mail Invoicing", "Airline", "Aircraft Type",
+        "Flugnummer", "Call Sign", // Call Sign hinzugefügt
+        "Flight Date", "Abflugzeit", "Tonnage", "Rate", "Security charges", "Dangerous Goods",
+        "10ft consumables", "20ft consumables", "Zusatzkosten", "Email Request",
+        "AGB Accepted", "Service Description Accepted", "Accepted By Name", "Acceptance Timestamp",
+        "Final Confirmation Sent", "Flight Type Import", "Flight Type Export", "Origin", "Destination"
+    ];
 
-    const filteredData = requestData.filter(r => {
-        let flightDateFromData = r['Flight Date'];
-        let flightDateObj;
+    let csvContent = headers.join(";") + "\n"; // Headers as semicolon-separated
 
-        if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            const parts = flightDateFromData.split('-');
-            flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        } else if (flightDateFromData instanceof Date) {
-            flightDateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
-        } else {
-            flightDateObj = new Date('Invalid Date');
-        }
-        flightDateObj.setHours(0, 0, 0, 0);
-
-        return flightDateObj >= fromDate && flightDateObj <= toDate;
+    confirmedRequests.forEach(row => {
+        const values = headers.map(header => {
+            let value = row[header];
+            if (value === undefined || value === null) {
+                value = "";
+            }
+            // Handle values that might contain semicolons or newlines
+            if (typeof value === 'string' && (value.includes(';') || value.includes('\n') || value.includes('"'))) {
+                value = `"${value.replace(/"/g, '""')}"`; // Enclose in double quotes and escape existing double quotes
+            }
+            return value;
+        });
+        csvContent += values.join(";") + "\n";
     });
 
-    let csvContent = "";
-
-    // --- Gesamtübersicht Statistik ---
-    let totalFlights = filteredData.length;
-    let totalTonnage = 0;
-
-    filteredData.forEach(item => {
-        const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
-        totalTonnage += tonnage;
-    });
-
-    csvContent += "Gesamtuebersicht\n";
-    csvContent += "Gesamtzahl Fluege," + totalFlights + "\n";
-    csvContent += "Gesamte Tonnage (kg)," + totalTonnage.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n"; // Nutze en-US für CSV-Konsistenz
-    csvContent += "\n"; // Leere Zeile zur Trennung
-
-    // --- Dangerous Goods Statistik ---
-    const dangerousGoodsCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
-    filteredData.forEach(item => {
-        // Sicherstellen, dass item['Dangerous Goods'] immer ein String ist
-        const dgStatus = String(item['Dangerous Goods'] || '').toLowerCase() === 'ja' ? 'Ja' : (String(item['Dangerous Goods'] || '').toLowerCase() === 'nein' ? 'Nein' : 'N/A');
-        dangerousGoodsCount[dgStatus]++;
-    });
-    csvContent += "Dangerous Goods Statistik\n";
-    csvContent += "Status,Anzahl,Prozentsatz\n";
-    csvContent += `Ja,${dangerousGoodsCount["Ja"]},${(dangerousGoodsCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
-    csvContent += `Nein,${dangerousGoodsCount["Nein"]},${(dangerousGoodsCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
-    if (dangerousGoodsCount["N/A"] > 0) {
-        csvContent += `Nicht angegeben,${dangerousGoodsCount["N/A"]},${(dangerousGoodsCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
-    }
-    csvContent += "\n";
-
-    // --- Vorfeldbegleitung Statistik ---
-    const VorfeldbegleitungCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
-    filteredData.forEach(item => {
-        const vbStatus = String(item['Vorfeldbegleitung'] || '').toLowerCase() === 'ja' ? 'Ja' : (String(item['Vorfeldbegleitung'] || '').toLowerCase() === 'nein' ? 'Nein' : 'N/A');
-        VorfeldbegleitungCount[vbStatus]++;
-    });
-    csvContent += "Vorfeldbegleitung Statistik\n";
-    csvContent += "Status,Anzahl,Prozentsatz\n";
-    csvContent += `Ja,${VorfeldbegleitungCount["Ja"]},${(VorfeldbegleitungCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
-    csvContent += `Nein,${VorfeldbegleitungCount["Nein"]},${(VorfeldbegleitungCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
-    if (VorfeldbegleitungCount["N/A"] > 0) {
-        csvContent += `Nicht angegeben,${VorfeldbegleitungCount["N/A"]},${(VorfeldbegleitungCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
-    }
-    csvContent += "\n";
-
-    // --- Tonnage pro Monat Statistik ---
-    const tonnagePerMonth = {};
-    filteredData.forEach(item => {
-        const flightDate = item['Flight Date'];
-        if (flightDate && typeof flightDate === 'string' && flightDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            const yearMonth = flightDate.substring(0, 7); // "YYYY-MM"
-            const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
-            tonnagePerMonth[yearMonth] = (tonnagePerMonth[yearMonth] || 0) + tonnage;
-        }
-    });
-    csvContent += "Tonnage pro Monat\n";
-    csvContent += "Monat,Tonnage (kg)\n";
-    Object.keys(tonnagePerMonth).sort().forEach(month => {
-        csvContent += `${month},${tonnagePerMonth[month].toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 })}\n`;
-    });
-    csvContent += "\n";
-
-    // --- Tonnage pro Kunde Statistik ---
-    const tonnagePerCustomer = {};
-    filteredData.forEach(item => {
-        const customerName = item['Billing Company'] || 'Unbekannt';
-        const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
-        tonnagePerCustomer[customerName] = (tonnagePerCustomer[customerName] || 0) + tonnage;
-    });
-    csvContent += "Tonnage pro Kunde\n";
-    csvContent += "Kunde,Tonnage (kg)\n";
-    // Sortiere Kunden nach Tonnage absteigend für bessere Lesbarkeit
-    Object.entries(tonnagePerCustomer).sort(([, a], [, b]) => b - a).forEach(([customer, tonnage]) => {
-        csvContent += `"${customer}",${tonnage.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 })}\n`; // Kundenname in Anführungszeichen setzen, um Kommas zu behandeln
-    });
-    csvContent += "\n";
-
-    // --- Airline Statistik ---
-    const airlineStats = {};
-    filteredData.forEach(item => {
-        const airlineName = item.Airline || 'Unbekannt';
-        const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
-
-        if (!airlineStats[airlineName]) {
-            airlineStats[airlineName] = { totalTonnage: 0, totalFlights: 0 };
-        }
-        airlineStats[airlineName].totalTonnage += tonnage;
-        airlineStats[airlineName].totalFlights++;
-    });
-
-    csvContent += "Statistik nach Airline\n";
-    let airlineHeader = "Airline,Fluege,Tonnage (kg)";
-    csvContent += airlineHeader + "\n";
-
-    Object.entries(airlineStats).sort(([, a], [, b]) => b.totalFlights - a.totalFlights).forEach(([airlineName, stats]) => {
-        let row = `"${airlineName}",${stats.totalFlights},${stats.totalTonnage.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 })}`;
-        csvContent += row + "\n";
-    });
-
-    // Erstelle ein Blob und lade es herunter
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.download !== undefined) { // Feature-Erkennung für das HTML5-Download-Attribut
+    const link = document.createElement("a");
+    if (link.download !== undefined) { // Feature detection
         const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `Charter_Dashboard_Statistik_${statFromDateInput}_bis_${statToDateInput}.csv`);
+        link.setAttribute("href", url);
+        link.setAttribute("download", "charter_statistics.csv");
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        showSaveFeedback("Statistik erfolgreich heruntergeladen!", true);
+        showSaveFeedback("Statistiken erfolgreich als CSV heruntergeladen!", true);
     } else {
-        // Fallback für Browser, die das Download-Attribut nicht unterstützen (heute weniger wahrscheinlich)
-        showSaveFeedback("Ihr Browser unterstützt das direkt Herunterladen nicht. Bitte kopieren Sie den Text manuell.", false);
-        console.warn("Download-Attribut wird nicht unterstützt. Fallback erforderlich.");
+        showSaveFeedback("Ihr Browser unterstützt das Herunterladen von CSV-Dateien nicht direkt.", false);
     }
 }
 
-// === NEUE E-MAIL BESTÄTIGUNGSFUNKTIONEN ===
-function openEmailConfirmationModal(data) {
-    // Setze das aktuelle Datenobjekt für die E-Mail-Funktion
-    currentModalData = data;
-    const emailConfirmationModal = document.getElementById('emailConfirmationModal');
-    const recipientEmailInput = document.getElementById('recipientEmailInput');
-    const emailConfirmationMessage = document.getElementById('emailConfirmationMessage');
 
-    // Versuche, die E-Mail-Adresse des Kunden vorab auszufüllen
-    if (currentModalData && currentModalData['Contact E-Mail Invoicing']) {
-        recipientEmailInput.value = currentModalData['Contact E-Mail Invoicing'];
-    } else {
-        recipientEmailInput.value = '';
-    }
-    emailConfirmationMessage.textContent = ''; // Alte Nachrichten löschen
-    emailConfirmationModal.style.display = 'flex';
+// === E-MAIL BESTÄTIGUNG MODAL FUNKTIONEN ===
+function openEmailConfirmationModal(data) {
+    currentModalData = data; // Setze die aktuellen Daten für das Modal
+    const confirmRefSpan = document.getElementById('confirmRef');
+    const confirmEmailSpan = document.getElementById('confirmEmail');
+    const additionalEmailInput = document.getElementById('additionalEmail');
+    const sendEmailConfirmBtn = document.getElementById('sendEmailConfirmBtn');
+
+    confirmRefSpan.textContent = data.Ref;
+    confirmEmailSpan.textContent = data['Contact E-Mail Invoicing'] || 'N/A';
+    additionalEmailInput.value = ''; // Zusätzliches E-Mail-Feld leeren
+
+    // Event Listener neu zuweisen, um sicherzustellen, dass er die aktuelle `data` erfasst
+    sendEmailConfirmBtn.onclick = () => generateEmailPreview(data);
+
+    document.getElementById('emailConfirmationModal').style.display = 'flex';
 }
 
 function closeEmailConfirmationModal() {
     document.getElementById('emailConfirmationModal').style.display = 'none';
-    document.getElementById('recipientEmailInput').value = ''; // Eingabefeld leeren
-    document.getElementById('emailConfirmationMessage').textContent = ''; // Nachricht leeren
 }
 
-document.getElementById('sendEmailConfirmBtn').addEventListener('click', async () => {
-    const recipientEmailInput = document.getElementById('recipientEmailInput');
-    const emailConfirmationMessage = document.getElementById('emailConfirmationMessage');
-    const recipientEmail = recipientEmailInput.value.trim();
+async function generateEmailPreview(data) {
+    document.getElementById('emailConfirmationModal').style.display = 'none'; // Bestätigungsmodal schließen
+
+    const previewRefSpan = document.getElementById('previewRef');
+    const emailPreviewContentDiv = document.getElementById('emailPreviewContent');
+    const markAsSentBtn = document.getElementById('markAsSentBtn');
+
+    previewRefSpan.textContent = data.Ref;
+    emailPreviewContentDiv.innerHTML = 'Lade E-Mail Vorschau...';
+
+    const additionalEmail = document.getElementById('additionalEmail').value.trim();
+    const recipientEmail = additionalEmail || data['Contact E-Mail Invoicing'];
 
     if (!recipientEmail) {
-        emailConfirmationMessage.textContent = 'Bitte geben Sie eine Empfänger-E-Mail-Adresse ein.';
-        emailConfirmationMessage.style.color = 'red';
+        showSaveFeedback("Keine E-Mail-Adresse für den Empfänger gefunden. Bitte geben Sie eine zusätzliche E-Mail ein.", false);
         return;
     }
 
-    // Einfache E-Mail-Validierung
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)) {
-        emailConfirmationMessage.textContent = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
-        emailConfirmationMessage.style.color = 'red';
-        return;
-    }
-
-    // Deaktiviere den Button während des Sendens
-    const sendButton = document.getElementById('sendEmailConfirmBtn');
-    sendButton.disabled = true;
-    sendButton.textContent = 'Senden...';
-    emailConfirmationMessage.textContent = 'Sende E-Mail...';
-    emailConfirmationMessage.style.color = 'blue';
+    const payload = {
+        mode: 'generateEmailPreview',
+        ref: data.Ref,
+        recipient: recipientEmail
+    };
 
     try {
-        const emailSubject = `Charter Bestätigung für Referenz: ${currentModalData.Ref || 'N/A'}`;
-        
-        // Erstelle den Payload und füge ALLE Daten aus currentModalData hinzu
-        const payload = {
-            mode: 'sendConfirmationEmail',
-            to: recipientEmail,
-            from: 'sales@vgcargo.de', // Feste Absenderadresse
-            bcc: 'sales@vgcargo.de, import@vgcargo.de, export@vgcargo.de', // Feste BCC-Adressen
-            subject: emailSubject,
-            ref: currentModalData.Ref, // Referenz für Audit-Log
-            user: currentUser.name // Aktueller Benutzer für Audit-Log
-        };
-
-        // Füge alle Eigenschaften von currentModalData zum Payload hinzu
-        for (const key in currentModalData) {
-            // Stelle sicher, dass wir keine vorhandenen Payload-Eigenschaften überschreiben
-            // und dass Date-Objekte korrekt als Strings gesendet werden
-            if (!payload.hasOwnProperty(key)) {
-                if (currentModalData[key] instanceof Date) {
-                    // Für Flight Date und Acceptance Timestamp: YYYY-MM-DD oder vollständiger String
-                    if (key === 'Flight Date') {
-                        payload[key] = currentModalData[key].toISOString().split('T')[0];
-                    } else {
-                        payload[key] = currentModalData[key].toLocaleString('de-DE'); // Oder ein anderes passendes Format
-                    }
-                } else {
-                    payload[key] = currentModalData[key];
-                }
-            }
-        }
-
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: {
@@ -1782,113 +1400,48 @@ document.getElementById('sendEmailConfirmBtn').addEventListener('click', async (
 
         const result = await response.json();
 
-        if (response.ok && result.status === 'success') {
-            emailConfirmationMessage.textContent = 'Charter Bestätigung erfolgreich gesendet!';
-            emailConfirmationMessage.style.color = 'green';
-            showSaveFeedback("Charter Bestätigung gesendet!", true);
-            // Markiere den Eintrag als "Final Confirmation Sent" = "Ja"
-            const index = requestData.findIndex(item => item.Ref === currentModalData.Ref);
-            if (index !== -1) {
-                requestData[index]['Final Confirmation Sent'] = 'Ja';
-                filterTable(); // Tabelle neu rendern, um das Häkchen anzuzeigen
-            }
-            // Schließe das Modal nach einer kurzen Verzögerung
-            setTimeout(() => {
-                closeEmailConfirmationModal();
-                closeModal(); // Auch das Detail-Modal schließen
-                fetchData(); // Daten neu laden, um History zu aktualisieren
-            }, 1500);
+        if (response.ok && result.status === 'success' && result.htmlContent) {
+            emailPreviewContentDiv.innerHTML = result.htmlContent;
+            // Markierungsbutton für manuelles Senden aktualisieren
+            markAsSentBtn.onclick = () => markAsSentManually(data.Ref, true); // Übergibt 'true' für "als gesendet markieren"
+            document.getElementById('emailPreviewModal').style.display = 'flex';
         } else {
-            emailConfirmationMessage.textContent = result.message || 'Fehler beim Senden der E-Mail.';
-            emailConfirmationMessage.style.color = 'red';
-            showSaveFeedback("Fehler beim Senden der Bestätigung!", false);
+            emailPreviewContentDiv.innerHTML = `<p style="color: red;">Fehler beim Laden der E-Mail-Vorschau: ${result.message || 'Unbekannter Fehler'}</p>`;
+            markAsSentBtn.onclick = () => markAsSentManually(data.Ref, false); // "als gesendet markieren" ohne Vorschau
+            document.getElementById('emailPreviewModal').style.display = 'flex';
         }
     } catch (error) {
-        console.error('Fehler beim Senden der E-Mail:', error);
-        emailConfirmationMessage.textContent = 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.';
-        emailConfirmationMessage.style.color = 'red';
-        showSaveFeedback("Fehler beim Senden der Bestätigung!", false);
-    } finally {
-        sendButton.disabled = false;
-        sendButton.textContent = 'Senden';
-    }
-});
-
-// NEU: Funktion zum Generieren des E-Mail-Bodys für die Vorschau
-async function generateEmailPreview() {
-    if (!currentModalData) {
-        showSaveFeedback("Keine Daten für die E-Mail-Vorschau verfügbar.", false);
-        return;
-    }
-
-    const emailPreviewModal = document.getElementById('emailPreviewModal');
-    const previewRefSpan = document.getElementById('previewRef');
-    const emailPreviewContent = document.getElementById('emailPreviewContent');
-
-    previewRefSpan.textContent = currentModalData.Ref || 'N/A';
-    emailPreviewContent.innerHTML = '<p style="text-align: center;">Lade Vorschau...</p>'; // Ladeanzeige
-    emailPreviewModal.style.display = 'flex';
-
-    try {
-        // Rufe den Server auf, um den E-Mail-Body zu generieren
-        const payload = {
-            mode: 'generateEmailBody',
-            data: JSON.stringify(currentModalData), // Sende die Daten als JSON-String
-            userRole: currentUser.role // Sende die Rolle des Benutzers
-        };
-
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams(payload).toString(),
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.status === 'success' && result.emailBody) {
-            emailPreviewContent.innerHTML = result.emailBody; // HTML direkt rendern
-        } else {
-            emailPreviewContent.innerHTML = `<p style="color: red; text-align: center;">${result.message || 'Fehler beim Generieren der E-Mail-Vorschau.'}</p>`;
-        }
-    } catch (error) {
-        console.error('Fehler beim Generieren der E-Mail-Vorschau:', error);
-        emailPreviewContent.innerHTML = '<p style="color: red; text-align: center;">Ein unerwarteter Fehler ist aufgetreten beim Generieren der Vorschau.</p>';
+        console.error('Fehler beim Abrufen der E-Mail-Vorschau:', error);
+        emailPreviewContentDiv.innerHTML = `<p style="color: red;">Ein Netzwerkfehler ist aufgetreten: ${error.message}</p>`;
+        markAsSentBtn.onclick = () => markAsSentManually(data.Ref, false); // "als gesendet markieren" ohne Vorschau
+        document.getElementById('emailPreviewModal').style.display = 'flex';
     }
 }
 
 function closeEmailPreviewModal() {
     document.getElementById('emailPreviewModal').style.display = 'none';
-    document.getElementById('emailPreviewContent').innerHTML = ''; // Inhalt leeren
 }
 
-// Event Listener für den Vorschau-Button
-document.getElementById('previewEmailBtn').addEventListener('click', generateEmailPreview);
+// NEU: Funktion zum manuellen Markieren als gesendet (oder tatsächlich senden)
+async function markAsSentManually(ref, sendEmail = false) {
+    let payload = {
+        mode: 'markAsSent',
+        ref: ref,
+        user: currentUser ? currentUser.name : "Unknown",
+        sendEmail: sendEmail // Steuert, ob die E-Mail tatsächlich gesendet werden soll
+    };
 
-// NEU: Funktion zum manuellen Markieren als "Final Confirmation Sent"
-async function markAsSentManually() {
-    if (!currentModalData || !currentModalData.Ref) {
-        showSaveFeedback("Keine Referenzdaten zum Markieren verfügbar.", false);
-        return;
-    }
-
-    const refToMark = currentModalData.Ref;
-    const user = currentUser.name;
-
-    // Bestätigungsdialog
-    const isConfirmed = confirm(`Möchten Sie die Charter Confirmation für Referenz "${refToMark}" wirklich manuell als 'gesendet' markieren?`);
-    if (!isConfirmed) {
-        return;
+    // Wenn die E-Mail gesendet werden soll, fügen Sie die Empfänger hinzu
+    if (sendEmail) {
+        const additionalEmail = document.getElementById('additionalEmail').value.trim();
+        payload.recipient = additionalEmail || currentModalData['Contact E-Mail Invoicing'];
+        if (!payload.recipient) {
+            showSaveFeedback("Keine E-Mail-Adresse für den Empfänger gefunden. E-Mail kann nicht gesendet werden.", false);
+            return;
+        }
     }
 
     try {
-        const payload = {
-            mode: 'markAsConfirmed', // Neuer Modus für Google Apps Script
-            ref: refToMark,
-            user: user
-        };
-
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: {
@@ -1900,66 +1453,21 @@ async function markAsSentManually() {
         const result = await response.json();
 
         if (response.ok && result.status === 'success') {
-            showSaveFeedback(`Referenz ${refToMark} als 'gesendet' markiert!`, true);
-            // Aktualisiere den lokalen Datenstatus und re-render die Tabelle
-            const index = requestData.findIndex(item => item.Ref === refToMark);
-            if (index !== -1) {
-                requestData[index]['Final Confirmation Sent'] = 'Ja';
-                filterTable(); // Tabelle neu rendern, um den Haken anzuzeigen
-            }
-            closeEmailPreviewModal(); // Vorschau-Modal schließen
-            closeModal(); // Detail-Modal schließen
-            fetchData(); // Daten neu laden, um sicherzustellen, dass alles synchron ist
+            showSaveFeedback(`Eintrag als 'Final Confirmation Sent' markiert. ${sendEmail ? 'E-Mail gesendet.' : ''}`, true);
+            closeEmailPreviewModal();
+            closeEmailConfirmationModal(); // Auch das Bestätigungsmodal schließen
+            closeModal(); // Und das Detailmodal, da die Bestätigung nun abgeschlossen ist
+            fetchData(); // Daten neu laden, um den Status-Update anzuzeigen
         } else {
-            showSaveFeedback(result.message || 'Fehler beim Markieren als gesendet.', false);
+            showSaveFeedback(result.message || `Fehler beim Markieren als gesendet. ${sendEmail ? 'E-Mail wurde nicht gesendet.' : ''}`, false);
         }
     } catch (error) {
-        console.error('Fehler beim manuellen Markieren als gesendet:', error);
-        showSaveFeedback('Ein Fehler ist beim Markieren als gesendet aufgetreten.', false);
+        console.error('Fehler beim Markieren/Senden:', error);
+        showSaveFeedback('Ein Fehler ist beim Markieren oder Senden aufgetreten. Bitte versuchen Sie es später erneut.', false);
     }
 }
 
-// Event Listener für den neuen Button "Charter Confirmation gesendet"
-document.getElementById('markAsSentBtn').addEventListener('click', markAsSentManually);
 
-
-// --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
-// Wenn script.js als type="module" geladen wird, sind Funktionen
-// standardmäßig nicht im globalen "window"-Scope verfügbar,
-// es sei denn, sie werden explizit exportiert oder zugewiesen.
-// Für HTML-onclick-Attribute ist die Zuweisung an "window" erforderlich.
-window.openProfileModal = openProfileModal;
-window.closeProfileModal = closeProfileModal;
-window.changePassword = changePassword;
-window.logoutUser = logoutUser;
-window.fetchData = fetchData;
-window.renderTable = renderTable;
-window.filterTable = filterTable;
-window.openModal = openModal;
-window.deleteRowFromModal = deleteRowFromModal;
-window.closeModal = closeModal;
-window.saveDetails = saveDetails;
-window.deleteRow = deleteRow;
-window.shiftCalendar = shiftCalendar;
-window.renderCalendars = renderCalendars;
-window.openCalendarDayFlights = openCalendarDayFlights;
-window.generateCalendarHTML = generateCalendarHTML;
-window.createNewRequest = createNewRequest;
-window.showSaveFeedback = showSaveFeedback;
-window.showHistory = showHistory;
-window.closeHistoryModal = closeHistoryModal;
-window.openStatisticsModal = openStatisticsModal; // Mache neue Funktion global zugänglich
-window.closeStatisticsModal = closeStatisticsModal; // Mache neue Funktion global zugänglich
-window.generateStatistics = generateStatistics; // Mache neue Funktion global zugänglich
-window.renderTonnagePerMonthChart = renderTonnagePerMonthChart; // Mache neue Funktion global zugänglich
-window.renderTonnagePerCustomerChart = renderTonnagePerCustomerChart; // Mache neue Funktion global zugänglich
-window.downloadStatisticsToCSV = downloadStatisticsToCSV; // Mache neue Download-Funktion global zugänglich
-window.openEmailConfirmationModal = openEmailConfirmationModal; // NEU: E-Mail Bestätigungsmodal öffnen
-window.closeEmailConfirmationModal = closeEmailConfirmationModal; // NEU: E-Mail Bestätigungsmodal schließen
-window.toggleOriginDestinationFields = toggleOriginDestinationFields; // NEU: Funktion global zugänglich machen
-window.generateEmailPreview = generateEmailPreview; // NEU: Funktion für E-Mail-Vorschau
-window.closeEmailPreviewModal = closeEmailPreviewModal; // NEU: Funktion zum Schließen der E-Mail-Vorschau
-window.markAsSentManually = markAsSentManually; // NEU: Funktion zum manuellen Markieren als gesendet
 // Initialisiere Auth-Status, sobald das DOM geladen ist.
 // Dies wird nach dem window.onload Event, aber vor dem Polling ausgeführt.
 checkAuthStatus();
