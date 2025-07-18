@@ -804,6 +804,20 @@
         </div>
     </div>
 
+    <!-- Tagesübersicht Flüge Modal (NEU) -->
+    <div class="modal" id="dayOverviewModal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeDayOverviewModal()">✖</span>
+            <h3>Tagesübersicht Flüge: <span id="dayOverviewDate"></span></h3>
+            <div id="dayOverviewBody" class="mt-4 text-gray-700">
+                <!-- Flüge des Tages werden hier geladen -->
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeDayOverviewModal()">Schließen</button>
+            </div>
+        </div>
+    </div>
+
     <!-- History Modal -->
     <div class="modal" id="historyModal">
         <div class="modal-content">
@@ -868,7 +882,7 @@
         </div>
     </div>
 
-    <!-- NEU: E-Mail Bestätigungsmodal -->
+    <!-- E-Mail Bestätigungsmodal -->
     <div class="modal" id="emailConfirmationModal">
         <div class="modal-content">
             <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeEmailConfirmationModal()">✖</span>
@@ -878,13 +892,13 @@
             <input type="email" id="additionalEmail" placeholder="Weitere E-Mail-Adresse eingeben">
             <p id="emailConfirmationMessage" class="text-sm text-red-500"></p>
             <div class="modal-buttons">
-                <button class="btn-email-action send" id="sendEmailConfirmBtn">Vorschau & Senden</button>
+                <button class="btn-email-action send" id="sendEmailConfirmBtn">E-Mail senden</button>
                 <button class="btn-email-action cancel" onclick="closeEmailConfirmationModal()">Abbrechen</button>
             </div>
         </div>
     </div>
 
-    <!-- NEU: E-Mail Vorschau Modal -->
+    <!-- E-Mail Vorschau Modal -->
     <div class="modal" id="emailPreviewModal">
         <div class="modal-content">
             <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeEmailPreviewModal()">✖</span>
@@ -892,7 +906,7 @@
             <!-- Geändert von <pre> zu <div> um HTML zu rendern -->
             <div id="emailPreviewContent"></div> 
             <div class="modal-buttons">
-                <button class="btn-manual-sent" id="markAsSentBtn">Charter Confirmation gesendet</button> <!-- NEU: Button hinzugefügt -->
+                <button class="btn-manual-sent" id="markAsSentBtn">E-Mail senden</button>
                 <button class="btn-email-action cancel" onclick="closeEmailPreviewModal()">Schließen</button>
             </div>
         </div>
