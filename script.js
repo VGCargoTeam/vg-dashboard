@@ -918,7 +918,6 @@ function renderCalendars() {
 
   // Monate für die Anzeige festlegen (aktueller, vorheriger, nächster Monat)
   const monthsToShow = [
-    new Date(baseYear, baseMonth - 1), // Vorheriger Monat
     new Date(baseYear, baseMonth),     // Aktueller Monat
     new Date(baseYear, baseMonth + 1)  // Nächster Monat
   ];
