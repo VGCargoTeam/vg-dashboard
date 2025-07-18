@@ -313,8 +313,8 @@
     }
     /* Specific styling for calendar navigation buttons */
     .calendar .nav button {
-      padding: 6px 12px; /* Smaller padding */
-      font-size: 0.8em; /* Smaller font size */
+      padding: 4px 10px; /* Smaller padding */
+      font-size: 0.75em; /* Smaller font size */
       border-radius: 6px; /* Slightly less rounded */
       box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Lighter shadow */
     }
@@ -355,9 +355,9 @@
     }
     .calendar-block th, .calendar-block td {
       border: 1px solid #f0f0f0;
-      padding: 8px; /* Increased padding */
+      padding: 4px; /* Reduced padding */
       text-align: center;
-      font-size: 0.9em; /* Increased font size */
+      font-size: 0.8em; /* Reduced font size */
       box-sizing: border-box; /* Ensure padding is included in the element's total width and height */
       width: calc(100% / 7); /* Distribute width equally among 7 days */
     }
@@ -376,7 +376,7 @@
       flex-direction: column; /* Stack day number and icon */
       justify-content: center;
       align-items: center;
-      min-height: 50px; /* Ensure a minimum height for cells */
+      min-height: 55px; /* Increased minimum height for cells */
     }
     .calendar-day:hover {
       background-color: #e6f7ff;
@@ -400,9 +400,9 @@
 
     /* Adjust font size for the day number within the calendar cell */
     .calendar-day .day-number {
-        font-size: 1.1em; /* Slightly larger for readability */
+        font-size: 1.2em; /* Adjusted for readability within smaller cell */
         font-weight: bold;
-        line-height: 1; /* Compact line height */
+        line-height: 1.2; /* Compact line height */
     }
 
     /* Tooltip styles for calendar */
@@ -437,7 +437,7 @@
     .flight-icon {
       /* Position static to flow with content, not absolute */
       position: static;
-      font-size: 0.8em; /* Smaller icon */
+      font-size: 0.7em; /* Smaller icon */
       color: #ff5722;
       margin-top: 2px; /* Small space between number and icon */
     }
