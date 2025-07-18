@@ -141,7 +141,7 @@ async function changePassword() {
           messageElem.style.color = 'green';
           // Leere die Felder nach erfolgreicher Änderung
           const newPassInput = document.getElementById('newPasswordInput');
-          const confirmPassInput = document.getElementById('confirmPassInput');
+          const confirmPassInput = document.getElementById('confirmPasswordInput');
           if (newPassInput) newPassInput.value = '';
           if (confirmPassInput) confirmPassInput.value = '';
 
@@ -375,6 +375,7 @@ function filterTable() {
 
 // === MODAL FUNKTIONEN ===
 function openModal(originalIndex) {
+  console.log("openModal called. currentUser:", currentUser); // Debug: Check currentUser
   if (!currentUser) {
       console.error("Versuch, Modal ohne angemeldeten Benutzer zu öffnen. Weiterleitung zum Login.");
       // Using a custom alert/message box instead of window.alert
@@ -1148,6 +1149,7 @@ function closeHistoryModal() {
 
 // === STATISTIK FUNKTIONEN ===
 function openStatisticsModal() {
+    console.log("openStatisticsModal called. Opening statistics modal."); // Debug: Check if function is called
     document.getElementById('statisticsModal').style.display = 'flex';
     // Set default dates if not already set
     const statFromDateInput = document.getElementById('statFromDate');
