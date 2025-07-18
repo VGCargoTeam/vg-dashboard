@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="UTF-8" />
   <title>Charter Dashboard</title>
+  <!-- Google Fonts - Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -20,7 +22,7 @@
     /* Custom styles for specific overrides or complex designs not easily done with Tailwind */
     body {
       margin: 0;
-      font-family: 'Segoe UI', sans-serif; /* Behält deine aktuelle Schriftart */
+      font-family: 'Inter', sans-serif; /* Behält deine aktuelle Schriftart */
       background: url('https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg') no-repeat center center fixed;
       background-size: cover;
       background-position: center;
@@ -503,14 +505,54 @@
         transform: translateY(-2px);
         box-shadow: 0 6px 8px rgba(0,0,0,0.15);
     }
+
+    /* Styles for the split table view */
+    .table-section {
+        margin-bottom: 30px;
+        background: rgba(255,255,255,0.9);
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .table-section h2 {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 10px;
+    }
+    .table-section table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    .table-section th, .table-section td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+    }
+    .table-section th {
+        background-color: #f8f8f8;
+        font-weight: 600;
+    }
+    .table-section tbody tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    .table-section tbody tr:hover {
+        background-color: #f1f1f1;
+    }
   </style>
 </head>
 <body class="font-inter flex flex-col lg:flex-row min-h-screen text-gray-800">
   <div class="main">
-    <div class="logo-container"> <img src="VG_Cargo_Logo_small.png"> </div>
+    <div class="logo-container"> <!-- NEU: Logo-Container -->
+        <img src="VG_Cargo_Logo_small.png" alt="VG Cargo Logo"> <!-- Dein Logo-Bild -->
+    </div>
 
     <div class="header-area" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h1 style="flex-grow: 1; text-align: center; margin-left: 70px; font-size: 2.5rem;">Charter Dashboard</h1> <button onclick="openProfileModal()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+      <h1 style="flex-grow: 1; text-align: center; margin-left: 70px; font-size: 2.5rem;">Charter Dashboard</h1> <!-- Überschrift vergrößert -->
+      <button onclick="openProfileModal()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
         Profil
       </button>
     </div>
@@ -531,16 +573,50 @@
     <div style="margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
       <label>Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
       <label>Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
-      <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" /> <label>From:</label> <input type="date" id="fromDate" onchange="filterTable()" />
+      <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" />
+      <label>Call Sign:</label> <input type="text" id="callSignSearchInput" placeholder="Call Sign" />
+      <button onclick="searchFlightRadar24()" style="padding: 6px 12px; background-color: #FF4500; color: white; border: none; border-radius: 6px; cursor: pointer;">
+          FlightRadar24
+      </button>
+      <label>From:</label> <input type="date" id="fromDate" onchange="filterTable()" />
       <label>To:</label> <input type="date" id="toDate" onchange="filterTable()" />
+      <!-- Moderne Archiv-Checkbox -->
       <div class="inline-flex items-center ml-4">
           <label for="archiveCheckbox" class="font-medium text-gray-700 mr-2 cursor-pointer">Archiv anzeigen:</label>
           <input type="checkbox" id="archiveCheckbox" class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer border-gray-300 shadow-sm">
       </div>
     </div>
-    <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
-    <table id="dataTable"><thead><tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage</th><th>Action</th></tr></thead><tbody></tbody></table>
+    
+    <!-- Unbestätigte Charteranfragen -->
+    <div class="table-section">
+        <h2>Unbestätigte Charteranfragen</h2>
+        <div class="summary" id="unconfirmedSummaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
+        <table id="unconfirmedDataTable">
+            <thead>
+                <tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+                <!-- Data will be loaded here by JavaScript -->
+            </tbody>
+        </table>
+    </div>
 
+    <!-- Bestätigte Charteranfragen -->
+    <div class="table-section">
+        <h2>Bestätigte Charteranfragen</h2>
+        <div class="summary" id="confirmedSummaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
+        <table id="confirmedDataTable">
+            <thead>
+                <tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+                <!-- Data will be loaded here by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+
+    <!-- Detail Modal (existing) -->
     <div class="modal" id="detailModal">
       <div class="modal-content">
         <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeModal()">✖</span>
@@ -548,15 +624,18 @@
       </div>
     </div>
 
+    <!-- NEU: History Modal -->
     <div class="modal" id="historyModal">
       <div class="modal-content">
         <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeHistoryModal()">✖</span>
         <h3>History for Reference: <span id="historyRef"></span></h3>
         <div id="historyBody" style="width:100%; max-height: 70vh; overflow-y: auto;">
-          </div>
+          <!-- History content will be loaded here -->
+        </div>
       </div>
     </div>
 
+    <!-- NEU: Profil Modal -->
     <div class="modal" id="profileModal">
       <div class="modal-content">
         <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeProfileModal()">✖</span>
@@ -578,11 +657,13 @@
       </div>
     </div>
 
+    <!-- NEU: Statistik Modal -->
     <div class="modal" id="statisticsModal">
       <div class="modal-content">
         <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeStatisticsModal()">✖</span>
         <h3>Statistik</h3>
         <div id="statisticsBody">
+          <!-- Datumsauswahl und Download-Button zuerst -->
           <div style="width:100%; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 15px;">
               <label for="statFromDate">Von:</label>
               <input type="date" id="statFromDate" onchange="generateStatistics()">
@@ -592,6 +673,9 @@
                   Statistik herunterladen
               </button>
           </div>
+          <!-- Diagramme und Tabellen werden hier dynamisch von generateStatistics() eingefügt -->
+          <!-- Siehe generateStatistics() in script.js für die genakte Reihenfolge -->
+
           <div class="chart-container">
               <h4>Tonnage pro Monat</h4>
               <canvas id="tonnagePerMonthChart"></canvas>
@@ -600,42 +684,18 @@
               <h4>Tonnage pro Kunde</h4>
               <canvas id="tonnagePerCustomerChart"></canvas>
           </div>
-
-          <div class="statistics-section">
-              <h4>Vorfeldbegleitungen</h4>
-              <p id="apronEscortsCount">Anzahl: 0</p>
-          </div>
-
-          <div class="statistics-section">
-              <h4>DGR Abfertigungen</h4>
-              <p id="dgrCount">Anzahl: 0</p>
-          </div>
-
-          <div class="statistics-section">
-              <h4>Flüge und Tonnage pro Airline</h4>
-              <table id="airlineStatisticsTable">
-                  <thead>
-                      <tr>
-                          <th>Airline</th>
-                          <th>Anzahl Flüge</th>
-                          <th>Gesamt Tonnage (kg)</th>
-                      </tr>
-                  </thead>
-                  <tbody>
-                      </tbody>
-              </table>
-          </div>
-
         </div>
       </div>
     </div>
 
+    <!-- NEU: E-Mail Bestätigungsmodal -->
     <div class="modal" id="emailConfirmationModal">
         <div class="modal-content">
             <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeEmailConfirmationModal()">✖</span>
-            <h3>Charter Bestätigung senden</h3>
-            <p>Bitte geben Sie die E-Mail-Adresse des Empfängers ein:</p>
-            <input type="email" id="recipientEmailInput" placeholder="Empfänger E-Mail" required>
+            <h3>Charter Bestätigung senden für Referenz: <span id="confirmRef"></span></h3>
+            <p>Empfänger E-Mail (aus Kundendaten): <strong id="confirmEmail"></strong></p>
+            <p>Zusätzliche E-Mail (optional):</p>
+            <input type="email" id="additionalEmail" placeholder="Zusätzliche Empfänger E-Mail">
             <p id="emailConfirmationMessage" style="color: red;"></p>
             <div class="modal-buttons">
                 <button class="btn-email-action preview" id="previewEmailBtn">Vorschau</button>
@@ -645,16 +705,22 @@
         </div>
     </div>
 
+    <!-- NEU: E-Mail Vorschau Modal -->
     <div class="modal" id="emailPreviewModal">
         <div class="modal-content">
             <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeEmailPreviewModal()">✖</span>
             <h3>E-Mail Vorschau für Referenz: <span id="previewRef"></span></h3>
+            <!-- Geändert von <pre> zu <div> um HTML zu rendern -->
             <div id="emailPreviewContent"></div> 
             <div class="modal-buttons">
-                <button class="btn-manual-sent" id="markAsSentBtn">Charter Confirmation gesendet</button> <button class="btn-email-action cancel" onclick="closeEmailPreviewModal()">Schließen</button>
+                <button class="btn-manual-sent" id="markAsSentBtn">Charter Confirmation gesendet</button> <!-- NEU: Button hinzugefügt -->
+                <button class="btn-email-action cancel" onclick="closeEmailPreviewModal()">Schließen</button>
             </div>
         </div>
     </div>
+
+    <!-- Feedback-Nachricht (global) -->
+    <div id="saveFeedback" style="display: none;"></div>
 
   </div>
   <div class="calendar">
@@ -664,6 +730,8 @@
     </div>
     <div id="calendarArea" class="calendar-wrapper"></div>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <script src="script.js" type="module"></script>
+  <!-- WICHTIGE KORREKTUR: script.js hierher verschoben und 'defer' entfernt -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js CDN hinzufügen -->
+  <script src="script.js" type="module"></script>
 </body>
 </html>
