@@ -44,9 +44,9 @@
     }
     .container {
       display: flex;
-      flex-direction: row;
+      flex-direction: column; /* Changed to column to stack vertically */
       gap: 20px;
-      flex-wrap: wrap; /* Ermöglicht Umbruch auf kleineren Bildschirmen */
+      /* flex-wrap: wrap; Removed as items will always stack */
     }
     .card {
       background: #fff;
@@ -389,7 +389,7 @@
     /* Responsive adjustments */
     @media (max-width: 768px) {
       .container {
-        flex-direction: column;
+        flex-direction: column; /* Ensure stacking on small screens */
       }
       .detail-view {
         grid-template-columns: 1fr;
@@ -774,11 +774,11 @@
     </div>
     <div id="calendarArea" class="calendar-wrapper"></div>
   </div>
-  <!-- WICHTIGE KORREKTUR: script.js hierher verschoben und 'defer' entfernt -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js CDN hinzufügen -->
+  <!-- IMPORTANT CORRECTION: script.js moved here and 'defer' removed -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Add Chart.js CDN -->
   <script src="script.js"></script>
 
-  <!-- Service Worker Registrierung -->
+  <!-- Service Worker Registration -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
