@@ -51,7 +51,7 @@
     .calendar-wrapper {
         overflow: visible;
     }
-    input[type="text"], input[type="date"], input[type="password"], select {
+    input[type="text"], input[type="date"] {
       padding: 6px 10px;
       margin: 5px;
       border: 1px solid #ccc;
@@ -73,26 +73,7 @@
     th {
       background-color: #007BFF;
       color: white;
-      position: relative;
     }
-    /* NEU: Sortier-Indikatoren */
-    th.sortable {
-        cursor: pointer;
-    }
-    th.sortable:hover {
-        background-color: #0056b3;
-    }
-    th .sort-arrow {
-        display: inline-block;
-        margin-left: 5px;
-        opacity: 0.5;
-    }
-    th.sorted-asc .sort-arrow.asc,
-    th.sorted-desc .sort-arrow.desc {
-        opacity: 1;
-        color: #ffc107;
-    }
-
     .nav button, .btn {
       padding: 6px 12px;
       margin: 3px;
@@ -218,7 +199,7 @@
       flex: 1 1 45%;
       margin: 0;
     }
-    .modal-content input, .modal-content textarea, .modal-content select {
+    .modal-content input, .modal-content textarea {
       width: 100%;
       padding: 6px;
       margin-top: 5px;
@@ -383,7 +364,7 @@
       margin-top: 8px;
       font-weight: bold;
     }
-    .modal-section input, .modal-section textarea, .modal-section select {
+    .modal-section input, .modal-section textarea {
       width: 100%;
       padding: 6px;
       margin-top: 4px;
@@ -524,21 +505,6 @@
         transform: translateY(-2px);
         box-shadow: 0 6px 8px rgba(0,0,0,0.15);
     }
-    
-    /* NEU: Stile für Benutzerverwaltung */
-    #userAdminModal .modal-content {
-        max-width: 800px;
-    }
-    #userAdminModal table {
-        margin-top: 15px;
-    }
-    #userAdminModal .user-form {
-        margin-top: 20px;
-        padding: 15px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        background-color: #f9f9f9;
-    }
   </style>
 </head>
 <body class="font-inter flex flex-col lg:flex-row min-h-screen text-gray-800">
@@ -549,14 +515,9 @@
 
     <div class="header-area" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h1 style="flex-grow: 1; text-align: center; margin-left: 70px; font-size: 2.5rem;">Charter Dashboard</h1> <!-- Überschrift vergrößert -->
-      <div>
-        <button onclick="openUserAdminModal()" class="admin-only" style="padding: 8px 15px; background-color: #ffc107; color: black; border: none; border-radius: 6px; cursor: pointer; margin-right: 10px;">
-            Benutzerverwaltung
-        </button>
-        <button onclick="openProfileModal()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
-          Profil
-        </button>
-      </div>
+      <button onclick="openProfileModal()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+        Profil
+      </button>
     </div>
 
     <div style="display: flex; gap: 10px; margin: 10px 0 20px;">
@@ -593,10 +554,10 @@
             <table id="unconfirmedTable" class="w-full data-table">
                 <thead>
                     <tr>
-                        <th class="sortable" onclick="sortTable('Ref', this)">Ref <span class="sort-arrow asc">▲</span><span class="sort-arrow desc">▼</span></th>
-                        <th class="sortable" onclick="sortTable('Flight Date', this)">Date <span class="sort-arrow asc">▲</span><span class="sort-arrow desc">▼</span></th>
-                        <th class="sortable" onclick="sortTable('Airline', this)">Airline <span class="sort-arrow asc">▲</span><span class="sort-arrow desc">▼</span></th>
-                        <th class="sortable" onclick="sortTable('Tonnage', this)">Tonnage <span class="sort-arrow asc">▲</span><span class="sort-arrow desc">▼</span></th>
+                        <th>Reference</th>
+                        <th>Date</th>
+                        <th>Airline</th>
+                        <th>Tonnage</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -615,10 +576,10 @@
             <table id="confirmedTable" class="w-full data-table">
                 <thead>
                     <tr>
-                        <th class="sortable" onclick="sortTable('Ref', this)">Ref <span class="sort-arrow asc">▲</span><span class="sort-arrow desc">▼</span></th>
-                        <th class="sortable" onclick="sortTable('Flight Date', this)">Date <span class="sort-arrow asc">▲</span><span class="sort-arrow desc">▼</span></th>
-                        <th class="sortable" onclick="sortTable('Airline', this)">Airline <span class="sort-arrow asc">▲</span><span class="sort-arrow desc">▼</span></th>
-                        <th class="sortable" onclick="sortTable('Tonnage', this)">Tonnage <span class="sort-arrow asc">▲</span><span class="sort-arrow desc">▼</span></th>
+                        <th>Reference</th>
+                        <th>Date</th>
+                        <th>Airline</th>
+                        <th>Tonnage</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -730,21 +691,6 @@
             </div>
         </div>
     </div>
-    
-    <!-- NEU: Benutzerverwaltung Modal -->
-    <div class="modal" id="userAdminModal">
-        <div class="modal-content">
-            <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeUserAdminModal()">✖</span>
-            <h3 style="width:100%; text-align: center;">Benutzerverwaltung</h3>
-            <div id="userAdminBody" style="width:100%;">
-                <!-- User table will be rendered here -->
-            </div>
-            <div id="userFormContainer" style="width:100%;">
-                <!-- Add/Edit user form will be shown here -->
-            </div>
-        </div>
-    </div>
-
 
   </div>
   <div class="calendar">
