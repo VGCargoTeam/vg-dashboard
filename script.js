@@ -1,98 +1,109 @@
-// Charter Dashboard Script – Vollständige Version mit neuen Features
-const API_URL = 'https://script.google.com/macros/s/AKfycbzo-FgxA6TMJYK4xwLbrsRnNTAU_AN-FEJJoZH6w7aJ3BlcsaB751LjdUJ9nieGtu1P/exec';
+// Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
+const API_URL = 'https://script.google.com/macros/s/AKfycbzo-FgxA6TMJYK4xwLbrsRnNTAU_AN-FEJJoZH6w7aJ3BlcsaB751LjdUJ9nieGtu1P/exec'; // <<< AKTUALISIERT: NEUER LINK VOM BENUTZER
+
+// !!! WICHTIG: Die users.js-Importzeile wird entfernt, da die Benutzerdaten nun aus Google Sheets kommen. !!!
+// import { users } from './users.js';
 
 let currentUser = null; // Speichert den aktuell angemeldeten Benutzer
 let requestData = []; // Speichert alle abgerufenen Charterdaten
-let customerData = []; // NEU: Speichert Kundendaten für die Datenbankfunktion
-let allUsers = []; // NEU: Speichert alle Benutzer für die Verwaltung
 let baseMonth = new Date().getMonth(); // Aktueller Monat (0-indexed)
 let baseYear = new Date().getFullYear(); // Aktuelles Jahr
 
 const today = new Date();
 today.setHours(0, 0, 0, 0); // Setzt die Zeit auf Mitternacht für den Vergleich
 
-// Globale Variablen für Chart-Instanzen
+// Globale Variablen für Chart-Instanzen, um sie bei Bedarf zu zerstören
 let tonnagePerMonthChartInstance = null;
 let tonnagePerCustomerChartInstance = null;
 
 // Variable zum Speichern der aktuell im Modal angezeigten Daten
 let currentModalData = null;
 
-// NEU: Variablen für die Tabellensortierung
-let currentSort = {
-    column: 'Flight Date',
-    direction: 'desc'
-};
 
 // === AUTHENTIFIZIERUNG UND BENUTZERVERWALTUNG ===
 function checkAuthStatus() {
   const storedUser = localStorage.getItem('currentUser');
   if (storedUser) {
     currentUser = JSON.parse(storedUser);
+    // Da die Benutzerdaten nun aus Google Sheets kommen, brauchen wir hier keine users-Datei-Überprüfung mehr.
+    // Wir vertrauen darauf, dass das currentUser-Objekt gültig ist, wenn es im localStorage ist.
     updateUIBasedOnUserRole();
     fetchData(); // Daten laden, wenn angemeldet
   } else {
+    // Wenn nicht angemeldet, zur Login-Seite umleiten
     window.location.href = 'login.html';
   }
 }
 
 function updateUIBasedOnUserRole() {
   const adminElements = document.querySelectorAll(".admin-only");
-  const editorElements = document.querySelectorAll(".editor-only"); // NEU: Für Editoren
   const loggedInUsernameSpan = document.getElementById('loggedInUsername');
   const loggedInUserRoleSpan = document.getElementById('loggedInUserRole');
+  const loggedInUsernameProfileSpan = document.getElementById('loggedInUsernameProfile');
+  const loggedInUserRoleProfileSpan = document.getElementById('loggedInUserRoleProfile');
+
 
   if (currentUser) {
     if (loggedInUsernameSpan) loggedInUsernameSpan.textContent = currentUser.name;
     if (loggedInUserRoleSpan) loggedInUserRoleSpan.textContent = currentUser.role;
+    if (loggedInUsernameProfileSpan) loggedInUsernameProfileSpan.textContent = currentUser.name;
+    if (loggedInUserRoleProfileSpan) loggedInUserRoleProfileSpan.textContent = currentUser.role;
 
-    // Admin sieht alles
+
     if (currentUser.role === 'admin') {
-      adminElements.forEach(el => el.style.display = ""); 
-      editorElements.forEach(el => el.style.display = "");
-    } 
-    // NEU: Editor-Rolle
-    else if (currentUser.role === 'editor') {
-      adminElements.forEach(el => el.style.display = "none");
-      editorElements.forEach(el => el.style.display = "");
-    }
-    // Viewer sieht am wenigsten
-    else {
-      adminElements.forEach(el => el.style.display = "none");
-      editorElements.forEach(el => el.style.display = "none");
+      adminElements.forEach(el => el.style.display = ""); // Standardanzeige
+    } else {
+      adminElements.forEach(el => el.style.display = "none"); // Ausblenden
     }
   } else {
-    // Fallback, falls kein Benutzer
+    // Falls kein Benutzer angemeldet ist (sollte durch checkAuthStatus abgefangen werden)
     adminElements.forEach(el => el.style.display = "none");
-    editorElements.forEach(el => el.style.display = "none");
     if (loggedInUsernameSpan) loggedInUsernameSpan.textContent = 'N/A';
     if (loggedInUserRoleSpan) loggedInUserRoleSpan.textContent = 'N/A';
+    if (loggedInUsernameProfileSpan) loggedInUsernameProfileSpan.textContent = 'N/A';
+    if (loggedInUserRoleProfileSpan) loggedInUserRoleProfileSpan.textContent = 'N/A';
   }
 }
 
 function openProfileModal() {
   const profileModal = document.getElementById('profileModal');
-  if (profileModal) {
-    profileModal.style.display = 'flex';
-    document.getElementById('newPasswordInput').value = '';
-    document.getElementById('confirmPasswordInput').value = '';
-    document.getElementById('passwordChangeMessage').textContent = '';
+  if (profileModal) { // Sicherstellen, dass das Modal existiert
+    profileModal.style.display = 'flex'; // Modal anzeigen
+    // Initialwerte setzen
+    const newPassInput = document.getElementById('newPasswordInput');
+    const confirmPassInput = document.getElementById('confirmPasswordInput');
+    const passwordChangeMessage = document.getElementById('passwordChangeMessage');
+    if (newPassInput) newPassInput.value = '';
+    if (confirmPassInput) confirmPassInput.value = '';
+    if (passwordChangeMessage) passwordChangeMessage.textContent = '';
+  } else {
+    console.warn("Profil-Modal (id='profileModal') nicht gefunden.");
   }
 }
 
 function closeProfileModal() {
-  document.getElementById('profileModal').style.display = 'none';
+  const profileModal = document.getElementById('profileModal');
+  if (profileModal) {
+    profileModal.style.display = 'none'; // Modal schließen
+  }
 }
 
 async function changePassword() {
-  const oldPass = prompt("Please enter your current password to confirm the change:");
-  if (oldPass === null) return;
+  const oldPass = prompt("Please enter your current password to confirm the change:"); // For security, ask for current password
+  if (oldPass === null) { // User cancelled
+      return;
+  }
 
   const newPass = document.getElementById('newPasswordInput').value;
   const confirmPass = document.getElementById('confirmPasswordInput').value;
   const messageElem = document.getElementById('passwordChangeMessage');
 
-  if (!newPass || !confirmPass) {
+  if (!messageElem) {
+    console.error("Passwortänderungs-Nachrichtenelement nicht gefunden.");
+    return;
+  }
+
+  if (newPass === '' || confirmPass === '') {
     messageElem.textContent = 'Bitte beide Passwortfelder ausfüllen.';
     messageElem.style.color = 'red';
     return;
@@ -102,113 +113,133 @@ async function changePassword() {
     messageElem.style.color = 'red';
     return;
   }
-  if (newPass.length < 6) {
+  if (newPass.length < 6) { // Beispiel: Mindestlänge
       messageElem.textContent = 'Passwort muss mindestens 6 Zeichen lang sein.';
+      messageElem.style.color = 'red';
+      return;
+  }
+  if (currentUser.username === undefined) {
+      messageElem.textContent = 'Benutzername für Passwortänderung nicht verfügbar.';
       messageElem.style.color = 'red';
       return;
   }
 
   const payload = {
       mode: 'updatePassword',
-      username: currentUser.username,
-      oldPassword: oldPass,
-      newPassword: newPass,
-      user: currentUser.name
+      username: currentUser.username, // Der Benutzer, dessen Passwort geändert werden soll
+      oldPassword: oldPass, // Aktuelles Passwort zur Verifizierung
+      newPassword: newPass, // Neues Passwort
+      user: currentUser.name // Für Audit-Log
   };
 
   try {
       const response = await fetch(API_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams(payload)
+          headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams(payload).toString(),
       });
+
       const result = await response.json();
+
       if (response.ok && result.status === 'success') {
           messageElem.textContent = 'Passwort erfolgreich geändert! Bitte melden Sie sich neu an.';
           messageElem.style.color = 'green';
-          setTimeout(logoutUser, 2000);
+          // Leere die Felder nach erfolgreicher Änderung
+          const newPassInput = document.getElementById('newPasswordInput');
+          const confirmPassInput = document.getElementById('confirmPasswordInput');
+          if (newPassInput) newPassInput.value = '';
+          if (confirmPassInput) confirmPassInput.value = '';
+
+          // Optional: Automatische Abmeldung nach erfolgreicher Passwortänderung
+          setTimeout(() => {
+              logoutUser();
+          }, 2000);
+
       } else {
           messageElem.textContent = result.message || 'Fehler beim Ändern des Passworts.';
           messageElem.style.color = 'red';
       }
   } catch (error) {
       console.error('Passwortänderungsfehler:', error);
-      messageElem.textContent = 'Ein Netzwerkfehler ist aufgetreten.';
+      messageElem.textContent = 'Ein Fehler ist beim Ändern des Passworts aufgetreten. Bitte versuchen Sie es später erneut.';
       messageElem.style.color = 'red';
   }
 }
 
 function logoutUser() {
-  localStorage.removeItem('currentUser');
+  localStorage.removeItem('currentUser'); // Sitzung beenden
   currentUser = null;
-  window.location.href = 'login.html';
+  window.location.href = 'login.html'; // Zur Login-Seite umleiten
 }
 
 // === DATENABRUF UND TABELLEN-RENDERUNG ===
 function fetchData() {
-  showSaveFeedback("Lade Daten...", true);
-  // NEU: Lade Kunden- und Charterdaten parallel
-  Promise.all([
-    fetch(API_URL + "?mode=read").then(r => r.json()),
-    fetch(API_URL + "?mode=readCustomers").then(r => r.json())
-  ]).then(([charterResult, customerResult]) => {
-    if (charterResult.status === 'success') {
-      requestData = charterResult.data;
-    } else {
-      throw new Error(charterResult.message || "Fehler beim Laden der Charterdaten.");
-    }
-
-    if (customerResult.status === 'success') {
-      customerData = customerResult.data;
-    } else {
-      console.warn(customerResult.message || "Fehler beim Laden der Kundendaten.");
-    }
-    
-    filterTable(); // Ruft filterTable auf, um Tabellen und Kalender zu aktualisieren
-    showSaveFeedback("Daten geladen!", true);
-  }).catch(error => {
-    console.error("Fehler beim Laden der Daten:", error);
-    showSaveFeedback("Fehler beim Laden der Daten!", false);
-  });
-}
-
-// NEU: Funktion zum Sortieren der Tabellen
-function sortTable(column, headerElement) {
-    const isAsc = currentSort.column === column && currentSort.direction === 'asc';
-    currentSort.direction = isAsc ? 'desc' : 'asc';
-    currentSort.column = column;
-
-    // Update header styles
-    document.querySelectorAll('th.sortable').forEach(th => {
-        th.classList.remove('sorted-asc', 'sorted-desc');
+  fetch(API_URL + "?mode=read")
+    .then(r => {
+      if (!r.ok) {
+        throw new Error(`HTTP-Fehler! Status: ${r.status}`);
+      }
+      return r.json();
+    })
+    .then(d => {
+      requestData = d.data; // Speichert das Array der Daten
+      console.log("Rohdaten von API:", JSON.parse(JSON.stringify(d.data))); // Zum Debuggen
+      filterTable(); // Ruft filterTable auf, um sowohl Tabelle als auch Kalender zu aktualisieren
+    })
+    .catch((error) => {
+      console.error("Fehler beim Laden der Daten:", error);
+      showSaveFeedback("Fehler beim Laden der Daten!", false);
     });
-    headerElement.classList.add(isAsc ? 'sorted-desc' : 'sorted-asc');
-
-    filterTable(); // Filter und Sortierung neu anwenden
 }
 
+// GEÄNDERT: Funktion zum Rendern beider Tabellen
 function renderRequestTables(dataToRender = requestData) {
     const unconfirmedTbody = document.querySelector("#unconfirmedTable tbody");
     const confirmedTbody = document.querySelector("#confirmedTable tbody");
 
+    // Sicherstellen, dass die Tabellen-Bodys existieren
     if (!unconfirmedTbody || !confirmedTbody) {
-        console.error("Tabellen für Anfragen nicht gefunden.");
+        console.error("Tabellen für bestätigte oder unbestätigte Anfragen nicht gefunden.");
         return;
     }
 
     unconfirmedTbody.innerHTML = "";
     confirmedTbody.innerHTML = "";
 
-    let unconfirmedFlights = 0, unconfirmedWeight = 0;
-    let confirmedFlights = 0, confirmedWeight = 0;
+    let unconfirmedFlights = 0;
+    let unconfirmedWeight = 0;
+    let confirmedFlights = 0;
+    let confirmedWeight = 0;
 
+    // Hilfsfunktion zum Erstellen einer Zeile, um Code-Duplizierung zu vermeiden
     const createRowHTML = (r) => {
         const ton = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0;
         const originalIndex = requestData.findIndex(item => item.Ref === r.Ref);
-        let displayFlightDate = r['Flight Date'] ? new Date(r['Flight Date']).toLocaleDateString('de-DE') : "-";
-        
-        // Admins und Editoren können löschen
-        const deleteButtonHTML = (currentUser && (currentUser.role === 'admin' || currentUser.role === 'editor')) ? `<button class="btn btn-delete" onclick="deleteRow(this)">Delete</button>` : '';
+
+        let displayFlightDate = r['Flight Date'] || "-";
+        if (displayFlightDate !== "-") {
+            try {
+                let dateObj;
+                if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const parts = displayFlightDate.split('-');
+                    dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                } else if (displayFlightDate instanceof Date) {
+                    dateObj = new Date(displayFlightDate.getFullYear(), displayFlightDate.getMonth(), displayFlightDate.getDate());
+                } else {
+                    dateObj = new Date('Invalid Date');
+                }
+                dateObj.setHours(0, 0, 0, 0);
+                if (!isNaN(dateObj.getTime())) {
+                    displayFlightDate = dateObj.toLocaleDateString('de-DE');
+                }
+            } catch (e) {
+                 console.error("Fehler bei der Datumskonvertierung für die Anzeige in Tabelle:", displayFlightDate, e);
+            }
+        }
+
+        const deleteButtonHTML = (currentUser && currentUser.role === 'admin') ? `<button class="btn btn-delete admin-only" onclick="deleteRow(this)">Delete</button>` : '';
         const isConfirmed = String(r['Final Confirmation Sent'] || '').toLowerCase() === 'ja';
         const confirmationIcon = isConfirmed ? '<span class="text-green-500 ml-1">&#10004;</span>' : '';
 
@@ -241,237 +272,485 @@ function renderRequestTables(dataToRender = requestData) {
         }
     });
 
-    document.getElementById("unconfirmedSummaryInfo").textContent = `Total Flights: ${unconfirmedFlights} | Total Tonnage: ${unconfirmedWeight.toLocaleString('de-DE')} kg`;
-    document.getElementById("confirmedSummaryInfo").textContent = `Total Flights: ${confirmedFlights} | Total Tonnage: ${confirmedWeight.toLocaleString('de-DE')} kg`;
+    document.getElementById("unconfirmedSummaryInfo").textContent =
+        `Total Flights: ${unconfirmedFlights} | Total Tonnage: ${unconfirmedWeight.toLocaleString('de-DE')} kg`;
+    document.getElementById("confirmedSummaryInfo").textContent =
+        `Total Flights: ${confirmedFlights} | Total Tonnage: ${confirmedWeight.toLocaleString('de-DE')} kg`;
 
     updateUIBasedOnUserRole();
 }
 
+
 function filterTable() {
   const refSearch = document.getElementById("refSearch").value.toLowerCase();
   const airlineSearch = document.getElementById("airlineSearch").value.toLowerCase();
-  const flightNumberSearch = document.getElementById("flightNumberSearch").value.toLowerCase();
+  const flightNumberSearchInput = document.getElementById("flightNumberSearch");
+  const flightNumberSearch = flightNumberSearchInput ? flightNumberSearchInput.value.toLowerCase() : '';
   const fromDateInput = document.getElementById("fromDate").value;
   const toDateInput = document.getElementById("toDate").value;
-  const showArchive = document.getElementById("archiveCheckbox").checked;
+  const showArchive = document.getElementById("archiveCheckbox") ? document.getElementById("archiveCheckbox").checked : false; // Archiv-Checkbox, falls vorhanden
 
-  let filtered = requestData.filter(r => {
+  const filtered = requestData.filter(r => {
     const matchesRef = (r.Ref || '').toLowerCase().includes(refSearch);
     const matchesAirline = (r.Airline || '').toLowerCase().includes(airlineSearch);
     const matchesFlightNumber = (r.Flugnummer || '').toLowerCase().includes(flightNumberSearch);
 
     let matchesDateRange = true;
-    let isPastFlight = false;
-    let flightDateObj = r['Flight Date'] ? new Date(r['Flight Date']) : null;
+    let isPastOrTodayAndGoneFlight = false;
+
+    let flightDateFromData = r['Flight Date'];
+    let flightDateObj;
+
+    // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
+    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
+        const parts = flightDateFromData.split('-');
+        flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    } else if (flightDateFromData instanceof Date) { // Falls es direkt ein Date-Objekt ist
+        flightDateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
+    } else {
+        flightDateObj = new Date('Invalid Date'); // Ungültiges Datum
+    }
+    flightDateObj.setHours(0, 0, 0, 0); // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist
+    console.log(`[filterTable] Original: "${flightDateFromData}", Geparsed (Lokal): ${flightDateObj}`);
+
 
     if (flightDateObj && !isNaN(flightDateObj.getTime())) {
-      flightDateObj.setHours(0, 0, 0, 0);
-      if (flightDateObj < today) isPastFlight = true;
+      if (flightDateObj < today) {
+          isPastOrTodayAndGoneFlight = true;
+      } else if (flightDateObj.getTime() === today.getTime()) {
+          const abflugzeit = r['Abflugzeit'];
+          if (abflugzeit) {
+              // Abflugzeit muss auch als lokaler Zeitpunkt für den Vergleich geparst werden
+              let flightTimeAsDate = new Date();
+              if (typeof abflugzeit === 'string' && abflugzeit.match(/^\d{2}:\d{2}$/)) { // Erwartet HH:MM vom Backend
+                  const [hours, minutes] = abflugzeit.split(':').map(Number);
+                  flightTimeAsDate.setHours(hours, minutes, 0, 0);
+              } else if (abflugzeit instanceof Date) {
+                  flightTimeAsDate = abflugzeit; // Falls schon Date-Objekt
+              } else {
+                 flightTimeAsDate = new Date('Invalid Date');
+              }
+
+              const now = new Date();
+              now.setSeconds(0, 0);
+              now.setMilliseconds(0);
+
+              if (!isNaN(flightTimeAsDate.getTime()) && flightTimeAsDate <= now) {
+                  isPastOrTodayAndGoneFlight = true;
+              }
+          }
+      }
+
+      // Filter nach Datumsbereich
       if (fromDateInput) {
-          const fromDateObj = new Date(fromDateInput);
-          fromDateObj.setHours(0,0,0,0);
+          const fromDateParts = fromDateInput.split('-');
+          const fromDateObj = new Date(parseInt(fromDateParts[0]), parseInt(fromDateParts[1]) - 1, parseInt(fromDateParts[2]));
+          fromDateObj.setHours(0,0,0,0); // Auch Filterdatum auf Mitternacht setzen
           if (flightDateObj < fromDateObj) matchesDateRange = false;
       }
       if (toDateInput) {
-          const toDateObj = new Date(toDateInput);
-          toDateObj.setHours(0,0,0,0);
+          const toDateParts = toDateInput.split('-');
+          const toDateObj = new Date(parseInt(toDateParts[0]), parseInt(toDateParts[1]) - 1, parseInt(toDateParts[2]));
+          toDateObj.setHours(0,0,0,0); // Auch Filterdatum auf Mitternacht setzen
           if (flightDateObj > toDateObj) matchesDateRange = false;
       }
+    } else {
+        isPastOrTodayAndGoneFlight = false;
     }
-    const passesPastFlightFilter = showArchive || !isPastFlight;
+
+    const passesPastFlightFilter = showArchive || !isPastOrTodayAndGoneFlight;
+
     return matchesRef && matchesAirline && matchesFlightNumber && matchesDateRange && passesPastFlightFilter;
   });
-
-  // NEU: Sortierung anwenden
-  filtered.sort((a, b) => {
-      let valA = a[currentSort.column];
-      let valB = b[currentSort.column];
-
-      // Handle different data types
-      if (currentSort.column === 'Tonnage') {
-          valA = parseFloat(String(valA).replace(',', '.') || '0');
-          valB = parseFloat(String(valB).replace(',', '.') || '0');
-      } else if (currentSort.column === 'Flight Date') {
-          valA = valA ? new Date(valA).getTime() : 0;
-          valB = valB ? new Date(valB).getTime() : 0;
-      } else {
-          valA = String(valA || '').toLowerCase();
-          valB = String(valB || '').toLowerCase();
-      }
-
-      if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
-      if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
-      return 0;
-  });
-
-  renderRequestTables(filtered);
+  renderRequestTables(filtered); // GEÄNDERT: Ruft die neue Funktion auf
   renderCalendars();
 }
 
 // === MODAL FUNKTIONEN ===
 function openModal(originalIndex) {
-  const isNewRequest = originalIndex === -1;
-  const r = isNewRequest ? {
+  if (!currentUser) {
+      console.error("Versuch, Modal ohne angemeldeten Benutzer zu öffnen. Weiterleitung zum Login.");
+      // Using a custom alert/message box instead of window.alert
+      showSaveFeedback("Bitte melden Sie sich an, um diese Funktion zu nutzen.", false);
+      setTimeout(() => { window.location.href = 'login.html'; }, 1500); // Redirect after message
+      return;
+  }
+
+  const r = originalIndex === -1 ? {
     Ref: generateReference(),
     'Created At': new Date().toLocaleString('de-DE'),
     'Billing Company': "", 'Billing Address': "", 'Tax Number': "",
     'Contact Name Invoicing': "", 'Contact E-Mail Invoicing': "",
     'Airline': "", 'Aircraft Type': "", 'Flugnummer': "",
     'Flight Date': "", 'Abflugzeit': "", 'Tonnage': "",
-    'Rate': "", 'Security charges': "", "Dangerous Goods": "Nein",
+    'Rate': "", 'Security charges': "", "Dangerous Goods": "Nein", // Standardwert "Nein"
     '10ft consumables': "", '20ft consumables': "",
-    'Zusatzkosten': "", 'Email Request': "", 'Internal Notes': "", // NEU
-    'AGB Accepted': "Ja", 'Service Description Accepted': "Ja",
-    'Accepted By Name': "", 'Acceptance Timestamp': "",
-    'Final Confirmation Sent': "Nein", 'Flight Type Import': "Nein",
-    'Flight Type Export': "Nein", 'Origin': '', 'Destination': ''
+    'Zusatzkosten': "", 'Email Request': "",
+    'AGB Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
+    'Service Description Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
+    'Accepted By Name': "",
+    'Acceptance Timestamp': "",
+    'Final Confirmation Sent': "Nein", // NEU: Standardwert für neue Anfragen
+    'Flight Type Import': "Nein", // NEU: Standardwert
+    'Flight Type Export': "Nein",  // NEU: Standardwert
+    'Origin': '', // NEU: Origin für Import
+    'Destination': '' // NEU: Destination für Export
   } : requestData[originalIndex];
 
+  // Speichere die aktuellen Daten im Modal, um sie später für die E-Mail zu verwenden
   currentModalData = r;
+
   const modal = document.getElementById("detailModal");
   const modalBody = document.getElementById("modalBody");
   modalBody.innerHTML = "";
 
+  // Modifizierte section Funktion, um eine Farbklasse zu akzeptieren
   const section = (title, contentHTML, colorClass = '') => {
     const wrap = document.createElement("div");
-    wrap.className = `modal-section ${colorClass}`;
+    wrap.className = `modal-section ${colorClass}`; // Farbklasse hier hinzufügen
     wrap.innerHTML = `<h3>${title}</h3>` + contentHTML;
     return wrap;
   };
 
-  // NEU: Kunden-Dropdown für neue Anfragen
-  let customerSectionHTML = '';
-  if (isNewRequest) {
-      customerSectionHTML += `<label>Bestehenden Kunden auswählen:</label>
-          <select id="customerSelect" onchange="populateCustomerDetails(this.value)">
-              <option value="">-- Neuen Kunden anlegen --</option>
-              ${customerData.map(c => `<option value="${c['Billing Company']}">${c['Billing Company']}</option>`).join('')}
-          </select>`;
-  }
-
   const renderFields = (fields) => {
-    return fields.map(({ label, key, type, role }) => {
-      // Rollenbasierte Anzeige
-      if (role === 'admin' && currentUser.role !== 'admin') return '';
-      if (role === 'editor' && !['admin', 'editor'].includes(currentUser.role)) return '';
+    return fields.map(({ label, key, type }) => {
+      let value = r[key];
+      if (value === undefined || value === null) value = "";
 
-      let value = r[key] || "";
-      const isReadOnly = ['Ref', 'Created At', 'Acceptance Timestamp', 'Accepted By Name', 'Final Confirmation Sent'].includes(key) || 
-                         (currentUser.role === 'viewer'); // Viewer kann nichts bearbeiten
-      const isPriceField = ['Rate', 'Security charges', '10ft consumables', '20ft consumables', 'Zusatzkosten', 'Dangerous Goods'].includes(key);
-      
-      // Editor darf keine Preisdetails sehen/bearbeiten
-      if (isPriceField && currentUser.role === 'editor') return '';
+      const isAlwaysReadOnlyField = [
+          "Ref", "Created At", "Acceptance Timestamp", "Email Request", "Accepted By Name", "Final Confirmation Sent"
+      ].includes(key);
 
-      const readOnlyAttr = isReadOnly ? 'readonly' : '';
-      const styleAttr = isReadOnly ? 'background-color:#eee; cursor: not-allowed;' : '';
+      let readOnlyAttr = '';
+      let styleAttr = '';
 
-      if (type === 'textarea') {
-          return `<label>${label}:</label><textarea name="${key}" rows="4" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
+      if (isAlwaysReadOnlyField) {
+          readOnlyAttr = 'readonly';
+          styleAttr = 'background-color:#eee; cursor: not-allowed;';
       }
-      if (type === 'date') {
-          let dateValue = "";
-          if (value) {
-              try {
-                  dateValue = new Date(value).toISOString().split('T')[0];
-              } catch (e) { console.error("Invalid date for input:", value); }
-          }
-          return `<label>${label}</label><input type="date" name="${key}" value="${dateValue}" ${readOnlyAttr} style="${styleAttr}">`;
+
+      // Spezielle Handhabung für Price-related fields und 'Zusatzkosten'
+      // Diese Felder sollen für Viewer komplett unsichtbar sein.
+      const isPriceRelatedOrZusatzkostenField = [
+        'Rate', 'Security charges', 'Dangerous Goods',
+        '10ft consumables', '20ft consumables', 'Zusatzkosten'
+      ].includes(key);
+
+      // Wenn der Benutzer ein Viewer ist und es sich um ein preisspezifisches Feld handelt, überspringen.
+      if (isPriceRelatedOrZusatzkostenField && currentUser.role === 'viewer') {
+          return ''; // Leerer String, um das Feld komplett zu überspringen
       }
-      if (type === 'time') {
-          return `<label>${label}:</label><input type="time" name="${key}" value="${value}" ${readOnlyAttr} style="${styleAttr}">`;
+      // Für Admins sind diese Felder editierbar, es sei denn, sie sind in isAlwaysReadOnlyField.
+
+
+      if (key === "Flight Date") {
+        let dateValue = "";
+        if (value) {
+            try {
+                // Parsen des Datums, um es im Input korrekt darzustellen (YYYY-MM-DD Format)
+                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
+                    dateValue = value;
+                } else if (value instanceof Date) {
+                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu竭-MM-DD
+                }
+            } catch (e) {
+                console.error("Fehler beim Parsen des Flugdatums für Modal-Input:", value, e);
+            }
+        }
+        return `<label>${label}</label><input type="date" name="${key}" value="${dateValue}" ${readOnlyAttr} style="${styleAttr}">`;
+      } else if (key === "Abflugzeit") {
+        let timeValue = "";
+        if (value) {
+            if (typeof value === 'string' && value.match(/^\d{2}:\d{2}$/)) { // Erwartet HH:MM vom Backend
+                timeValue = value;
+            } else if (value instanceof Date) {
+                timeValue = value.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            }
+        }
+        return `<label>${label}:</label><input type="time" name="${key}" value="${timeValue}" ${readOnlyAttr} style="${styleAttr}">`;
+      } else if (key === "AGB Accepted" || key === "Service Description Accepted") {
+          // Immer einen grünen Haken anzeigen, da der Kunde die AGB akzeptieren MUSS, um eine Anfrage zu senden.
+          const icon = '&#10004;'; // Grüner Haken
+          const color = 'green';
+          return `<label>${label}: <span style="color: ${color}; font-size: 1.2em; font-weight: bold;">${icon}</span></label>`;
+      } else if (key === "Vorfeldbegleitung" && type === "checkbox") {
+        const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
+        return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}"> ${label}</label>`;
+      } else if (['Tonnage'].includes(key)) { // Tonnage darf Viewer sehen und bearbeiten
+          const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
+          return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" ${readOnlyAttr} style="${styleAttr}" />`;
+      } else if (key === "Email Request") { // E-Mail Request ist ein normales Textfeld
+          return `<label>${label}:</label><textarea name="${key}" rows="5" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
+      } else if (key === "Flight Type Import") { // NEU: Checkbox für Import
+          const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
+          const originInput = (String(r['Flight Type Import']).toLowerCase() === 'ja') ? `<label>Origin:</label><input type="text" name="Origin" value="${r.Origin || ''}" ${readOnlyAttr} style="${styleAttr}" />` : '';
+          return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}" onchange="toggleOriginDestinationFields(this, 'Origin')"> ${label}</label>${originInput}`;
+      } else if (key === "Flight Type Export") { // NEU: Checkbox für Export
+          const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
+          const destinationInput = (String(r['Flight Type Export']).toLowerCase() === 'ja') ? `<label>Destination:</label><input type="text" name="Destination" value="${r.Destination || ''}" ${readOnlyAttr} style="${styleAttr}" />` : '';
+          return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}" onchange="toggleOriginDestinationFields(this, 'Destination')"> ${label}</label>${destinationInput}`;
+      } else if (key === "Final Confirmation Sent") { // Anzeige für "Final Confirmation Sent"
+          const statusText = String(value).toLowerCase() === 'ja' ? 'Ja (Gesendet)' : 'Nein (Nicht gesendet)';
+          const statusColor = String(value).toLowerCase() === 'ja' ? 'green' : 'red';
+          return `<label>${label}: <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></label>`;
       }
-      
       return `<label>${label}:</label><input type="text" name="${key}" value="${value}" ${readOnlyAttr} style="${styleAttr}" />`;
     }).join("");
   };
 
   const customerFields = [
     { label: "Ref", key: "Ref" },
+    { label: "Created At", key: "Created At" },
     { label: "Billing Company", key: "Billing Company" },
     { label: "Billing Address", key: "Billing Address" },
     { label: "Tax Number", key: "Tax Number" },
     { label: "Contact Name Invoicing", key: "Contact Name Invoicing" },
     { label: "Contact E-Mail Invoicing", key: "Contact E-Mail Invoicing" },
-    { label: "Final Confirmation Sent", key: "Final Confirmation Sent" }
+    { label: "AGB Accepted", key: "AGB Accepted" },
+    { label: "Service Description Accepted", key: "Service Description Accepted" },
+    { label: "Accepted By Name", key: "Accepted By Name" },
+    { label: "Acceptance Timestamp", key: "Acceptance Timestamp" },
+    { label: "Final Confirmation Sent", key: "Final Confirmation Sent" } // NEU: Feld hinzugefügt
   ];
+
   const flightFields = [
     { label: "Airline", key: "Airline" },
     { label: "Aircraft Type", key: "Aircraft Type" },
     { label: "Flugnummer", key: "Flugnummer" },
-    { label: "Flight Date", key: "Flight Date", type: "date" },
-    { label: "Abflugzeit", key: "Abflugzeit", type: "time" },
-    { label: "Tonnage", key: "Tonnage" }
-  ];
-  const priceFields = [
-    { label: "Rate", key: "Rate", role: 'admin' },
-    { label: "Security charges", key: "Security charges", role: 'admin' },
-    { label: "Dangerous Goods", key: "Dangerous Goods", role: 'admin' },
-    { label: "10ft consumables", key: "10ft consumables", role: 'admin' },
-    { label: "20ft consumables", key: "20ft consumables", role: 'admin' },
-    { label: "Zusatzkosten", key: "Zusatzkosten", type: "textarea", role: 'admin' }
-  ];
-  const notesFields = [
-      { label: "Interne Notizen", key: "Internal Notes", type: "textarea", role: 'editor' }
+    { label: "Flight Date", key: "Flight Date" },
+    { label: "Abflugzeit", key: "Abflugzeit" },
+    { label: "Tonnage", key: "Tonnage" },
+    { label: "Vorfeldbegleitung", key: "Vorfeldbegleitung", type: "checkbox" },
+    { label: "Flight Type Import", key: "Flight Type Import", type: "checkbox" }, // NEU
+    { label: "Flight Type Export", key: "Flight Type Export", type: "checkbox" }, // NEU
+    { label: "E-Mail Request", key: "Email Request" }
   ];
 
-  modalBody.appendChild(section("Kundendetails", customerSectionHTML + renderFields(customerFields), 'bg-blue-50'));
+  // Preisbezogene Felder, die nur für Admins sichtbar sind
+  const priceFields = [
+    { label: "Rate", key: "Rate" },
+    { label: "Security charges (X-Ray, ETD, EDD)", key: "Security charges" },
+    { label: "Dangerous Goods", key: "Dangerous Goods" },
+    { label: "10ft consumables", key: "10ft consumables" },
+    { label: "20ft consumables", key: "20ft consumables" },
+    { label: "Zusatzkosten", key: "Zusatzkosten", type: "textarea" } // Zusatzkosten als Textarea
+  ];
+
+  // Hinzufügen der Abschnitte mit spezifischen Hintergrundfarben
+  modalBody.appendChild(section("Kundendetails", renderFields(customerFields), 'bg-blue-50'));
   modalBody.appendChild(section("Flugdetails", renderFields(flightFields), 'bg-green-50'));
-  if (currentUser.role === 'admin') {
-      modalBody.appendChild(section("Preisdetails", renderFields(priceFields), 'bg-yellow-50'));
+
+  // Preisdetails nur für Admins anzeigen
+  if (currentUser && currentUser.role === 'admin') {
+    // Erstellen des HTML für Preisdetails
+    let priceDetailsHTML = priceFields.map(({ label, key, type }) => {
+        let value = r[key] || "";
+        if (key === "Zusatzkosten") {
+            // Sicherstellen, dass die textarea für Zusatzkosten korrekt gerendert wird
+            return `<label>${label}:</label><textarea name="${key}" placeholder="Labeln, Fotos" style="height:80px">${value}</textarea>`;
+        } else if (key === "Dangerous Goods") {
+            const options = ["Ja", "Nein", "N/A"]; // Beispieloptionen
+            return `<label>${label}:</label>
+                    <select name="${key}">
+                        ${options.map(opt => `<option value="${opt}" ${String(value).toLowerCase() === opt.toLowerCase() ? 'selected' : ''}>${opt}</option>`).join('')}
+                    </select>`;
+        } else {
+            const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
+            return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" />`;
+        }
+    }).join("");
+
+    modalBody.appendChild(section("Preisdetails", priceDetailsHTML, 'bg-yellow-50')); // Farbklasse für Preisdetails
   }
-  if (['admin', 'editor'].includes(currentUser.role)) {
-      modalBody.appendChild(section("Interne Notizen", renderFields(notesFields), 'bg-gray-50'));
-  }
+  // Der 'else' Block für Viewer wurde entfernt, da 'Zusatzkosten'
+  // direkt in renderFields() behandelt wird, um es komplett zu überspringen.
+
 
   const buttonContainer = document.createElement("div");
-  buttonContainer.className = "w-full flex justify-center gap-4 mt-5";
+  buttonContainer.style.width = "100%";
+  buttonContainer.style.display = "flex";
+  buttonContainer.style.justifyContent = "center";
+  buttonContainer.style.gap = "10px";
+  buttonContainer.style.marginTop = "20px";
 
-  // Nur Admins und Editoren können speichern
-  if (['admin', 'editor'].includes(currentUser.role)) {
-    buttonContainer.innerHTML += `<button class="btn bg-green-500 text-white" onclick="saveDetails()">Speichern</button>`;
+  // Speichern-Button ist für alle eingeloggten Benutzer verfügbar
+  if (currentUser) {
+    const saveButton = document.createElement("button");
+    saveButton.textContent = "Speichern";
+    saveButton.onclick = saveDetails;
+    saveButton.style.padding = "10px 20px";
+    saveButton.style.fontWeight = "bold";
+    saveButton.style.backgroundColor = "#28a745";
+    saveButton.style.color = "white";
+    saveButton.style.border = "none";
+    saveButton.style.borderRadius = "6px";
+    saveButton.style.cursor = "pointer";
+    buttonContainer.appendChild(saveButton);
   }
-  buttonContainer.innerHTML += `<button class="btn bg-blue-500 text-white" onclick="showHistory(currentModalData.Ref)">History</button>`;
-  if (!isNewRequest) {
-      buttonContainer.innerHTML += `<button class="btn bg-indigo-500 text-white" onclick="openEmailConfirmationModal(currentModalData)">Final Charter Confirmation senden</button>`;
+
+  const historyButton = document.createElement("button");
+  historyButton.textContent = "History";
+  historyButton.style.padding = "10px 20px";
+  historyButton.style.fontWeight = "bold";
+  historyButton.style.backgroundColor = "#17a2b8";
+  historyButton.style.color = "white";
+  historyButton.style.border = "none";
+  historyButton.style.borderRadius = "6px";
+  historyButton.style.cursor = "pointer";
+  historyButton.onclick = () => showHistory(r.Ref);
+  buttonContainer.appendChild(historyButton);
+
+  if (currentUser && originalIndex !== -1) { // Button für alle Rollen, wenn ein Eintrag geöffnet ist
+      const sendConfirmationButton = document.createElement("button");
+      sendConfirmationButton.textContent = "Final Charter Confirmation senden";
+      sendConfirmationButton.style.padding = "10px 20px";
+      sendConfirmationButton.style.fontWeight = "bold";
+      sendConfirmationButton.style.backgroundColor = "#007BFF"; // Blau für Senden
+      sendConfirmationButton.style.color = "white";
+      sendConfirmationButton.style.border = "none";
+      sendConfirmationButton.style.borderRadius = "6px";
+      sendConfirmationButton.style.cursor = "pointer";
+      sendConfirmationButton.onclick = () => openEmailConfirmationModal(r); // Übergabe der aktuellen Daten
+      buttonContainer.appendChild(sendConfirmationButton);
   }
-  // Nur Admins können löschen
-  if (currentUser.role === 'admin' && !isNewRequest) {
-    buttonContainer.innerHTML += `<button class="btn btn-delete" onclick="deleteRowFromModal(currentModalData.Ref)">Eintrag löschen</button>`;
+
+  if (currentUser && currentUser.role === 'admin' && originalIndex !== -1) {
+    const deleteButtonModal = document.createElement("button");
+    deleteButtonModal.textContent = "Eintrag löschen";
+    deleteButtonModal.className = "btn btn-delete";
+    deleteButtonModal.style.padding = "10px 20px";
+    deleteButtonModal.style.fontWeight = "bold";
+    deleteButtonModal.style.backgroundColor = "#dc3545";
+    deleteButtonModal.style.color = "white";
+    deleteButtonModal.style.border = "none";
+    deleteButtonModal.style.borderRadius = "6px";
+    deleteButtonModal.style.cursor = "pointer";
+    deleteButtonModal.onclick = () => deleteRowFromModal(r.Ref);
+    buttonContainer.appendChild(deleteButtonModal);
   }
+
   modalBody.appendChild(buttonContainer);
+
   modal.style.display = "flex";
 }
 
-// NEU: Funktion zum Befüllen der Kundendetails
-function populateCustomerDetails(companyName) {
-    if (!companyName) {
-        // Reset fields if "Neuen Kunden anlegen" is selected
-        document.querySelector('[name="Billing Company"]').value = '';
-        document.querySelector('[name="Billing Address"]').value = '';
-        document.querySelector('[name="Tax Number"]').value = '';
-        document.querySelector('[name="Contact Name Invoicing"]').value = '';
-        document.querySelector('[name="Contact E-Mail Invoicing"]').value = '';
-        return;
+// NEU: Funktion zum Umschalten der Origin/Destination Felder basierend auf Checkbox
+function toggleOriginDestinationFields(checkbox, fieldType) {
+    const parentLabel = checkbox.closest('label');
+    let inputElement = parentLabel.nextElementSibling; // Versuchen, das nächste Geschwisterelement zu finden
+
+    // Wenn es kein Input-Element ist oder es nicht das richtige ist, suchen wir es
+    if (!inputElement || (inputElement.tagName !== 'INPUT' && inputElement.tagName !== 'LABEL')) {
+        // Suche innerhalb des gleichen modal-section Divs
+        const sectionDiv = checkbox.closest('.modal-section');
+        if (sectionDiv) {
+            inputElement = sectionDiv.querySelector(`input[name="${fieldType}"]`);
+        }
     }
-    const customer = customerData.find(c => c['Billing Company'] === companyName);
-    if (customer) {
-        document.querySelector('[name="Billing Company"]').value = customer['Billing Company'] || '';
-        document.querySelector('[name="Billing Address"]').value = customer['Billing Address'] || '';
-        document.querySelector('[name="Tax Number"]').value = customer['Tax Number'] || '';
-        document.querySelector('[name="Contact Name Invoicing"]').value = customer['Contact Name Invoicing'] || '';
-        document.querySelector('[name="Contact E-Mail Invoicing"]').value = customer['Contact E-Mail Invoicing'] || '';
+
+    if (checkbox.checked) {
+        // Wenn die Checkbox aktiviert ist, füge das Feld hinzu, falls es nicht existiert
+        if (!inputElement || inputElement.name !== fieldType) {
+            const newLabel = document.createElement('label');
+            newLabel.textContent = `${fieldType}:`;
+            const newInput = document.createElement('input');
+            newInput.type = 'text';
+            newInput.name = fieldType;
+            newInput.value = currentModalData[fieldType] || ''; // Vorhandenen Wert setzen
+            newInput.style.cssText = 'width: 100%; padding: 6px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;';
+
+            parentLabel.parentNode.insertBefore(newLabel, parentLabel.nextSibling);
+            newLabel.parentNode.insertBefore(newInput, newLabel.nextSibling);
+        } else {
+            // Wenn das Feld bereits existiert, stelle sicher, dass es sichtbar ist
+            inputElement.style.display = '';
+            inputElement.previousElementSibling.style.display = ''; // Label auch anzeigen
+        }
+    } else {
+        // Wenn die Checkbox deaktiviert ist, verstecke das Feld
+        if (inputElement && inputElement.name === fieldType) {
+            inputElement.style.display = 'none';
+            inputElement.previousElementSibling.style.display = 'none'; // Label auch verstecken
+        }
+        // Optional: Den Wert des Feldes leeren, wenn es ausgeblendet wird
+        if (currentModalData) {
+            currentModalData[fieldType] = '';
+        }
     }
 }
 
-async function saveDetails() {
-  const isConfirmed = confirm('Sind Sie sicher, dass Sie diese Änderungen speichern möchten?');
-  if (!isConfirmed) return;
 
-  const inputs = document.querySelectorAll("#modalBody input, #modalBody textarea, #modalBody select");
+// Neue Funktion, die vom Modal aus den Löschvorgang startet und dann das Modal schließt
+async function deleteRowFromModal(ref) {
+  // Statt alert() eine benutzerdefinierte Bestätigung verwenden, da alert() in iframes nicht gut funktioniert
+  const isConfirmed = confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`);
+  if (!isConfirmed) {
+    return;
+  }
+
+  const data = {
+    Ref: ref,
+    mode: "delete",
+    user: currentUser.name
+  };
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+      body: new URLSearchParams(data)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP-Fehler! Status: ${response.status}`);
+    }
+    const responseData = await response.json();
+
+    if (responseData && responseData.status === "success") {
+      showSaveFeedback("Eintrag gelöscht!", true);
+    } else {
+      showSaveFeedback(`Fehler beim Löschen des Eintrags! ${responseData.message || ''}`, false);
+      console.error("Löschen fehlgeschlagen:", responseData);
+    }
+    closeModal();
+    fetchData();
+  } catch (err) {
+    showSaveFeedback("Fehler beim Löschen!", false);
+    console.error(err);
+  }
+}
+
+function closeModal() {
+  document.getElementById("detailModal").style.display = "none";
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === "Escape") {
+    closeModal();
+    closeHistoryModal();
+    closeProfileModal();
+    closeStatisticsModal(); // NEU: Statistik Modal schließen
+    closeEmailConfirmationModal(); // NEU: E-Mail Bestätigungsmodal schließen
+    closeEmailPreviewModal(); // NEU: E-Mail Vorschau Modal schließen
+  }
+});
+
+async function saveDetails() {
+  // Statt alert() eine benutzerdefinierte Bestätigung verwenden
+  const isConfirmed = confirm('Sind Sie sicher, dass Sie diese Änderungen speichern möchten?');
+  if (!isConfirmed) {
+    return;
+  }
+
+  const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled]), #modalBody select[name]:not([disabled])");
   const data = {};
   inputs.forEach(i => {
-    if (i.name) {
+    if (i.name === "Flight Date") {
+        data[i.name] = i.value;
+    } else if (['Tonnage', 'Rate', 'Security charges', '10ft consumables', '20ft consumables'].includes(i.name)) {
+        // Tonnage und Preis-Felder: Kommas durch Punkte ersetzen und Euro-Symbol sowie Leerzeichen entfernen
+        data[i.name] = i.value.replace(/,/g, '.').replace('€', '').trim() || "";
+    } else { // Wichtig: Für 'Zusatzkosten' (textarea) kommt der Wert einfach als String.
         if (i.type === "checkbox") {
             data[i.name] = i.checked ? "Ja" : "Nein";
         } else {
@@ -480,37 +759,51 @@ async function saveDetails() {
     }
   });
 
-  data.Ref = currentModalData.Ref; // Ref immer mitsenden
+  const refValue = document.querySelector("#modalBody input[name='Ref']").value;
   data.mode = "write";
   data.user = currentUser.name;
-  data.role = currentUser.role; // Rolle für Berechtigungsprüfung im Backend
 
+  console.log('Payload for saving:', data);
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
       body: new URLSearchParams(data)
     });
-    const responseData = await response.json();
-    if (responseData.status === "success") {
-      showSaveFeedback("Gespeichert!", true);
-      closeModal();
-      fetchData(); // Daten neu laden, um Änderungen und ggf. neue Kunden zu sehen
-    } else {
-      showSaveFeedback(`Fehler: ${responseData.message || 'Unbekannter Fehler'}`, false);
+
+    if (!response.ok) {
+      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
     }
+    const responseData = await response.json();
+
+    if (responseData && responseData.status === "success") {
+      showSaveFeedback("Gespeichert!", true);
+    } else {
+      showSaveFeedback(`Fehler beim Speichern! ${responseData.message || ''}`, false);
+      console.error("Speichern fehlgeschlagen:", responseData);
+    }
+    closeModal();
+    fetchData();
   } catch (err) {
-    showSaveFeedback("Netzwerkfehler beim Speichern!", false);
+    showSaveFeedback("Fehler beim Speichern!", false);
     console.error(err);
   }
 }
 
 async function deleteRow(btn) {
   const ref = btn.closest("tr").querySelector("a").textContent;
-  const isConfirmed = confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen?`);
-  if (!isConfirmed) return;
 
-  const data = { Ref: ref, mode: "delete", user: currentUser.name, role: currentUser.role };
+  // Statt alert() eine benutzerdefinierte Bestätigung verwenden
+  const isConfirmed = confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`);
+  if (!isConfirmed) {
+    return;
+  }
+
+  const data = {
+    Ref: ref,
+    mode: "delete",
+    user: currentUser.name
+  };
 
   try {
     const response = await fetch(API_URL, {
@@ -518,25 +811,23 @@ async function deleteRow(btn) {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
       body: new URLSearchParams(data)
     });
-    const responseData = await response.json();
-    if (responseData.status === "success") {
-      showSaveFeedback("Eintrag gelöscht!", true);
-      fetchData();
-    } else {
-      showSaveFeedback(`Fehler: ${responseData.message}`, false);
+
+    if (!response.ok) {
+      throw new Error(`HTTP-Fehler! Status: ${r.status}`);
     }
+    const responseData = await response.json();
+
+    if (responseData && responseData.status === "success") {
+      showSaveFeedback("Eintrag gelöscht!", true);
+    } else {
+      showSaveFeedback(`Fehler beim Löschen des Eintrags! ${responseData.message || ''}`, false);
+      console.error("Löschen fehlgeschlagen:", responseData);
+    }
+    fetchData();
   } catch (err) {
-    showSaveFeedback("Netzwerkfehler beim Löschen!", false);
+    showSaveFeedback("Fehler beim Löschen!", false);
+    console.error(err);
   }
-}
-
-async function deleteRowFromModal(ref) {
-    deleteRow({ closest: () => ({ querySelector: () => ({ textContent: ref }) }) });
-    closeModal();
-}
-
-function closeModal() {
-  document.getElementById("detailModal").style.display = "none";
 }
 
 // === KALENDER FUNKTIONEN ===
@@ -559,15 +850,36 @@ function renderCalendars() {
 }
 
 function openCalendarDayFlights(year, month, day) {
+  console.log(`Clicked on calendar day: Jahr ${year}, Monat ${month + 1}, Tag ${day}`);
+
+  // Erstelle das Vergleichsdatum als String (YYYY-MM-DD)
   const clickedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  const flightsOnThisDay = requestData.filter(r => r['Flight Date'] === clickedDateStr);
+
+  const flightsOnThisDay = requestData.filter(r => {
+    let flightDateFromData = r['Flight Date']; // Dies ist bereits竭-MM-DD vom Backend
+
+    // Einfacher String-Vergleich
+    const isMatch = flightDateFromData === clickedDateStr;
+    console.log(`  Vergleich: Flugdatum "${flightDateFromData}" vs. geklicktes Datum "${clickedDateStr}" -> Match: ${isMatch}`);
+    return isMatch;
+  });
+
+  console.log(`Gefundene Flüge für diesen Tag (${clickedDateStr}):`, flightsOnThisDay);
 
   if (flightsOnThisDay.length > 0) {
+    // Wenn mehrere Flüge am selben Tag, öffne den ersten gefundenen.
+    // Optimal wäre eine Liste oder Auswahl, aber für den Anfang öffnen wir den ersten.
     const firstFlight = flightsOnThisDay[0];
     const originalIndex = requestData.findIndex(item => item.Ref === firstFlight.Ref);
+    console.log(`Erster Flug Ref: ${firstFlight.Ref}, Original Index: ${originalIndex}`);
+
     if (originalIndex !== -1) {
       openModal(originalIndex);
+    } else {
+      console.warn("Konnte den Originalindex des Fluges nicht finden:", firstFlight);
     }
+  } else {
+      console.log("Keine Flüge für diesen Tag gefunden.");
   }
 }
 
@@ -578,16 +890,18 @@ function generateCalendarHTML(year, month) {
   let html = `<div class="calendar-block"><h3>${monthName} ${year}</h3><table><thead><tr><th>Mo</th><th>Di</th><th>Mi</th><th>Do</th><th>Fr</th><th>Sa</th><th>So</th></tr></thead><tbody>`;
   let day = 1;
 
-  const todayCal = new Date();
-  todayCal.setHours(0, 0, 0, 0);
+  const today = new Date(); // Get today's date
+  today.setHours(0, 0, 0, 0); // Reset time for accurate date comparison
 
   const flightsByDay = new Map();
   requestData.forEach((r) => {
-    if (r['Flight Date']) {
-        const flightDate = new Date(r['Flight Date']);
-        if (flightDate.getFullYear() === year && flightDate.getMonth() === month) {
-            const fDay = flightDate.getDate();
-            if (!flightsByDay.has(fDay)) flightsByDay.set(fDay, []);
+    let flightDate = r['Flight Date'];
+    if (typeof flightDate === 'string' && flightDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [fYear, fMonth, fDay] = flightDate.split('-').map(Number);
+        if (fYear === year && (fMonth - 1) === month) {
+            if (!flightsByDay.has(fDay)) {
+              flightsByDay.set(fDay, []);
+            }
             flightsByDay.get(fDay).push(r);
         }
     }
@@ -600,21 +914,101 @@ function generateCalendarHTML(year, month) {
         html += "<td class='empty'></td>";
       } else {
         const currentCalendarDayForCell = new Date(year, month, day);
+        currentCalendarDayForCell.setHours(0,0,0,0);
+
         const flightsForDay = flightsByDay.get(day) || [];
         let cellClasses = ['calendar-day'];
-        let tooltipContent = flightsForDay.map(f => `Ref: ${f.Ref}\nAirline: ${f.Airline}`).join('\n\n');
-        
-        let hasImport = flightsForDay.some(f => String(f['Flight Type Import']).toLowerCase() === 'ja');
-        let hasExport = flightsForDay.some(f => String(f['Flight Type Export']).toLowerCase() === 'ja');
+        let tooltipContentArray = [];
+        let simpleTitleContent = '';
+        let dayHasVorfeldbegleitung = false;
 
-        if (hasImport && hasExport) cellClasses.push('import-export');
-        else if (hasImport) cellClasses.push('import-only');
-        else if (hasExport) cellClasses.push('export-only');
-        else if (flightsForDay.length > 0) cellClasses.push('has-flights');
+        // NEU: Import/Export Status für den Tag
+        let hasImport = false;
+        let hasExport = false;
 
-        let dayNumberClass = currentCalendarDayForCell.getTime() === todayCal.getTime() ? 'font-bold text-lg today-red-text' : 'font-bold text-lg';
-        
-        html += `<td class='${cellClasses.join(' ')}' data-tooltip='${tooltipContent}' onclick="openCalendarDayFlights(${year}, ${month}, ${day})"><div class="${dayNumberClass}">${day}</div></td>`;
+
+        // Check if current day is today and add 'today' class
+        if (currentCalendarDayForCell.getTime() === today.getTime()) {
+            cellClasses.push('today');
+        }
+
+        if (flightsForDay.length > 0) {
+          // Entferne 'has-flights' da wir spezifischere Klassen verwenden
+          // cellClasses.push('has-flights');
+
+          flightsForDay.forEach(f => {
+            const tonnageValue = parseFloat(String(f.Tonnage).replace(',', '.') || "0") || 0;
+
+            let formattedAbflugzeit = f['Abflugzeit'] || '-';
+            if (typeof formattedAbflugzeit === 'string' && formattedAbflugzeit.match(/^\d{2}:\d{2}$/)) {
+            } else if (formattedAbflugzeit instanceof Date) {
+                formattedAbflugzeit = formattedAbflugzeit.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            } else if (typeof formattedAbflugzeit === 'string' && formattedAbflugzeit.includes('T')) {
+                try {
+                    const timeObj = new Date(formattedAbflugzeit);
+                    if (!isNaN(timeObj.getTime())) {
+                        formattedAbflugzeit = timeObj.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                    }
+                } catch (e) {
+                    console.error("Fehler beim Formatieren der Abflugzeit für Tooltip:", formattedAbflugzeit, e);
+                }
+            }
+
+
+            tooltipContentArray.push(
+              `Ref: ${f.Ref || '-'}` +
+              `\nAirline: ${f.Airline || '-'}` +
+              `\nFlugnummer: ${f.Flugnummer || '-'}` +
+              `\nAbflugzeit: ${formattedAbflugzeit}` +
+              `\nTonnage: ${tonnageValue.toLocaleString('de-DE')} kg`
+            );
+            if (f.Origin) { // NEU: Origin zum Tooltip hinzufügen
+                tooltipContentArray[tooltipContentArray.length - 1] += `\nOrigin: ${f.Origin}`;
+            }
+            if (f.Destination) { // NEU: Destination zum Tooltip hinzufügen
+                tooltipContentArray[tooltipContentArray.length - 1] += `\nDestination: ${f.Destination}`;
+            }
+
+            if (f['Vorfeldbegleitung'] && String(f['Vorfeldbegleitung']).toLowerCase() === 'ja') {
+              dayHasVorfeldbegleitung = true;
+            }
+            // NEU: Import/Export Status prüfen
+            if (String(f['Flight Type Import'] || '').toLowerCase() === 'ja') {
+                hasImport = true;
+            }
+            if (String(f['Flight Type Export'] || '').toLowerCase() === 'ja') {
+                hasExport = true;
+            }
+          });
+          simpleTitleContent = `Flüge: ${flightsForDay.length}`;
+        }
+
+        // NEU: Klassen für Kalenderfarben hinzufügen
+        if (hasImport && hasExport) {
+            cellClasses.push('import-export');
+        } else if (hasImport) {
+            cellClasses.push('import-only');
+        } else if (hasExport) {
+            cellClasses.push('export-only');
+        } else if (flightsForDay.length > 0) {
+            // Wenn Flüge da sind, aber weder Import noch Export markiert, Standardfarbe für Flüge
+            cellClasses.push('has-flights');
+        }
+
+
+        const dataTooltipContent = tooltipContentArray.join('\n\n').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
+        const flightIcon = dayHasVorfeldbegleitung ? ' <span class="flight-icon">&#9992;</span>' : '';
+
+        // Added styling for 'today' class here
+        let dayNumberClass = '';
+        if (currentCalendarDayForCell.getTime() === today.getTime()) {
+            dayNumberClass = 'font-bold text-lg today-red-text'; // NEU: Klasse für rote Farbe
+        } else {
+            dayNumberClass = 'font-bold text-lg'; // Standardklasse für die Zahl
+        }
+
+
+        html += `<td class='${cellClasses.join(' ')}' title='${simpleTitleContent}' data-tooltip='${dataTooltipContent}' onclick="openCalendarDayFlights(${year}, ${month}, ${day})"><div class="${dayNumberClass}">${day}</div>${flightIcon}</td>`;
         day++;
       }
     }
@@ -625,15 +1019,29 @@ function generateCalendarHTML(year, month) {
   return html;
 }
 
+// === UHRZEIT UND DATUM ===
+document.addEventListener("DOMContentLoaded", () => {
+  checkAuthStatus();
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Das Event-Listener für archiveCheckbox muss hier bleiben, da es keine globale Funktion ist.
+  const archiveCheckbox = document.getElementById("archiveCheckbox");
+  if (archiveCheckbox) {
+      archiveCheckbox.addEventListener('change', filterTable);
+  }
+});
+
 function updateClock() {
   const now = new Date();
-  document.getElementById('currentDate').textContent = "Date: " + now.toLocaleDateString('de-DE');
-  document.getElementById('clock').textContent = "Time: " + now.toLocaleTimeString('de-DE');
+  document.getElementById('currentDate').textContent = "Date: " + now.toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  document.getElementById('clock').textContent = "Time: " + now.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
 }
 
+// === NEUE ANFRAGE ERSTELLEN ===
 function generateReference() {
   const now = new Date();
-  const timestamp = now.toLocaleDateString('de-DE').replace(/\./g, '');
+  const timestamp = now.toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\./g, '').replace(/\//g, '');
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `CC-${timestamp}-${random}`;
 }
@@ -642,39 +1050,103 @@ function createNewRequest() {
   openModal(-1);
 }
 
+// === FEEDBACK ANZEIGEN ===
 function showSaveFeedback(message, success) {
   const feedback = document.createElement("div");
   feedback.textContent = message;
-  feedback.className = `fixed top-5 right-5 p-4 rounded-lg shadow-lg text-white z-50 ${success ? 'bg-green-500' : 'bg-red-500'}`;
+  feedback.style.position = "fixed";
+  feedback.style.top = "20px";
+  feedback.style.right = "20px";
+  feedback.style.backgroundColor = success ? "#4CAF50" : "#f44336";
+  feedback.style.color = "#fff";
+  feedback.style.padding = "10px 16px";
+  feedback.style.borderRadius = "8px";
+  feedback.style.boxShadow = "0 8px 10px rgba(0,0,0,0.2)";
+  feedback.style.zIndex = "9999";
   document.body.appendChild(feedback);
   setTimeout(() => feedback.remove(), 3000);
 }
 
+// NEUE FUNKTIONEN FÜR HISTORY MODAL
 async function showHistory(ref) {
   const historyModal = document.getElementById("historyModal");
   const historyBody = document.getElementById("historyBody");
-  document.getElementById("historyRef").textContent = ref;
-  historyBody.innerHTML = '<p>Lade Verlauf...</p>';
+  const historyRefSpan = document.getElementById("historyRef");
+
+  historyRefSpan.textContent = ref;
+  historyBody.innerHTML = '<p style="text-align: center;">Lade Verlauf...</p>';
   historyModal.style.display = "flex";
 
   try {
     const response = await fetch(API_URL + "?mode=readAuditLog");
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
     const auditResult = await response.json();
+
     const filteredLogs = auditResult.data.filter(log => log.Reference === ref);
 
     if (filteredLogs.length === 0) {
-      historyBody.innerHTML = '<p>Kein Verlauf gefunden.</p>';
+      historyBody.innerHTML = '<p style="text-align: center;">Kein Verlauf für diese Referenz gefunden.</p>';
       return;
     }
 
-    let historyHTML = '<ul>';
+    let historyHTML = '<ul style="list-style-type: none; padding: 0;">';
     filteredLogs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp)).forEach(log => {
-      historyHTML += `<li><strong>${new Date(log.Timestamp).toLocaleString('de-DE')} - ${log.User} - ${log.Action}</strong><br>${log.Details}</li>`;
+      let detailsContent = log.Details || '-';
+
+      // Nur für Viewer-Rolle sensible Informationen schwärzen (dieser Teil bleibt, da es um History geht)
+      if (currentUser && currentUser.role === 'viewer' && typeof detailsContent === 'string') {
+        const sensitiveFieldPrefixes = [
+          'Rate:',
+          'Security charges:',
+          'Dangerous Goods:',
+          '10ft consumables:',
+          '20ft consumables:',
+          'Zusatzkosten:'
+        ];
+
+        let processedDetailsParts = [];
+        const detailParts = detailsContent.split(';').map(part => part.trim()).filter(part => part !== '');
+
+        detailParts.forEach(part => {
+            let redactedPart = part;
+            for (const prefix of sensitiveFieldPrefixes) {
+                if (part.startsWith(prefix)) {
+                    redactedPart = `${prefix} [GESCHWÄRZT]`;
+                    break;
+                }
+            }
+            processedDetailsParts.push(redactedPart);
+        });
+        detailsContent = processedDetailsParts.join('; ');
+      }
+
+      try {
+          const parsedDetails = JSON.parse(detailsContent);
+          if (typeof parsedDetails === 'object' && parsedDetails !== null) {
+              detailsContent = 'Gelöschte Daten: <pre>' + JSON.stringify(parsedDetails, null, 2) + '</pre>';
+          }
+      } catch (e) {
+          // Nicht-JSON-Strings werden direkt als Details angezeigt
+      }
+
+
+      historyHTML += `
+        <li style="background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; padding: 15px;">
+          <strong style="color: #007BFF;">Timestamp:</strong> ${log.Timestamp || '-'} <br>
+          <strong style="color: #007BFF;">User:</strong> ${log.User || '-'} <br>
+          <strong style="color: #007BFF;">Action:</strong> ${log.Action || '-'} <br>
+          <strong style="color: #007BFF;">Details:</strong> ${detailsContent}
+        </li>
+      `;
     });
     historyHTML += '</ul>';
     historyBody.innerHTML = historyHTML;
+
   } catch (error) {
-    historyBody.innerHTML = '<p class="text-red-500">Fehler beim Laden des Verlaufs.</p>';
+    console.error("Fehler beim Abrufen des Audit-Logs:", error);
+    historyBody.innerHTML = '<p style="color: red; text-align: center;">Fehler beim Laden des Verlaufs: ' + error.message + '</p>';
   }
 }
 
@@ -682,272 +1154,773 @@ function closeHistoryModal() {
   document.getElementById("historyModal").style.display = "none";
 }
 
+// === NEUE STATISTIK-FUNKTIONEN ===
 function openStatisticsModal() {
-    document.getElementById('statisticsModal').style.display = 'flex';
-    generateStatistics();
+    const statisticsModal = document.getElementById('statisticsModal');
+    if (statisticsModal) {
+        statisticsModal.style.display = 'flex';
+        // Set default date range to current month if not already set
+        const statFromDateInput = document.getElementById('statFromDate');
+        const statToDateInput = document.getElementById('statToDate');
+        if (!statFromDateInput.value || !statToDateInput.value) {
+            const now = new Date();
+            // Erster Tag des aktuellen Monats
+            const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            // Letzter Tag des aktuellen Monats (geht zum nächsten Monat und dann zum 0. Tag)
+            const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+
+            statFromDateInput.value = firstDayOfMonth;
+            statToDateInput.value = lastDayOfMonth;
+        }
+
+        generateStatistics(); // Statistik beim Öffnen generieren
+    } else {
+        console.warn("Statistik-Modal (id='statisticsModal') not found.");
+    }
 }
+
 function closeStatisticsModal() {
-    document.getElementById('statisticsModal').style.display = 'none';
+    document.getElementById("statisticsModal").style.display = "none";
+    // Optional: Zerstöre die Charts beim Schließen des Modals, um Speicher freizugeben
+    if (tonnagePerMonthChartInstance) {
+        tonnagePerMonthChartInstance.destroy();
+        tonnagePerMonthChartInstance = null;
+    }
+    if (tonnagePerCustomerChartInstance) {
+        tonnagePerCustomerChartInstance.destroy();
+        tonnagePerCustomerChartInstance = null;
+    }
 }
-function generateStatistics() { /* ... Implementierung ... */ }
-function downloadStatisticsToCSV() { /* ... Implementierung ... */ }
+
+function generateStatistics() {
+    const statFromDateInput = document.getElementById('statFromDate').value;
+    const statToDateInput = document.getElementById('statToDate').value;
+    const statisticsBody = document.getElementById('statisticsBody');
+
+    // Entferne alte nicht-Diagramm-Inhalte, um Platz für neue Statistiken zu schaffen
+    // ACHTUNG: Hier werden nur die dynamisch hinzugefügten Elemente entfernt.
+    // Die statischen Chart-Container bleiben bestehen.
+    const elementsToRemove = statisticsBody.querySelectorAll('h4, p, ul, table');
+    elementsToRemove.forEach(el => {
+        // Stelle sicher, dass nur die von generateStatistics hinzugefügten Elemente entfernt werden
+        // und nicht die statischen Chart-Container
+        if (!el.classList.contains('chart-container') && el.tagName !== 'CANVAS') {
+            el.remove();
+        }
+    });
 
 
+    if (!statFromDateInput || !statToDateInput) {
+        statisticsBody.insertAdjacentHTML('beforeend', '<p style="text-align: center; color: red;">Bitte wählen Sie einen Start- und Enddatum für die Statistik.</p>');
+        return;
+    }
+
+    const fromDate = new Date(statFromDateInput);
+    fromDate.setHours(0, 0, 0, 0);
+    const toDate = new Date(statToDateInput);
+    toDate.setHours(23, 59, 59, 999); // Setze auf Ende des Tages für inklusiven Bereich
+
+    const filteredData = requestData.filter(r => {
+        let flightDateFromData = r['Flight Date'];
+        let flightDateObj;
+
+        if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const parts = flightDateFromData.split('-');
+            flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        } else if (flightDateFromData instanceof Date) {
+            flightDateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
+        } else {
+            flightDateObj = new Date('Invalid Date');
+        }
+        flightDateObj.setHours(0, 0, 0, 0); // Normalisiere für den Vergleich
+
+        return flightDateObj >= fromDate && flightDateObj <= toDate;
+    });
+
+    // Statistiken initialisieren
+    let totalFlights = filteredData.length;
+    let totalTonnage = 0;
+    // Finanzstatistiken entfernt:
+    // let totalRate = 0;
+    // let totalSecurityCharges = 0;
+    // let total10ftConsumables = 0;
+    // let total20ftConsumables = 0;
+    const dangerousGoodsCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
+    const VorfeldbegleitungCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
+    const airlineStats = {}; // { AirlineName: { totalTonnage: X, totalFlights: Y } } - totalRevenue entfernt
+    const tonnagePerMonth = {}; // { "YYYY-MM": totalTonnage }
+    const tonnagePerCustomer = {}; // { CustomerName: totalTonnage }
+
+
+    filteredData.forEach(item => {
+        const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
+        
+        totalTonnage += tonnage;
+
+        // Dangerous Goods Statistik
+        // Sicherstellen, dass item['Dangerous Goods'] immer ein String ist, bevor toLowerCase aufgerufen wird
+        const dgStatus = String(item['Dangerous Goods'] || '').toLowerCase() === 'ja' ? 'Ja' : (String(item['Dangerous Goods'] || '').toLowerCase() === 'nein' ? 'Nein' : 'N/A');
+        dangerousGoodsCount[dgStatus]++;
+
+        // Vorfeldbegleitung Statistik
+        const vbStatus = String(item['Vorfeldbegleitung'] || '').toLowerCase() === 'ja' ? 'Ja' : (String(item['Vorfeldbegleitung'] || '').toLowerCase() === 'nein' ? 'Nein' : 'N/A');
+        VorfeldbegleitungCount[vbStatus]++;
+
+        // Airline-spezifische Statistik
+        const airlineName = item.Airline || 'Unbekannt';
+        if (!airlineStats[airlineName]) {
+            airlineStats[airlineName] = { totalTonnage: 0, totalFlights: 0 }; // totalRevenue entfernt
+        }
+        airlineStats[airlineName].totalTonnage += tonnage;
+        airlineStats[airlineName].totalFlights++;
+
+        // Tonnage pro Monat Statistik
+        const flightDate = item['Flight Date'];
+        if (flightDate && typeof flightDate === 'string' && flightDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const yearMonth = flightDate.substring(0, 7); // "YYYY-MM"
+            const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
+            tonnagePerMonth[yearMonth] = (tonnagePerMonth[yearMonth] || 0) + tonnage;
+        }
+
+        // Tonnage pro Kunde Statistik (nutzt 'Billing Company' als Kunde)
+        const customerName = item['Billing Company'] || 'Unbekannt';
+        tonnagePerCustomer[customerName] = (tonnagePerCustomer[customerName] || 0) + tonnage;
+    });
+
+    // --- TEXT-BASIERTE STATISTIKEN RENDERN ---
+    let statsHTML = '<h4>Gesamtübersicht</h4>';
+    statsHTML += `<p>Gesamtzahl Flüge: <strong>${totalFlights}</strong></p>`;
+    statsHTML += `<p>Gesamte Tonnage: <strong>${totalTonnage.toLocaleString('de-DE', { maximumFractionDigits: 2 })} kg</strong></p>`;
+
+
+    statsHTML += '<h4>Dangerous Goods Statistik</h4>';
+    statsHTML += `<ul>`;
+    statsHTML += `<li>Ja: ${dangerousGoodsCount["Ja"]} (${(dangerousGoodsCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
+    statsHTML += `<li>Nein: ${dangerousGoodsCount["Nein"]} (${(dangerousGoodsCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
+    if (dangerousGoodsCount["N/A"] > 0) {
+        statsHTML += `<li>Nicht angegeben: ${dangerousGoodsCount["N/A"]} (${(dangerousGoodsCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
+    }
+    statsHTML += `</ul>`;
+
+    statsHTML += '<h4>Vorfeldbegleitung Statistik</h4>';
+    statsHTML += `<ul>`;
+    statsHTML += `<li>Ja: ${VorfeldbegleitungCount["Ja"]} (${(VorfeldbegleitungCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
+    statsHTML += `<li>Nein: ${VorfeldbegleitungCount["Nein"]} (${(VorfeldbegleitungCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
+    if (VorfeldbegleitungCount["N/A"] > 0) {
+        statsHTML += `<li>Nicht angegeben: ${VorfeldbegleitungCount["N/A"]} (${(VorfeldbegleitungCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
+    }
+    statsHTML += `</ul>`;
+
+
+    statsHTML += '<h4>Statistik nach Airline</h4>';
+    if (Object.keys(airlineStats).length > 0) {
+        statsHTML += `<table><thead><tr><th>Airline</th><th>Flüge</th><th>Tonnage (kg)</th>`;
+        statsHTML += `</tr></thead><tbody>`;
+
+        // Sortiere Airlines nach Gesamtflügen absteigend
+        const sortedAirlines = Object.entries(airlineStats).sort(([, a], [, b]) => b.totalFlights - a.totalFlights);
+
+        sortedAirlines.forEach(([airlineName, stats]) => {
+            statsHTML += `<tr>`;
+            statsHTML += `<td>${airlineName}</td>`;
+            statsHTML += `<td>${stats.totalFlights}</td>`;
+            statsHTML += `<td>${stats.totalTonnage.toLocaleString('de-DE', { maximumFractionDigits: 2 })}</td>`;
+            statsHTML += `</tr>`;
+        });
+        statsHTML += `</tbody></table>`;
+    } else {
+        statsHTML += '<p>Keine Flüge für die ausgewählten Daten gefunden.</p>';
+    }
+
+    // Füge die textbasierten Statistiken vor den Diagrammen ein
+    // Finden Sie das erste Chart-Container-Element und fügen Sie die Statistiken davor ein.
+    // Wenn keine Chart-Container gefunden werden (was nicht passieren sollte, aber als Fallfall), fügen Sie sie ans Ende.
+    const firstChartContainer = statisticsBody.querySelector('.chart-container');
+    if (firstChartContainer) {
+        firstChartContainer.insertAdjacentHTML('beforebegin', statsHTML);
+    } else {
+        statisticsBody.insertAdjacentHTML('beforeend', statsHTML);
+    }
+
+    // --- DIAGRAMME RENDERN ---
+    renderTonnagePerMonthChart(tonnagePerMonth);
+    renderTonnagePerCustomerChart(tonnagePerCustomer);
+}
+
+function renderTonnagePerMonthChart(data) {
+    const ctx = document.getElementById('tonnagePerMonthChart');
+    if (!ctx) {
+        console.error("Canvas element 'tonnagePerMonthChart' not found.");
+        return;
+    }
+    const chartCtx = ctx.getContext('2d');
+
+    // Zerstöre die vorherige Chart-Instanz, falls vorhanden
+    if (tonnagePerMonthChartInstance) {
+        tonnagePerMonthChartInstance.destroy();
+    }
+
+    const labels = Object.keys(data).sort(); // Sortiere nach Monat (YYYY-MM)
+    const tonnageValues = labels.map(label => data[label]);
+
+    tonnagePerMonthChartInstance = new Chart(chartCtx, {
+        type: 'bar', // Balkendiagramm
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Tonnage (kg)',
+                data: tonnageValues,
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false, // Wichtig für feste Höhe des Canvas
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Tonnage (kg)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Monat'
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += context.parsed.y.toLocaleString('de-DE') + ' kg';
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderTonnagePerCustomerChart(data) {
+    const ctx = document.getElementById('tonnagePerCustomerChart');
+    if (!ctx) {
+        console.error("Canvas element 'tonnagePerCustomerChart' not found.");
+        return;
+    }
+    const chartCtx = ctx.getContext('2d');
+
+    // Zerstöre die vorherige Chart-Instanz, falls vorhanden
+    if (tonnagePerCustomerChartInstance) {
+        tonnagePerCustomerChartInstance.destroy();
+    }
+
+    // Sortiere Kunden nach Tonnage (absteigend) und zeige nur die Top X (z.B. Top 10)
+    const sortedCustomers = Object.entries(data).sort(([, tonnageA], [, tonnageB]) => tonnageB - tonnageA);
+    const topCustomers = sortedCustomers.slice(0, 10); // Zeige nur die Top 10 Kunden
+
+    const labels = topCustomers.map(([customer]) => customer);
+    const tonnageValues = topCustomers.map(([, tonnage]) => tonnage);
+
+    // Farben für die Balken generieren
+    const backgroundColors = [
+        'rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)', 'rgba(255, 206, 86, 0.6)',
+        'rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)', 'rgba(255, 159, 64, 0.6)',
+        'rgba(199, 199, 199, 0.6)', 'rgba(83, 102, 255, 0.6)', 'rgba(40, 159, 64, 0.6)',
+        'rgba(210, 50, 50, 0.6)'
+    ];
+    const borderColors = backgroundColors.map(color => color.replace('0.6', '1')); // Feste Ränder
+
+    tonnagePerCustomerChartInstance = new Chart(chartCtx, {
+        type: 'bar', // Balkendiagramm
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Tonnage (kg)',
+                data: tonnageValues,
+                backgroundColor: backgroundColors.slice(0, labels.length),
+                borderColor: borderColors.slice(0, labels.length),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Tonnage (kg)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Kunde'
+                    },
+                    // Optional: Labels drehen, wenn sie zu lang sind
+                    ticks: {
+                        autoSkip: false,
+                        maxRotation: 90,
+                        minRotation: 45
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += context.parsed.y.toLocaleString('de-DE') + ' kg';
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function downloadStatisticsToCSV() {
+    const statFromDateInput = document.getElementById('statFromDate').value;
+    const statToDateInput = document.getElementById('statToDate').value;
+
+    if (!statFromDateInput || !statToDateInput) {
+        showSaveFeedback("Bitte wählen Sie einen Start- und Enddatum für den Download aus.", false);
+        return;
+    }
+
+    const fromDate = new Date(statFromDateInput);
+    fromDate.setHours(0, 0, 0, 0);
+    const toDate = new Date(statToDateInput);
+    toDate.setHours(23, 59, 59, 999);
+
+    const filteredData = requestData.filter(r => {
+        let flightDateFromData = r['Flight Date'];
+        let flightDateObj;
+
+        if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const parts = flightDateFromData.split('-');
+            flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        } else if (flightDateFromData instanceof Date) {
+            flightDateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
+        } else {
+            flightDateObj = new Date('Invalid Date');
+        }
+        flightDateObj.setHours(0, 0, 0, 0);
+
+        return flightDateObj >= fromDate && flightDateObj <= toDate;
+    });
+
+    let csvContent = "";
+
+    // --- Gesamtübersicht Statistik ---
+    let totalFlights = filteredData.length;
+    let totalTonnage = 0;
+
+    filteredData.forEach(item => {
+        const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
+        totalTonnage += tonnage;
+    });
+
+    csvContent += "Gesamtuebersicht\n";
+    csvContent += "Gesamtzahl Fluege," + totalFlights + "\n";
+    csvContent += "Gesamte Tonnage (kg)," + totalTonnage.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n"; // Nutze en-US für CSV-Konsistenz
+    csvContent += "\n"; // Leere Zeile zur Trennung
+
+    // --- Dangerous Goods Statistik ---
+    const dangerousGoodsCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
+    filteredData.forEach(item => {
+        // Sicherstellen, dass item['Dangerous Goods'] immer ein String ist
+        const dgStatus = String(item['Dangerous Goods'] || '').toLowerCase() === 'ja' ? 'Ja' : (String(item['Dangerous Goods'] || '').toLowerCase() === 'nein' ? 'Nein' : 'N/A');
+        dangerousGoodsCount[dgStatus]++;
+    });
+    csvContent += "Dangerous Goods Statistik\n";
+    csvContent += "Status,Anzahl,Prozentsatz\n";
+    csvContent += `Ja,${dangerousGoodsCount["Ja"]},${(dangerousGoodsCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
+    csvContent += `Nein,${dangerousGoodsCount["Nein"]},${(dangerousGoodsCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
+    if (dangerousGoodsCount["N/A"] > 0) {
+        csvContent += `Nicht angegeben,${dangerousGoodsCount["N/A"]},${(dangerousGoodsCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
+    }
+    csvContent += "\n";
+
+    // --- Vorfeldbegleitung Statistik ---
+    const VorfeldbegleitungCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
+    filteredData.forEach(item => {
+        const vbStatus = String(item['Vorfeldbegleitung'] || '').toLowerCase() === 'ja' ? 'Ja' : (String(item['Vorfeldbegleitung'] || '').toLowerCase() === 'nein' ? 'Nein' : 'N/A');
+        VorfeldbegleitungCount[vbStatus]++;
+    });
+    csvContent += "Vorfeldbegleitung Statistik\n";
+    csvContent += "Status,Anzahl,Prozentsatz\n";
+    csvContent += `Ja,${VorfeldbegleitungCount["Ja"]},${(VorfeldbegleitungCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
+    csvContent += `Nein,${VorfeldbegleitungCount["Nein"]},${(VorfeldbegleitungCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
+    if (VorfeldbegleitungCount["N/A"] > 0) {
+        csvContent += `Nicht angegeben,${VorfeldbegleitungCount["N/A"]},${(VorfeldbegleitungCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
+    }
+    csvContent += "\n";
+
+    // --- Tonnage pro Monat Statistik ---
+    const tonnagePerMonth = {};
+    filteredData.forEach(item => {
+        const flightDate = item['Flight Date'];
+        if (flightDate && typeof flightDate === 'string' && flightDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const yearMonth = flightDate.substring(0, 7); // "YYYY-MM"
+            const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
+            tonnagePerMonth[yearMonth] = (tonnagePerMonth[yearMonth] || 0) + tonnage;
+        }
+    });
+    csvContent += "Tonnage pro Monat\n";
+    csvContent += "Monat,Tonnage (kg)\n";
+    Object.keys(tonnagePerMonth).sort().forEach(month => {
+        csvContent += `${month},${tonnagePerMonth[month].toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 })}\n`;
+    });
+    csvContent += "\n";
+
+    // --- Tonnage pro Kunde Statistik ---
+    const tonnagePerCustomer = {};
+    filteredData.forEach(item => {
+        const customerName = item['Billing Company'] || 'Unbekannt';
+        const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
+        tonnagePerCustomer[customerName] = (tonnagePerCustomer[customerName] || 0) + tonnage;
+    });
+    csvContent += "Tonnage pro Kunde\n";
+    csvContent += "Kunde,Tonnage (kg)\n";
+    // Sortiere Kunden nach Tonnage absteigend für bessere Lesbarkeit
+    Object.entries(tonnagePerCustomer).sort(([, a], [, b]) => b - a).forEach(([customer, tonnage]) => {
+        csvContent += `"${customer}",${tonnage.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 })}\n`; // Kundenname in Anführungszeichen setzen, um Kommas zu behandeln
+    });
+    csvContent += "\n";
+
+    // --- Airline Statistik ---
+    const airlineStats = {};
+    filteredData.forEach(item => {
+        const airlineName = item.Airline || 'Unbekannt';
+        const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
+
+        if (!airlineStats[airlineName]) {
+            airlineStats[airlineName] = { totalTonnage: 0, totalFlights: 0 };
+        }
+        airlineStats[airlineName].totalTonnage += tonnage;
+        airlineStats[airlineName].totalFlights++;
+    });
+
+    csvContent += "Statistik nach Airline\n";
+    let airlineHeader = "Airline,Fluege,Tonnage (kg)";
+    csvContent += airlineHeader + "\n";
+
+    Object.entries(airlineStats).sort(([, a], [, b]) => b.totalFlights - a.totalFlights).forEach(([airlineName, stats]) => {
+        let row = `"${airlineName}",${stats.totalFlights},${stats.totalTonnage.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 })}`;
+        csvContent += row + "\n";
+    });
+
+    // Erstelle ein Blob und lade es herunter
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) { // Feature-Erkennung für das HTML5-Download-Attribut
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `Charter_Dashboard_Statistik_${statFromDateInput}_bis_${statToDateInput}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        showSaveFeedback("Statistik erfolgreich heruntergeladen!", true);
+    } else {
+        // Fallback für Browser, die das Download-Attribut nicht unterstützen (heute weniger wahrscheinlich)
+        showSaveFeedback("Ihr Browser unterstützt das direkt Herunterladen nicht. Bitte kopieren Sie den Text manuell.", false);
+        console.warn("Download-Attribut wird nicht unterstützt. Fallback erforderlich.");
+    }
+}
+
+// === NEUE E-MAIL BESTÄTIGUNGSFUNKTIONEN ===
 function openEmailConfirmationModal(data) {
+    // Setze das aktuelle Datenobjekt für die E-Mail-Funktion
     currentModalData = data;
-    document.getElementById('emailConfirmationModal').style.display = 'flex';
-    document.getElementById('recipientEmailInput').value = data['Contact E-Mail Invoicing'] || '';
+    const emailConfirmationModal = document.getElementById('emailConfirmationModal');
+    const recipientEmailInput = document.getElementById('recipientEmailInput');
+    const emailConfirmationMessage = document.getElementById('emailConfirmationMessage');
+
+    // Versuche, die E-Mail-Adresse des Kunden vorab auszufüllen
+    if (currentModalData && currentModalData['Contact E-Mail Invoicing']) {
+        recipientEmailInput.value = currentModalData['Contact E-Mail Invoicing'];
+    } else {
+        recipientEmailInput.value = '';
+    }
+    emailConfirmationMessage.textContent = ''; // Alte Nachrichten löschen
+    emailConfirmationModal.style.display = 'flex';
 }
+
 function closeEmailConfirmationModal() {
     document.getElementById('emailConfirmationModal').style.display = 'none';
+    document.getElementById('recipientEmailInput').value = ''; // Eingabefeld leeren
+    document.getElementById('emailConfirmationMessage').textContent = ''; // Nachricht leeren
 }
-async function generateEmailPreview() { /* ... Implementierung ... */ }
+
+document.getElementById('sendEmailConfirmBtn').addEventListener('click', async () => {
+    const recipientEmailInput = document.getElementById('recipientEmailInput');
+    const emailConfirmationMessage = document.getElementById('emailConfirmationMessage');
+    const recipientEmail = recipientEmailInput.value.trim();
+
+    if (!recipientEmail) {
+        emailConfirmationMessage.textContent = 'Bitte geben Sie eine Empfänger-E-Mail-Adresse ein.';
+        emailConfirmationMessage.style.color = 'red';
+        return;
+    }
+
+    // Einfache E-Mail-Validierung
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)) {
+        emailConfirmationMessage.textContent = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
+        emailConfirmationMessage.style.color = 'red';
+        return;
+    }
+
+    // Deaktiviere den Button während des Sendens
+    const sendButton = document.getElementById('sendEmailConfirmBtn');
+    sendButton.disabled = true;
+    sendButton.textContent = 'Senden...';
+    emailConfirmationMessage.textContent = 'Sende E-Mail...';
+    emailConfirmationMessage.style.color = 'blue';
+
+    try {
+        const emailSubject = `Charter Bestätigung für Referenz: ${currentModalData.Ref || 'N/A'}`;
+        
+        // Erstelle den Payload und füge ALLE Daten aus currentModalData hinzu
+        const payload = {
+            mode: 'sendConfirmationEmail',
+            to: recipientEmail,
+            from: 'sales@vgcargo.de', // Feste Absenderadresse
+            bcc: 'sales@vgcargo.de, import@vgcargo.de, export@vgcargo.de', // Feste BCC-Adressen
+            subject: emailSubject,
+            ref: currentModalData.Ref, // Referenz für Audit-Log
+            user: currentUser.name // Aktueller Benutzer für Audit-Log
+        };
+
+        // Füge alle Eigenschaften von currentModalData zum Payload hinzu
+        for (const key in currentModalData) {
+            // Stelle sicher, dass wir keine vorhandenen Payload-Eigenschaften überschreiben
+            // und dass Date-Objekte korrekt als Strings gesendet werden
+            if (!payload.hasOwnProperty(key)) {
+                if (currentModalData[key] instanceof Date) {
+                    // Für Flight Date und Acceptance Timestamp: YYYY-MM-DD oder vollständiger String
+                    if (key === 'Flight Date') {
+                        payload[key] = currentModalData[key].toISOString().split('T')[0];
+                    } else {
+                        payload[key] = currentModalData[key].toLocaleString('de-DE'); // Oder ein anderes passendes Format
+                    }
+                } else {
+                    payload[key] = currentModalData[key];
+                }
+            }
+        }
+
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(payload).toString(),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'success') {
+            emailConfirmationMessage.textContent = 'Charter Bestätigung erfolgreich gesendet!';
+            emailConfirmationMessage.style.color = 'green';
+            showSaveFeedback("Charter Bestätigung gesendet!", true);
+            // Markiere den Eintrag als "Final Confirmation Sent" = "Ja"
+            const index = requestData.findIndex(item => item.Ref === currentModalData.Ref);
+            if (index !== -1) {
+                requestData[index]['Final Confirmation Sent'] = 'Ja';
+                filterTable(); // Tabelle neu rendern, um das Häkchen anzuzeigen
+            }
+            // Schließe das Modal nach einer kurzen Verzögerung
+            setTimeout(() => {
+                closeEmailConfirmationModal();
+                closeModal(); // Auch das Detail-Modal schließen
+                fetchData(); // Daten neu laden, um History zu aktualisieren
+            }, 1500);
+        } else {
+            emailConfirmationMessage.textContent = result.message || 'Fehler beim Senden der E-Mail.';
+            emailConfirmationMessage.style.color = 'red';
+            showSaveFeedback("Fehler beim Senden der Bestätigung!", false);
+        }
+    } catch (error) {
+        console.error('Fehler beim Senden der E-Mail:', error);
+        emailConfirmationMessage.textContent = 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.';
+        emailConfirmationMessage.style.color = 'red';
+        showSaveFeedback("Fehler beim Senden der Bestätigung!", false);
+    } finally {
+        sendButton.disabled = false;
+        sendButton.textContent = 'Senden';
+    }
+});
+
+// GEÄNDERT: Funktion zum Generieren des E-Mail-Bodys für die Vorschau
+async function generateEmailPreview() {
+    if (!currentModalData) {
+        showSaveFeedback("Keine Daten für die E-Mail-Vorschau verfügbar.", false);
+        return;
+    }
+
+    const emailPreviewModal = document.getElementById('emailPreviewModal');
+    const previewRefSpan = document.getElementById('previewRef');
+    const emailPreviewContent = document.getElementById('emailPreviewContent');
+
+    previewRefSpan.textContent = currentModalData.Ref || 'N/A';
+    emailPreviewContent.innerHTML = '<p style="text-align: center;">Lade Vorschau...</p>'; // Ladeanzeige
+    emailPreviewModal.style.display = 'flex';
+
+    try {
+        // Rufe den Server auf, um den E-Mail-Body zu generieren
+        const payload = {
+            mode: 'generateEmailPreview', // KORRIGIERT: Modus an Backend angepasst
+            ref: currentModalData.Ref,     // KORRIGIERT: Sende 'ref' statt 'data'
+            userRole: currentUser.role
+        };
+
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(payload).toString(),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'success' && result.htmlContent) { // KORRIGIERT: Prüfe auf 'htmlContent'
+            emailPreviewContent.innerHTML = result.htmlContent; // KORRIGIERT: HTML direkt aus 'htmlContent' rendern
+        } else {
+            emailPreviewContent.innerHTML = `<p style="color: red; text-align: center;">${result.message || 'Fehler beim Generieren der E-Mail-Vorschau.'}</p>`;
+        }
+    } catch (error) {
+        console.error('Fehler beim Generieren der E-Mail-Vorschau:', error);
+        emailPreviewContent.innerHTML = '<p style="color: red; text-align: center;">Ein unerwarteter Fehler ist aufgetreten beim Generieren der Vorschau.</p>';
+    }
+}
+
+
 function closeEmailPreviewModal() {
     document.getElementById('emailPreviewModal').style.display = 'none';
+    document.getElementById('emailPreviewContent').innerHTML = ''; // Inhalt leeren
 }
+
+// Event Listener für den Vorschau-Button
+document.getElementById('previewEmailBtn').addEventListener('click', generateEmailPreview);
+
+// KORRIGIERT: Funktion zum manuellen Markieren als "Final Confirmation Sent"
 async function markAsSentManually() {
-    if (!currentModalData || !currentModalData.Ref) return;
-    const isConfirmed = confirm(`Manuell als gesendet markieren?`);
-    if (!isConfirmed) return;
+    if (!currentModalData || !currentModalData.Ref) {
+        showSaveFeedback("Keine Referenzdaten zum Markieren verfügbar.", false);
+        return;
+    }
 
-    const payload = {
-        mode: 'markAsSent',
-        ref: currentModalData.Ref,
-        user: currentUser.name,
-        sendEmail: 'false'
-    };
+    const refToMark = currentModalData.Ref;
+    const user = currentUser.name;
+
+    // Bestätigungsdialog
+    const isConfirmed = confirm(`Möchten Sie die Charter Confirmation für Referenz "${refToMark}" wirklich manuell als 'gesendet' markieren?`);
+    if (!isConfirmed) {
+        return;
+    }
 
     try {
+        const payload = {
+            mode: 'markAsSent', // KORRIGIERT: Modus an Backend angepasst ('markAsSent' statt 'markAsConfirmed')
+            ref: refToMark,
+            user: user,
+            sendEmail: 'false' // Explizit angeben, dass keine E-Mail gesendet werden soll
+        };
+
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams(payload)
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(payload).toString(),
         });
+
         const result = await response.json();
-        if (result.status === 'success') {
-            showSaveFeedback("Als gesendet markiert!", true);
-            closeEmailPreviewModal();
-            closeModal();
-            fetchData();
-        } else {
-            showSaveFeedback(`Fehler: ${result.message}`, false);
-        }
-    } catch (err) {
-        showSaveFeedback("Netzwerkfehler.", false);
-    }
-}
 
-// === BENUTZERVERWALTUNG (NEU) ===
-function openUserAdminModal() {
-    const modal = document.getElementById('userAdminModal');
-    const body = document.getElementById('userAdminBody');
-    body.innerHTML = '<p>Lade Benutzer...</p>';
-    document.getElementById('userFormContainer').innerHTML = ''; // Formular leeren
-    modal.style.display = 'flex';
-
-    fetch(API_URL + "?mode=readUsers")
-        .then(res => res.json())
-        .then(result => {
-            if (result.status === 'success') {
-                allUsers = result.data;
-                renderUserTable();
-            } else {
-                body.innerHTML = `<p class="text-red-500">${result.message}</p>`;
+        if (response.ok && result.status === 'success') {
+            showSaveFeedback(`Referenz ${refToMark} als 'gesendet' markiert!`, true);
+            // Aktualisiere den lokalen Datenstatus und re-render die Tabelle
+            const index = requestData.findIndex(item => item.Ref === refToMark);
+            if (index !== -1) {
+                requestData[index]['Final Confirmation Sent'] = 'Ja';
+                filterTable(); // Tabelle neu rendern, um den Haken anzuzeigen
             }
-        }).catch(err => {
-            body.innerHTML = `<p class="text-red-500">Fehler beim Laden der Benutzer.</p>`;
-            console.error(err);
-        });
-}
-
-function closeUserAdminModal() {
-    document.getElementById('userAdminModal').style.display = 'none';
-}
-
-function renderUserTable() {
-    const body = document.getElementById('userAdminBody');
-    let tableHTML = `<button class="btn bg-green-500 text-white mb-4" onclick="showAddUserForm()">Neuen Benutzer anlegen</button>
-                     <table class="w-full">
-                         <thead><tr><th>Username</th><th>Name</th><th>Rolle</th><th>Aktionen</th></tr></thead>
-                         <tbody>`;
-    allUsers.forEach(user => {
-        tableHTML += `<tr>
-                        <td>${user.username}</td>
-                        <td>${user.name}</td>
-                        <td>${user.role}</td>
-                        <td>
-                            <button class="btn bg-yellow-500 text-white" onclick="showEditUserForm('${user.username}')">Bearbeiten</button>
-                            <button class="btn btn-delete" onclick="deleteUser('${user.username}')">Löschen</button>
-                        </td>
-                      </tr>`;
-    });
-    tableHTML += `</tbody></table>`;
-    body.innerHTML = tableHTML;
-}
-
-function showAddUserForm() {
-    showUserForm();
-}
-
-function showEditUserForm(username) {
-    const user = allUsers.find(u => u.username === username);
-    if (user) {
-        showUserForm(user);
-    }
-}
-
-function showUserForm(user = {}) {
-    const isEdit = !!user.username;
-    const formContainer = document.getElementById('userFormContainer');
-    formContainer.innerHTML = `
-        <div class="user-form">
-            <h4 class="text-xl font-bold mb-2">${isEdit ? 'Benutzer bearbeiten' : 'Neuen Benutzer anlegen'}</h4>
-            <label>Username:</label>
-            <input type="text" id="userFormUsername" value="${user.username || ''}" ${isEdit ? 'readonly style="background:#eee;"' : ''}>
-            <label>Name:</label>
-            <input type="text" id="userFormName" value="${user.name || ''}">
-            <label>Passwort ${isEdit ? '(leer lassen, um nicht zu ändern)' : ''}:</label>
-            <input type="password" id="userFormPassword">
-            <label>Rolle:</label>
-            <select id="userFormRole">
-                <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>Viewer</option>
-                <option value="editor" ${user.role === 'editor' ? 'selected' : ''}>Editor</option>
-                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
-            </select>
-            <div class="mt-4">
-                <button class="btn bg-green-500 text-white" onclick="saveUser(${isEdit})">Speichern</button>
-                <button class="btn bg-gray-500 text-white" onclick="document.getElementById('userFormContainer').innerHTML = ''">Abbrechen</button>
-            </div>
-        </div>`;
-}
-
-async function saveUser(isEdit) {
-    const username = document.getElementById('userFormUsername').value;
-    const name = document.getElementById('userFormName').value;
-    const password = document.getElementById('userFormPassword').value;
-    const role = document.getElementById('userFormRole').value;
-
-    if (!username || !name || !role || (!isEdit && !password)) {
-        showSaveFeedback("Bitte alle Felder ausfüllen.", false);
-        return;
-    }
-
-    const payload = {
-        mode: isEdit ? 'updateUser' : 'addUser',
-        username, name, role,
-        user: currentUser.name // Admin, der die Aktion ausführt
-    };
-    if (password) {
-        payload.password = password;
-    }
-
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams(payload)
-        });
-        const result = await response.json();
-        if (result.status === 'success') {
-            showSaveFeedback("Benutzer gespeichert!", true);
-            openUserAdminModal(); // Reload user list
+            closeEmailPreviewModal(); // Vorschau-Modal schließen
+            closeModal(); // Detail-Modal schließen
+            fetchData(); // Daten neu laden, um sicherzustellen, dass alles synchron ist
         } else {
-            showSaveFeedback(`Fehler: ${result.message}`, false);
+            showSaveFeedback(result.message || 'Fehler beim Markieren als gesendet.', false);
         }
-    } catch (err) {
-        showSaveFeedback("Netzwerkfehler.", false);
+    } catch (error) {
+        console.error('Fehler beim manuellen Markieren als gesendet:', error);
+        showSaveFeedback('Ein Fehler ist beim Markieren als gesendet aufgetreten.', false);
     }
 }
 
-async function deleteUser(username) {
-    if (!confirm(`Sind Sie sicher, dass Sie den Benutzer "${username}" löschen möchten?`)) return;
+// Event Listener für den neuen Button "Charter Confirmation gesendet"
+document.getElementById('markAsSentBtn').addEventListener('click', markAsSentManually);
 
-    const payload = {
-        mode: 'deleteUser',
-        username,
-        user: currentUser.name
-    };
 
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams(payload)
-        });
-        const result = await response.json();
-        if (result.status === 'success') {
-            showSaveFeedback("Benutzer gelöscht!", true);
-            openUserAdminModal();
-        } else {
-            showSaveFeedback(`Fehler: ${result.message}`, false);
-        }
-    } catch (err) {
-        showSaveFeedback("Netzwerkfehler.", false);
-    }
-}
-
-// === WICHTIG: Alle globalen Funktionen zuweisen ===
-document.addEventListener('keydown', (e) => {
-  if (e.key === "Escape") {
-    closeModal();
-    closeHistoryModal();
-    closeProfileModal();
-    closeStatisticsModal();
-    closeEmailConfirmationModal();
-    closeEmailPreviewModal();
-    closeUserAdminModal();
-  }
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  checkAuthStatus();
-  updateClock();
-  setInterval(updateClock, 1000);
-  document.getElementById("archiveCheckbox")?.addEventListener('change', filterTable);
-  document.getElementById('previewEmailBtn')?.addEventListener('click', generateEmailPreview);
-  document.getElementById('markAsSentBtn')?.addEventListener('click', markAsSentManually);
-  document.getElementById('sendEmailConfirmBtn')?.addEventListener('click', async () => {
-    const recipientEmail = document.getElementById('recipientEmailInput').value.trim();
-    if (!recipientEmail) {
-        showSaveFeedback('Bitte E-Mail-Adresse eingeben.', false);
-        return;
-    }
-    const payload = {
-        mode: 'markAsSent', // sendConfirmationEmail wurde zu markAsSent konsolidiert
-        sendEmail: 'true',
-        recipient: recipientEmail,
-        ref: currentModalData.Ref,
-        user: currentUser.name
-    };
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams(payload)
-        });
-        const result = await response.json();
-        if (result.status === 'success') {
-            showSaveFeedback('E-Mail gesendet und als bestätigt markiert!', true);
-            closeEmailConfirmationModal();
-            fetchData();
-        } else {
-            showSaveFeedback(`Fehler: ${result.message}`, false);
-        }
-    } catch (err) {
-        showSaveFeedback('Netzwerkfehler.', false);
-    }
-  });
-});
-
-Object.assign(window, {
-    openProfileModal, closeProfileModal, changePassword, logoutUser,
-    fetchData, filterTable, sortTable,
-    openModal, closeModal, saveDetails, deleteRow, deleteRowFromModal,
-    createNewRequest, generateReference,
-    populateCustomerDetails,
-    shiftCalendar, renderCalendars, openCalendarDayFlights,
-    showHistory, closeHistoryModal,
-    openStatisticsModal, closeStatisticsModal, generateStatistics, downloadStatisticsToCSV,
-    openEmailConfirmationModal, closeEmailConfirmationModal, generateEmailPreview, closeEmailPreviewModal, markAsSentManually,
-    openUserAdminModal, closeUserAdminModal, renderUserTable, showAddUserForm, showEditUserForm, saveUser, deleteUser
-});
+// --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
+// Wenn script.js als type="module" geladen wird, sind Funktionen
+// standardmäßig nicht im globalen "window"-Scope verfügbar,
+// es sei denn, sie werden explizit exportiert oder zugewiesen.
+// Für HTML-onclick-Attribute ist die Zuweisung an "window" erforderlich.
+window.openProfileModal = openProfileModal;
+window.closeProfileModal = closeProfileModal;
+window.changePassword = changePassword;
+window.logoutUser = logoutUser;
+window.fetchData = fetchData;
+window.renderRequestTables = renderRequestTables; // GEÄNDERT: Neue Funktion
+window.filterTable = filterTable;
+window.openModal = openModal;
+window.deleteRowFromModal = deleteRowFromModal;
+window.closeModal = closeModal;
+window.saveDetails = saveDetails;
+window.deleteRow = deleteRow;
+window.shiftCalendar = shiftCalendar;
+window.renderCalendars = renderCalendars;
+window.openCalendarDayFlights = openCalendarDayFlights;
+window.generateCalendarHTML = generateCalendarHTML;
+window.createNewRequest = createNewRequest;
+window.showSaveFeedback = showSaveFeedback;
+window.showHistory = showHistory;
+window.closeHistoryModal = closeHistoryModal;
+window.openStatisticsModal = openStatisticsModal; // Mache neue Funktion global zugänglich
+window.closeStatisticsModal = closeStatisticsModal; // Mache neue Funktion global zugänglich
+window.generateStatistics = generateStatistics; // Mache neue Funktion global zugänglich
+window.renderTonnagePerMonthChart = renderTonnagePerMonthChart; // Mache neue Funktion global zugänglich
+window.renderTonnagePerCustomerChart = renderTonnagePerCustomerChart; // Mache neue Funktion global zugänglich
+window.downloadStatisticsToCSV = downloadStatisticsToCSV; // Mache neue Download-Funktion global zugänglich
+window.openEmailConfirmationModal = openEmailConfirmationModal; // NEU: E-Mail Bestätigungsmodal öffnen
+window.closeEmailConfirmationModal = closeEmailConfirmationModal; // NEU: E-Mail Bestätigungsmodal schließen
+window.toggleOriginDestinationFields = toggleOriginDestinationFields; // NEU: Funktion global zugänglich machen
+window.generateEmailPreview = generateEmailPreview; // NEU: Funktion für E-Mail-Vorschau
+window.closeEmailPreviewModal = closeEmailPreviewModal; // NEU: Funktion zum Schließen der E-Mail-Vorschau
+window.markAsSentManually = markAsSentManually; // NEU: Funktion zum manuellen Markieren als gesendet
+// Initialisiere Auth-Status, sobald das DOM geladen ist.
+// Dies wird nach dem window.onload Event, aber vor dem Polling ausgeführt.
+checkAuthStatus();
