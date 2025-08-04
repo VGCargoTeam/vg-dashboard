@@ -767,6 +767,8 @@ async function saveDetails() {
   // }
 
   // Additional checks for 'Flight Type Import' and 'Flight Type Export'
+  // Removed validation for Origin and Destination
+  /*
   if (data['Flight Type Import'] === 'Ja' && (!data['Origin'] || String(data['Origin']).trim() === '')) {
       showSaveFeedback('Error: If "Flight Type Import" is selected, "Origin" must be filled.', false);
       return;
@@ -775,6 +777,7 @@ async function saveDetails() {
       showSaveFeedback('Error: If "Flight Type Export" is selected, "Destination" must be filled.', false);
       return;
   }
+  */
 
   // Ref and Created At should not be changeable
   data.Ref = currentModalData.Ref; // Ensure reference is retained
@@ -1947,7 +1950,7 @@ window.downloadStatisticsToCSV = downloadStatisticsToCSV;
 window.openEmailConfirmationModal = openEmailConfirmationModal;
 window.closeEmailConfirmationModal = closeEmailConfirmationModal;
 window.sendFinalConfirmationEmail = sendFinalConfirmationEmail; // NEW: Direct send function
-window.toggleOriginDestinationFields = toggleOriginOriginDestinationFields;
+window.toggleOriginDestinationFields = toggleOriginDestinationFields;
 window.generateEmailPreview = generateEmailPreview;
 window.closeEmailPreviewModal = closeEmailPreviewModal;
 window.markAsSentManually = markAsSentManually;
