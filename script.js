@@ -194,72 +194,92 @@ function fetchData() {
     });
 }
 
-function renderTable(dataToRender = requestData) { // Erlaubt das Rendern von gefilterten Daten
-  const tbody = document.querySelector("#dataTable tbody");
-  tbody.innerHTML = "";
-  let totalFlights = 0;
-  let totalWeight = 0;
+// GEÄNDERT: Funktion zum Rendern beider Tabellen
+function renderRequestTables(dataToRender = requestData) {
+    const unconfirmedTbody = document.querySelector("#unconfirmedTable tbody");
+    const confirmedTbody = document.querySelector("#confirmedTable tbody");
 
-  dataToRender.forEach((r) => { // dataToRender verwenden
-    const row = document.createElement("tr");
-    const ton = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0;
-
-    const originalIndex = requestData.findIndex(item => item.Ref === r.Ref);
-
-    // Datum korrekt für die Anzeige formatieren (DD.MM.YYYY)
-    let displayFlightDate = r['Flight Date'] || "-";
-    if (displayFlightDate !== "-") {
-        try {
-            // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
-            let dateObj;
-            if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
-                const parts = displayFlightDate.split('-');
-                dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-            } else if (displayFlightDate instanceof Date) { // Falls es direkt ein Date-Objekt ist (selten, aber sicherheitshalber)
-                dateObj = new Date(displayFlightDate.getFullYear(), displayFlightDate.getMonth(), displayFlightDate.getDate());
-            } else {
-                dateObj = new Date('Invalid Date'); // Ungültiges Datum
-            }
-
-            // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist, um Konsistenz zu gewährleisten
-            dateObj.setHours(0, 0, 0, 0);
-
-            console.log(`[renderTable] Original: "${r['Flight Date']}", Geparsed (Lokal): ${dateObj}`); // Zum Debuggen
-
-            if (!isNaN(dateObj.getTime())) {
-                displayFlightDate = dateObj.toLocaleDateString('de-DE');
-                console.log(`[renderTable] Formatiert (de-DE): ${displayFlightDate}`);
-            }
-        } catch (e) {
-             console.error("Fehler bei der Datumskonvertierung für die Anzeige in Tabelle:", displayFlightDate, e);
-        }
+    // Sicherstellen, dass die Tabellen-Bodys existieren
+    if (!unconfirmedTbody || !confirmedTbody) {
+        console.error("Tabellen für bestätigte oder unbestätigte Anfragen nicht gefunden.");
+        return;
     }
 
-    const deleteButtonHTML = (currentUser && currentUser.role === 'admin') ? `<button class="btn btn-delete admin-only" onclick="deleteRow(this)">Delete</button>` : '';
+    unconfirmedTbody.innerHTML = "";
+    confirmedTbody.innerHTML = "";
 
-    // NEU: Status der finalen Bestätigung prüfen und Icon hinzufügen
-    const isConfirmed = String(r['Final Confirmation Sent'] || '').toLowerCase() === 'ja';
-    const confirmationIcon = isConfirmed ? '<span class="text-green-500 ml-1">&#10004;</span>' : ''; // Grünes Häkchen
+    let unconfirmedFlights = 0;
+    let unconfirmedWeight = 0;
+    let confirmedFlights = 0;
+    let confirmedWeight = 0;
 
-    row.innerHTML = `
-      <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})">${r.Ref}</a>${confirmationIcon}</td>
-      <td>${displayFlightDate}</td>
-      <td>${r.Airline || "-"}</td>
-      <td>${ton.toLocaleString('de-DE')}</td> <td>
-        <button class="btn btn-view" onclick="openModal(${originalIndex})">View</button>
-        ${deleteButtonHTML}
-      </td>
-    `;
-    tbody.appendChild(row);
-    totalFlights++;
-    totalWeight += ton;
-  });
+    // Hilfsfunktion zum Erstellen einer Zeile, um Code-Duplizierung zu vermeiden
+    const createRowHTML = (r) => {
+        const ton = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0;
+        const originalIndex = requestData.findIndex(item => item.Ref === r.Ref);
 
-  document.getElementById("summaryInfo").textContent =
-    `Total Flights: ${totalFlights} | Total Tonnage: ${totalWeight.toLocaleString('de-DE')} kg`;
+        let displayFlightDate = r['Flight Date'] || "-";
+        if (displayFlightDate !== "-") {
+            try {
+                let dateObj;
+                if (typeof displayFlightDate === 'string' && displayFlightDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const parts = displayFlightDate.split('-');
+                    dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                } else if (displayFlightDate instanceof Date) {
+                    dateObj = new Date(displayFlightDate.getFullYear(), displayFlightDate.getMonth(), displayFlightDate.getDate());
+                } else {
+                    dateObj = new Date('Invalid Date');
+                }
+                dateObj.setHours(0, 0, 0, 0);
+                if (!isNaN(dateObj.getTime())) {
+                    displayFlightDate = dateObj.toLocaleDateString('de-DE');
+                }
+            } catch (e) {
+                 console.error("Fehler bei der Datumskonvertierung für die Anzeige in Tabelle:", displayFlightDate, e);
+            }
+        }
 
-  updateUIBasedOnUserRole();
+        const deleteButtonHTML = (currentUser && currentUser.role === 'admin') ? `<button class="btn btn-delete admin-only" onclick="deleteRow(this)">Delete</button>` : '';
+        const isConfirmed = String(r['Final Confirmation Sent'] || '').toLowerCase() === 'ja';
+        const confirmationIcon = isConfirmed ? '<span class="text-green-500 ml-1">&#10004;</span>' : '';
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})">${r.Ref}</a>${confirmationIcon}</td>
+          <td>${displayFlightDate}</td>
+          <td>${r.Airline || "-"}</td>
+          <td>${ton.toLocaleString('de-DE')}</td>
+          <td>
+            <button class="btn btn-view" onclick="openModal(${originalIndex})">View</button>
+            ${deleteButtonHTML}
+          </td>
+        `;
+        return { row, ton };
+    };
+
+    dataToRender.forEach(r => {
+        const { row, ton } = createRowHTML(r);
+        const isConfirmed = String(r['Final Confirmation Sent'] || '').toLowerCase() === 'ja';
+
+        if (isConfirmed) {
+            confirmedTbody.appendChild(row);
+            confirmedFlights++;
+            confirmedWeight += ton;
+        } else {
+            unconfirmedTbody.appendChild(row);
+            unconfirmedFlights++;
+            unconfirmedWeight += ton;
+        }
+    });
+
+    document.getElementById("unconfirmedSummaryInfo").textContent =
+        `Total Flights: ${unconfirmedFlights} | Total Tonnage: ${unconfirmedWeight.toLocaleString('de-DE')} kg`;
+    document.getElementById("confirmedSummaryInfo").textContent =
+        `Total Flights: ${confirmedFlights} | Total Tonnage: ${confirmedWeight.toLocaleString('de-DE')} kg`;
+
+    updateUIBasedOnUserRole();
 }
+
 
 function filterTable() {
   const refSearch = document.getElementById("refSearch").value.toLowerCase();
@@ -342,7 +362,7 @@ function filterTable() {
 
     return matchesRef && matchesAirline && matchesFlightNumber && matchesDateRange && passesPastFlightFilter;
   });
-  renderTable(filtered);
+  renderRequestTables(filtered); // GEÄNDERT: Ruft die neue Funktion auf
   renderCalendars();
 }
 
@@ -1753,7 +1773,7 @@ document.getElementById('sendEmailConfirmBtn').addEventListener('click', async (
     }
 });
 
-// NEU: Funktion zum Generieren des E-Mail-Bodys für die Vorschau
+// GEÄNDERT: Funktion zum Generieren des E-Mail-Bodys für die Vorschau
 async function generateEmailPreview() {
     if (!currentModalData) {
         showSaveFeedback("Keine Daten für die E-Mail-Vorschau verfügbar.", false);
@@ -1771,9 +1791,9 @@ async function generateEmailPreview() {
     try {
         // Rufe den Server auf, um den E-Mail-Body zu generieren
         const payload = {
-            mode: 'generateEmailBody',
-            data: JSON.stringify(currentModalData), // Sende die Daten als JSON-String
-            userRole: currentUser.role // Sende die Rolle des Benutzers
+            mode: 'generateEmailPreview', // KORRIGIERT: Modus an Backend angepasst
+            ref: currentModalData.Ref,     // KORRIGIERT: Sende 'ref' statt 'data'
+            userRole: currentUser.role
         };
 
         const response = await fetch(API_URL, {
@@ -1786,8 +1806,8 @@ async function generateEmailPreview() {
 
         const result = await response.json();
 
-        if (response.ok && result.status === 'success' && result.emailBody) {
-            emailPreviewContent.innerHTML = result.emailBody; // HTML direkt rendern
+        if (response.ok && result.status === 'success' && result.htmlContent) { // KORRIGIERT: Prüfe auf 'htmlContent'
+            emailPreviewContent.innerHTML = result.htmlContent; // KORRIGIERT: HTML direkt aus 'htmlContent' rendern
         } else {
             emailPreviewContent.innerHTML = `<p style="color: red; text-align: center;">${result.message || 'Fehler beim Generieren der E-Mail-Vorschau.'}</p>`;
         }
@@ -1796,6 +1816,7 @@ async function generateEmailPreview() {
         emailPreviewContent.innerHTML = '<p style="color: red; text-align: center;">Ein unerwarteter Fehler ist aufgetreten beim Generieren der Vorschau.</p>';
     }
 }
+
 
 function closeEmailPreviewModal() {
     document.getElementById('emailPreviewModal').style.display = 'none';
@@ -1872,7 +1893,7 @@ window.closeProfileModal = closeProfileModal;
 window.changePassword = changePassword;
 window.logoutUser = logoutUser;
 window.fetchData = fetchData;
-window.renderTable = renderTable;
+window.renderRequestTables = renderRequestTables; // GEÄNDERT: Neue Funktion
 window.filterTable = filterTable;
 window.openModal = openModal;
 window.deleteRowFromModal = deleteRowFromModal;
