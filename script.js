@@ -1,31 +1,31 @@
 // Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
 const API_URL = 'https://script.google.com/macros/s/AKfycbzo-FgxA6TMJYK4xwLbrsRnNTAU_AN-FEJJoZH6w7aJ3BlcsaB751LjdUJ9nieGtu1P/exec'; // <<< AKTUALISIERT: NEUER LINK VOM BENUTZER
 
-let currentUser = null; // Speichert den aktuell angemeldeten Benutzer
-let requestData = []; // Speichert alle abgerufenen Charterdaten
-let baseMonth = new Date().getMonth(); // Aktueller Monat (0-indexed)
-let baseYear = new Date().getFullYear(); // Aktuelles Jahr
+let currentUser = null; // Stores the currently logged-in user
+let requestData = []; // Stores all retrieved charter data
+let baseMonth = new Date().getMonth(); // Current month (0-indexed)
+let baseYear = new Date().getFullYear(); // Current year
 
 const today = new Date();
-today.setHours(0, 0, 0, 0); // Setzt die Zeit auf Mitternacht für den Vergleich
+today.setHours(0, 0, 0, 0); // Sets the time to midnight for comparison
 
-// Globale Variablen für Chart-Instanzen, um sie bei Bedarf zu zerstören
+// Global variables for chart instances, to destroy them if necessary
 let tonnagePerMonthChartInstance = null;
 let tonnagePerCustomerChartInstance = null;
 
-// Variable zum Speichern der aktuell im Modal angezeigten Daten
+// Variable to store the data currently displayed in the modal
 let currentModalData = null;
 
 
-// === AUTHENTIFIZIERUNG UND BENUTZERVERWALTUNG ===
+// === AUTHENTICATION AND USER MANAGEMENT ===
 function checkAuthStatus() {
   const storedUser = localStorage.getItem('currentUser');
   if (storedUser) {
     currentUser = JSON.parse(storedUser);
     updateUIBasedOnUserRole();
-    fetchData(); // Daten laden, wenn angemeldet
+    fetchData(); // Load data if logged in
   } else {
-    // Wenn nicht angemeldet, zur Login-Seite umleiten
+    // If not logged in, redirect to the login page
     window.location.href = 'login.html';
   }
 }
@@ -44,12 +44,12 @@ function updateUIBasedOnUserRole() {
     if (loggedInUserRoleProfileSpan) loggedInUserRoleProfileSpan.textContent = currentUser.role;
 
     if (currentUser.role === 'admin') {
-      adminElements.forEach(el => el.style.display = ""); // Standardanzeige
+      adminElements.forEach(el => el.style.display = ""); // Default display
     } else {
-      adminElements.forEach(el => el.style.display = "none"); // Ausblenden
+      adminElements.forEach(el => el.style.display = "none"); // Hide
     }
   } else {
-    // Falls kein Benutzer angemeldet ist (sollte durch checkAuthStatus abgefangen werden)
+    // If no user is logged in (should be caught by checkAuthStatus)
     adminElements.forEach(el => el.style.display = "none");
     if (loggedInUsernameSpan) loggedInUsernameSpan.textContent = 'N/A';
     if (loggedInUserRoleSpan) loggedInUserRoleSpan.textContent = 'N/A';
@@ -60,9 +60,9 @@ function updateUIBasedOnUserRole() {
 
 function openProfileModal() {
   const profileModal = document.getElementById('profileModal');
-  if (profileModal) { // Sicherstellen, dass das Modal existiert
-    profileModal.style.display = 'flex'; // Modal anzeigen
-    // Initialwerte setzen
+  if (profileModal) { // Ensure the modal exists
+    profileModal.style.display = 'flex'; // Show modal
+    // Set initial values
     const newPassInput = document.getElementById('newPasswordInput');
     const confirmPassInput = document.getElementById('confirmPasswordInput');
     const passwordChangeMessage = document.getElementById('passwordChangeMessage');
@@ -70,14 +70,14 @@ function openProfileModal() {
     if (confirmPassInput) confirmPassInput.value = '';
     if (passwordChangeMessage) passwordChangeMessage.textContent = '';
   } else {
-    console.warn("Profil-Modal (id='profileModal') nicht gefunden.");
+    console.warn("Profile modal (id='profileModal') not found.");
   }
 }
 
 function closeProfileModal() {
   const profileModal = document.getElementById('profileModal');
   if (profileModal) {
-    profileModal.style.display = 'none'; // Modal schließen
+    profileModal.style.display = 'none'; // Close modal
   }
 }
 
@@ -92,7 +92,7 @@ async function changePassword() {
   const messageElem = document.getElementById('passwordChangeMessage');
 
   if (!messageElem) {
-    console.error("Passwortänderungs-Nachrichtenelement nicht gefunden.");
+    console.error("Password change message element not found.");
     return;
   }
 
@@ -106,7 +106,7 @@ async function changePassword() {
     messageElem.style.color = 'red';
     return;
   }
-  if (newPass.length < 6) { // Beispiel: Mindestlänge
+  if (newPass.length < 6) { // Example: Minimum length
       messageElem.textContent = 'Passwort muss mindestens 6 Zeichen lang sein.';
       messageElem.style.color = 'red';
       return;
@@ -119,10 +119,10 @@ async function changePassword() {
 
   const payload = {
       mode: 'updatePassword',
-      username: currentUser.username, // Der Benutzer, dessen Passwort geändert werden soll
-      oldPassword: oldPass, // Aktuelles Passwort zur Verifizierung
-      newPassword: newPass, // Neues Passwort
-      user: currentUser.name // Für Audit-Log
+      username: currentUser.username, // The user whose password is to be changed
+      oldPassword: oldPass, // Current password for verification
+      newPassword: newPass, // New password
+      user: currentUser.name // For audit log
   };
 
   try {
@@ -139,13 +139,13 @@ async function changePassword() {
       if (response.ok && result.status === 'success') {
           messageElem.textContent = 'Passwort erfolgreich geändert! Bitte melden Sie sich neu an.';
           messageElem.style.color = 'green';
-          // Leere die Felder nach erfolgreicher Änderung
+          // Clear the fields after successful change
           const newPassInput = document.getElementById('newPasswordInput');
           const confirmPassInput = document.getElementById('confirmPassInput');
           if (newPassInput) newPassInput.value = '';
           if (confirmPassInput) confirmPassInput.value = '';
 
-          // Optional: Automatische Abmeldung nach erfolgreicher Passwortänderung
+          // Optional: Automatic logout after successful password change
           setTimeout(() => {
               logoutUser();
           }, 2000);
@@ -155,39 +155,39 @@ async function changePassword() {
           messageElem.style.color = 'red';
       }
   } catch (error) {
-      console.error('Passwortänderungsfehler:', error);
+      console.error('Password change error:', error);
       messageElem.textContent = 'Ein Fehler ist beim Ändern des Passworts aufgetreten. Bitte versuchen Sie es später erneut.';
       messageElem.style.color = 'red';
   }
 }
 
 function logoutUser() {
-  localStorage.removeItem('currentUser'); // Sitzung beenden
+  localStorage.removeItem('currentUser'); // End session
   currentUser = null;
-  window.location.href = 'login.html'; // Zur Login-Seite umleiten
+  window.location.href = 'login.html'; // Redirect to login page
 }
 
-// === DATENABRUF UND TABELLEN-RENDERUNG ===
+// === DATA RETRIEVAL AND TABLE RENDERING ===
 function fetchData() {
   fetch(API_URL + "?mode=read")
     .then(r => {
       if (!r.ok) {
-        throw new Error(`HTTP-Fehler! Status: ${r.status}`);
+        throw new Error(`HTTP error! Status: ${r.status}`);
       }
       return r.json();
     })
     .then(d => {
-      requestData = d.data; // Speichert das Array der Daten
-      console.log("Rohdaten von API:", JSON.parse(JSON.stringify(d.data))); // Zum Debuggen
-      filterTable(); // Ruft filterTable auf, um sowohl Tabelle als auch Kalender zu aktualisieren
+      requestData = d.data; // Stores the data array
+      console.log("Raw data from API:", JSON.parse(JSON.stringify(d.data))); // For debugging
+      filterTable(); // Calls filterTable to update both table and calendar
     })
     .catch((error) => {
-      console.error("Fehler beim Laden der Daten:", error);
-      showSaveFeedback("Fehler beim Laden der Daten!", false);
+      console.error("Error loading data:", error);
+      showSaveFeedback("Error loading data!", false);
     });
 }
 
-function renderTables(unconfirmedData, confirmedData) { // Erlaubt das Rendern von gefilterten Daten
+function renderTables(unconfirmedData, confirmedData) { // Allows rendering of filtered data
   const unconfirmedTbody = document.querySelector("#unconfirmedDataTable tbody");
   const confirmedTbody = document.querySelector("#confirmedDataTable tbody");
   unconfirmedTbody.innerHTML = "";
@@ -221,7 +221,7 @@ function renderTables(unconfirmedData, confirmedData) { // Erlaubt das Rendern v
                   displayFlightDate = dateObj.toLocaleDateString('de-DE');
               }
           } catch (e) {
-               console.error("Fehler bei der Datumskonvertierung für die Anzeige in Tabelle:", displayFlightDate, e);
+               console.error("Error converting date for table display:", displayFlightDate, e);
           }
       }
       const deleteButtonHTML = (currentUser && currentUser.role === 'admin') ? `<button class="btn btn-delete admin-only" data-ref="${r.Ref}">Delete</button>` : '';
@@ -291,7 +291,7 @@ function filterTable() {
   const flightNumberSearch = flightNumberSearchInput ? flightNumberSearchInput.value.toLowerCase() : '';
   const fromDateInput = document.getElementById("fromDate").value;
   const toDateInput = document.getElementById("toDate").value;
-  const showArchive = document.getElementById("archiveCheckbox") ? document.getElementById("archiveCheckbox").checked : false; // Archiv-Checkbox, falls vorhanden
+  const showArchive = document.getElementById("archiveCheckbox") ? document.getElementById("archiveCheckbox").checked : false; // Archive checkbox, if present
 
   const filtered = requestData.filter(r => {
     const matchesRef = (r.Ref || '').toLowerCase().includes(refSearch);
@@ -304,17 +304,17 @@ function filterTable() {
     let flightDateFromData = r['Flight Date'];
     let flightDateObj;
 
-    // Robustes Parsen des Datums, um Zeitzonenprobleme zu vermeiden
-    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
+    // Robust date parsing to avoid timezone issues
+    if (typeof flightDateFromData === 'string' && flightDateFromData.match(/^\d{4}-\d{2}-\d{2}$/)) { // Expects YYYY-MM-DD from backend
         const parts = flightDateFromData.split('-');
         flightDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    } else if (flightDateFromData instanceof Date) { // Falls es direkt ein Date-Objekt ist
+    } else if (flightDateFromData instanceof Date) { // If it's already a Date object
         flightDateObj = new Date(flightDateFromData.getFullYear(), flightDateFromData.getMonth(), flightDateFromData.getDate());
     } else {
-        flightDateObj = new Date('Invalid Date'); // Ungültiges Datum
+        flightDateObj = new Date('Invalid Date'); // Invalid date
     }
-    flightDateObj.setHours(0, 0, 0, 0); // Sicherstellen, dass die Uhrzeit auf Mitternacht gesetzt ist
-    console.log(`[filterTable] Original: "${flightDateFromData}", Geparsed (Lokal): ${flightDateObj}`);
+    flightDateObj.setHours(0, 0, 0, 0); // Ensure time is set to midnight
+    console.log(`[filterTable] Original: "${flightDateFromData}", Parsed (Local): ${flightDateObj}`);
 
 
     if (flightDateObj && !isNaN(flightDateObj.getTime())) {
@@ -323,13 +323,13 @@ function filterTable() {
       } else if (flightDateObj.getTime() === today.getTime()) {
           const abflugzeit = r['Abflugzeit'];
           if (abflugzeit) {
-              // Abflugzeit muss auch als lokaler Zeitpunkt für den Vergleich geparst werden
+              // Departure time must also be parsed as a local time for comparison
               let flightTimeAsDate = new Date();
-              if (typeof abflugzeit === 'string' && abflugzeit.match(/^\d{2}:\d{2}$/)) { // Erwartet HH:MM vom Backend
+              if (typeof abflugzeit === 'string' && abflugzeit.match(/^\d{2}:\d{2}$/)) { // Expects HH:MM from backend
                   const [hours, minutes] = abflugzeit.split(':').map(Number);
                   flightTimeAsDate.setHours(hours, minutes, 0, 0);
               } else if (abflugzeit instanceof Date) {
-                  flightTimeAsDate = abflugzeit; // Falls schon Date-Objekt
+                  flightTimeAsDate = abflugzeit; // If already a Date object
               } else {
                  flightTimeAsDate = new Date('Invalid Date');
               }
@@ -344,17 +344,17 @@ function filterTable() {
           }
       }
 
-      // Filter nach Datumsbereich
+      // Filter by date range
       if (fromDateInput) {
           const fromDateParts = fromDateInput.split('-');
           const fromDateObj = new Date(parseInt(fromDateParts[0]), parseInt(fromDateParts[1]) - 1, parseInt(fromDateParts[2]));
-          fromDateObj.setHours(0,0,0,0); // Auch Filterdatum auf Mitternacht setzen
+          fromDateObj.setHours(0,0,0,0); // Also set filter date to midnight
           if (flightDateObj < fromDateObj) matchesDateRange = false;
       }
       if (toDateInput) {
           const toDateParts = toDateInput.split('-');
           const toDateObj = new Date(parseInt(toDateParts[0]), parseInt(toDateParts[1]) - 1, parseInt(toDateParts[2]));
-          toDateObj.setHours(0,0,0,0); // Auch Filterdatum auf Mitternacht setzen
+          toDateObj.setHours(0,0,0,0); // Also set filter date to midnight
           if (flightDateObj > toDateObj) matchesDateRange = false;
       }
     } else {
@@ -373,13 +373,13 @@ function filterTable() {
   renderCalendars();
 }
 
-// === MODAL FUNKTIONEN ===
+// === MODAL FUNCTIONS ===
 function openModal(originalIndex) {
   console.log("openModal called. currentUser:", currentUser); // Debug: Check currentUser
   if (!currentUser) {
-      console.error("Versuch, Modal ohne angemeldeten Benutzer zu öffnen. Weiterleitung zum Login.");
+      console.error("Attempt to open modal without logged-in user. Redirecting to login.");
       // Using a custom alert/message box instead of window.alert
-      showSaveFeedback("Bitte melden Sie sich an, um diese Funktion zu nutzen.", false);
+      showSaveFeedback("Please log in to use this feature.", false);
       setTimeout(() => { window.location.href = 'login.html'; }, 1500); // Redirect after message
       return;
   }
@@ -390,23 +390,23 @@ function openModal(originalIndex) {
     'Billing Company': "", 'Billing Address': "", 'Tax Number': "",
     'Contact Name Invoicing': "", 'Contact E-Mail Invoicing': "",
     'Airline': "", 'Aircraft Type': "", 'Flugnummer': "",
-    'Call Sign': "", // NEU: Call Sign hinzugefügt
+    'Call Sign': "", // NEW: Call Sign added
     'Flight Date': "", 'Abflugzeit': "", 'Tonnage': "",
-    'Rate': "", 'Security charges': "", "Dangerous Goods": "Nein", // Standardwert "Nein"
+    'Rate': "", 'Security charges': "", "Dangerous Goods": "Nein", // Default value "No"
     '10ft consumables': "", '20ft consumables': "",
     'Zusatzkosten': "", 'Email Request': "",
-    'AGB Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
-    'Service Description Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
+    'AGB Accepted': "Ja", // Default value "Yes" for new requests
+    'Service Description Accepted': "Ja", // Default value "Yes" for new requests
     'Accepted By Name': "",
     'Acceptance Timestamp': "",
-    'Final Confirmation Sent': "Nein", // NEU: Standardwert für neue Anfragen
-    'Flight Type Import': "Nein", // NEU: Standardwert
-    'Flight Type Export': "Nein",  // NEU: Standardwert
-    'Origin': '', // NEU: Origin für Import
-    'Destination': '' // NEU: Destination für Export
+    'Final Confirmation Sent': "Nein", // NEW: Default value for new requests
+    'Flight Type Import': "Nein", // NEW: Default value
+    'Flight Type Export': "Nein",  // NEW: Default value
+    'Origin': '', // NEW: Origin for Import
+    'Destination': '' // NEW: Destination for Export
   } : requestData[originalIndex];
 
-  // Speichere die aktuellen Daten im Modal, um sie später für die E-Mail zu verwenden
+  // Store the current data in the modal to use it later for the email
   currentModalData = r;
 
   const modal = document.getElementById("detailModal");
@@ -419,10 +419,10 @@ function openModal(originalIndex) {
       callSignSearchInput.value = r['Call Sign'] || '';
   }
 
-  // Modifizierte section Funktion, um eine Farbklasse zu akzeptieren
+  // Modified section function to accept a color class
   const section = (title, contentHTML, colorClass = '') => {
     const wrap = document.createElement("div");
-    wrap.className = `modal-section ${colorClass}`; // Farbklasse hier hinzufügen
+    wrap.className = `modal-section ${colorClass}`; // Add color class here
     wrap.innerHTML = `<h3>${title}</h3>` + contentHTML;
     return wrap;
   };
@@ -444,39 +444,39 @@ function openModal(originalIndex) {
           styleAttr = 'background-color:#eee; cursor: not-allowed;';
       }
 
-      // Spezielle Handhabung für Price-related fields und 'Zusatzkosten'
-      // Diese Felder sollen für Viewer komplett unsichtbar sein.
+      // Special handling for Price-related fields and 'Zusatzkosten'
+      // These fields should be completely invisible to viewers.
       const isPriceRelatedOrZusatzkostenField = [
         'Rate', 'Security charges', 'Dangerous Goods',
         '10ft consumables', '20ft consumables', 'Zusatzkosten'
       ].includes(key);
 
-      // Wenn der Benutzer ein Viewer ist und es sich um ein preisspezifisches Feld handelt, überspringen.
+      // If the user is a Viewer and it's a price-specific field, skip.
       if (isPriceRelatedOrZusatzkostenField && currentUser.role === 'viewer') {
-          return ''; // Leerer String, um das Feld komplett zu überspringen
+          return ''; // Empty string to completely skip the field
       }
-      // Für Admins sind diese Felder editierbar, es sei denn, sie sind in isAlwaysReadOnlyField.
+      // For Admins, these fields are editable unless they are in isAlwaysReadOnlyField.
 
 
       if (key === "Flight Date") {
         let dateValue = "";
         if (value) {
             try {
-                // Parsen des Datums, um es im Input korrekt darzustellen (YYYY-MM-DD Format)
-                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
+                // Parse the date to display it correctly in the input (YYYY-MM-DD format)
+                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Expects YYYY-MM-DD from backend
                     dateValue = value;
                 } else if (value instanceof Date) {
-                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu YYYY-MM-DD
+                    dateValue = value.toISOString().split('T')[0]; // Convert Date object to YYYY-MM-DD
                 }
             } catch (e) {
-                console.error("Fehler beim Parsen des Flugdatums für Modal-Input:", value, e);
+                console.error("Error parsing flight date for modal input:", value, e);
             }
         }
         return `<label>${label}</label><input type="date" name="${key}" value="${dateValue}" ${readOnlyAttr} style="${styleAttr}">`;
       } else if (key === "Abflugzeit") {
         let timeValue = "";
         if (value) {
-            if (typeof value === 'string' && value.match(/^\d{2}:\d{2}$/)) { // Erwartet HH:MM vom Backend
+            if (typeof value === 'string' && value.match(/^\d{2}:\d{2}$/)) { // Expects HH:MM from backend
                 timeValue = value;
             } else if (value instanceof Date) {
                 timeValue = value.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
@@ -484,27 +484,27 @@ function openModal(originalIndex) {
         }
         return `<label>${label}:</label><input type="time" name="${key}" value="${timeValue}" ${readOnlyAttr} style="${styleAttr}">`;
       } else if (key === "AGB Accepted" || key === "Service Description Accepted") {
-          // Immer einen grünen Haken anzeigen, da der Kunde die AGB akzeptieren MUSS, um eine Anfrage zu senden.
-          const icon = '&#10004;'; // Grüner Haken
+          // Always show a green checkmark, as the customer MUST accept the T&Cs to send a request.
+          const icon = '&#10004;'; // Green checkmark
           const color = 'green';
           return `<label>${label}: <span style="color: ${color}; font-size: 1.2em; font-weight: bold;">${icon}</span></label>`;
       } else if (key === "Vorfeldbegleitung" && type === "checkbox") {
         const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
         return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}"> ${label}</label>`;
-      } else if (['Tonnage'].includes(key)) { // Tonnage darf Viewer sehen und bearbeiten
+      } else if (['Tonnage'].includes(key)) { // Tonnage can be seen and edited by Viewer
           const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
           return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" ${readOnlyAttr} style="${styleAttr}" />`;
-      } else if (key === "Email Request") { // E-Mail Request ist ein normales Textfeld
+      } else if (key === "Email Request") { // Email Request is a normal text field
           return `<label>${label}:</label><textarea name="${key}" rows="5" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
-      } else if (key === "Flight Type Import") { // NEU: Checkbox für Import
+      } else if (key === "Flight Type Import") { // NEW: Checkbox for Import
           const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
           const originInput = (String(r['Flight Type Import']).toLowerCase() === 'ja') ? `<label>Origin:</label><input type="text" name="Origin" value="${r.Origin || ''}" ${readOnlyAttr} style="${styleAttr}" />` : '';
           return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}" onchange="toggleOriginDestinationFields(this, 'Origin')"> ${label}</label>${originInput}`;
-      } else if (key === "Flight Type Export") { // NEU: Checkbox für Export
+      } else if (key === "Flight Type Export") { // NEW: Checkbox for Export
           const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
           const destinationInput = (String(r['Flight Type Export']).toLowerCase() === 'ja') ? `<label>Destination:</label><input type="text" name="Destination" value="${r.Destination || ''}" ${readOnlyAttr} style="${styleAttr}" />` : '';
           return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}" onchange="toggleOriginDestinationFields(this, 'Destination')"> ${label}</label>${destinationInput}`;
-      } else if (key === "Final Confirmation Sent") { // Anzeige für "Final Confirmation Sent"
+      } else if (key === "Final Confirmation Sent") { // Display for "Final Confirmation Sent"
           const statusText = String(value).toLowerCase() === 'ja' ? 'Ja (Gesendet)' : 'Nein (Nicht gesendet)';
           const statusColor = String(value).toLowerCase() === 'ja' ? 'green' : 'red';
           return `<label>${label}: <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></label>`;
@@ -525,47 +525,47 @@ function openModal(originalIndex) {
     { label: "Service Description Accepted", key: "Service Description Accepted" },
     { label: "Accepted By Name", key: "Accepted By Name" },
     { label: "Acceptance Timestamp", key: "Acceptance Timestamp" },
-    { label: "Final Confirmation Sent", key: "Final Confirmation Sent" } // NEU: Feld hinzugefügt
+    { label: "Final Confirmation Sent", key: "Final Confirmation Sent" } // NEW: Field added
   ];
 
   const flightFields = [
     { label: "Airline", key: "Airline" },
     { label: "Aircraft Type", key: "Aircraft Type" },
     { label: "Flugnummer", key: "Flugnummer" },
-    { label: "Call Sign", key: "Call Sign" }, // NEU: Call Sign hinzugefügt
+    { label: "Call Sign", key: "Call Sign" }, // NEW: Call Sign added
     { label: "Flight Date", key: "Flight Date" },
     { label: "Abflugzeit", key: "Abflugzeit" },
     { label: "Tonnage", key: "Tonnage" },
     { label: "Vorfeldbegleitung", key: "Vorfeldbegleitung", type: "checkbox" },
-    { label: "Flight Type Import", key: "Flight Type Import", type: "checkbox" }, // NEU
-    { label: "Flight Type Export", key: "Flight Type Export", type: "checkbox" }, // NEU
+    { label: "Flight Type Import", key: "Flight Type Import", type: "checkbox" }, // NEW
+    { label: "Flight Type Export", key: "Flight Type Export", type: "checkbox" }, // NEW
     { label: "E-Mail Request", key: "Email Request" }
   ];
 
-  // Preisbezogene Felder, die nur für Admins sichtbar sind
+  // Price-related fields, visible only to Admins
   const priceFields = [
     { label: "Rate", key: "Rate" },
     { label: "Security charges (X-Ray, ETD, EDD)", key: "Security charges" },
     { label: "Dangerous Goods", key: "Dangerous Goods" },
     { label: "10ft consumables", key: "10ft consumables" },
     { label: "20ft consumables", key: "20ft consumables" },
-    { label: "Zusatzkosten", key: "Zusatzkosten", type: "textarea" } // Zusatzkosten als Textarea
+    { label: "Zusatzkosten", key: "Zusatzkosten", type: "textarea" } // Additional costs as textarea
   ];
 
-  // Hinzufügen der Abschnitte mit spezifischen Hintergrundfarben
-  modalBody.appendChild(section("Kundendetails", renderFields(customerFields), 'bg-blue-50'));
-  modalBody.appendChild(section("Flugdetails", renderFields(flightFields), 'bg-green-50'));
+  // Adding sections with specific background colors
+  modalBody.appendChild(section("Customer Details", renderFields(customerFields), 'bg-blue-50'));
+  modalBody.appendChild(section("Flight Details", renderFields(flightFields), 'bg-green-50'));
 
-  // Preisdetails nur für Admins anzeigen
+  // Show price details only for Admins
   if (currentUser && currentUser.role === 'admin') {
-    // Erstellen des HTML für Preisdetails
+    // Create HTML for price details
     let priceDetailsHTML = priceFields.map(({ label, key, type }) => {
         let value = r[key] || "";
         if (key === "Zusatzkosten") {
-            // Sicherstellen, dass die textarea für Zusatzkosten korrekt gerendert wird
+            // Ensure the textarea for additional costs is rendered correctly
             return `<label>${label}:</label><textarea name="${key}" placeholder="Labeln, Fotos" style="height:80px">${value}</textarea>`;
         } else if (key === "Dangerous Goods") {
-            const options = ["Ja", "Nein", "N/A"]; // Beispieloptionen
+            const options = ["Ja", "Nein", "N/A"]; // Example options
             return `<label>${label}:</label>
                     <select name="${key}">
                         ${options.map(opt => `<option value="${opt}" ${String(value).toLowerCase() === opt.toLowerCase() ? 'selected' : ''}>${opt}</option>`).join('')}
@@ -576,10 +576,10 @@ function openModal(originalIndex) {
         }
     }).join("");
 
-    modalBody.appendChild(section("Preisdetails", priceDetailsHTML, 'bg-yellow-50')); // Farbklasse für Preisdetails
+    modalBody.appendChild(section("Price Details", priceDetailsHTML, 'bg-yellow-50')); // Color class for price details
   }
-  // Der 'else' Block für Viewer wurde entfernt, da 'Zusatzkosten'
-  // direkt in renderFields() behandelt wird, um es komplett zu überspringen.
+  // The 'else' block for Viewers was removed, as 'Zusatzkosten'
+  // is handled directly in renderFields() to skip it completely.
 
 
   const buttonContainer = document.createElement("div");
@@ -589,8 +589,7 @@ function openModal(originalIndex) {
   buttonContainer.style.gap = "10px";
   buttonContainer.style.marginTop = "20px";
 
-  // Speichern-Button ist für alle eingeloggten Benutzer verfügbar
-  // Der Speichern-Button ist bereits im HTML des Modals vorhanden, daher hier nicht mehr dynamisch hinzufügen.
+  // The save button is already present in the modal's HTML, so no need to add it dynamically here.
   // if (currentUser) {
   //   const saveButton = document.createElement("button");
   //   saveButton.textContent = "Speichern";
@@ -617,30 +616,30 @@ function openModal(originalIndex) {
   historyButton.onclick = () => showHistory(r.Ref);
   buttonContainer.appendChild(historyButton);
 
-  if (currentUser && originalIndex !== -1) { // Button für alle Rollen, wenn ein Eintrag geöffnet ist
+  if (currentUser && originalIndex !== -1) { // Button for all roles, when an entry is open
     const sendConfirmationButton = document.createElement("button");
     sendConfirmationButton.textContent = "Final Charter Confirmation senden";
     sendConfirmationButton.style.padding = "10px 20px";
     sendConfirmationButton.style.fontWeight = "bold";
-    sendConfirmationButton.style.backgroundColor = "#007BFF"; // Blau für Senden
+    sendConfirmationButton.style.backgroundColor = "#007BFF"; // Blue for Send
     sendConfirmationButton.style.color = "white";
     sendConfirmationButton.style.border = "none";
     sendConfirmationButton.style.borderRadius = "6px";
     sendConfirmationButton.style.cursor = "pointer";
-    sendConfirmationButton.onclick = () => sendFinalConfirmationEmail(r); // Ruft neue Funktion auf, die direkt sendet
+    sendConfirmationButton.onclick = () => sendFinalConfirmationEmail(r); // Calls new function that sends directly
     buttonContainer.appendChild(sendConfirmationButton);
 
-    // NEU: Button für E-Mail Vorschau hinzufügen
+    // NEW: Add button for email preview
     const previewEmailButton = document.createElement("button");
     previewEmailButton.textContent = "E-Mail Vorschau anzeigen";
     previewEmailButton.style.padding = "10px 20px";
     previewEmailButton.style.fontWeight = "bold";
-    previewEmailButton.style.backgroundColor = "#6c757d"; // Grau für Vorschau
+    previewEmailButton.style.backgroundColor = "#6c757d"; // Gray for preview
     previewEmailButton.style.color = "white";
     previewEmailButton.style.border = "none";
     previewEmailButton.style.borderRadius = "6px";
     previewEmailButton.style.cursor = "pointer";
-    previewEmailButton.onclick = () => generateEmailPreview(r); // Ruft Vorschau-Funktion auf
+    previewEmailButton.onclick = () => generateEmailPreview(r); // Calls preview function
     buttonContainer.appendChild(previewEmailButton);
   }
 
@@ -663,24 +662,24 @@ function openModal(originalIndex) {
   modal.style.display = "flex";
 }
 
-// NEU: Funktion zum Suchen auf FlightRadar24
+// NEW: Function to search on FlightRadar24
 function searchFlightRadar24() {
     const callSign = document.getElementById('callSignSearchInput').value.trim();
     if (callSign) {
         window.open(`https://www.flightradar24.com/${callSign}`, '_blank');
     } else {
-        showSaveFeedback("Bitte geben Sie ein Call Sign ein, um auf FlightRadar24 zu suchen.", false);
+        showSaveFeedback("Please enter a Call Sign to search on FlightRadar24.", false);
     }
 }
 
-// NEU: Funktion zum Umschalten der Origin/Destination Felder basierend auf Checkbox
+// NEW: Function to toggle Origin/Destination fields based on checkbox
 function toggleOriginDestinationFields(checkbox, fieldType) {
     const parentLabel = checkbox.closest('label');
-    let inputElement = parentLabel.nextElementSibling; // Versuchen, das nächste Geschwisterelement zu finden
+    let inputElement = parentLabel.nextElementSibling; // Try to find the next sibling element
 
-    // Wenn es kein Input-Element ist oder es nicht das richtige ist, suchen wir es
+    // If it's not an input element or it's not the right one, search for it
     if (!inputElement || (inputElement.tagName !== 'INPUT' && inputElement.tagName !== 'LABEL')) {
-        // Suche innerhalb des gleichen modal-section Divs
+        // Search within the same modal-section Div
         const sectionDiv = checkbox.closest('.modal-section');
         if (sectionDiv) {
             inputElement = sectionDiv.querySelector(`input[name="${fieldType}"]`);
@@ -688,29 +687,29 @@ function toggleOriginDestinationFields(checkbox, fieldType) {
     }
 
     if (checkbox.checked) {
-        // Wenn die Checkbox aktiviert ist, füge das Feld hinzu, falls es nicht existiert
+        // If the checkbox is checked, add the field if it doesn't exist
         if (!inputElement || inputElement.name !== fieldType) {
             const newLabel = document.createElement('label');
             newLabel.textContent = `${fieldType}:`;
             const newInput = document.createElement('input');
             newInput.type = 'text';
             newInput.name = fieldType;
-            newInput.value = currentModalData[fieldType] || ''; // Vorhandenen Wert setzen
+            newInput.value = currentModalData[fieldType] || ''; // Set existing value
             newInput.style.cssText = 'width: 100%; padding: 6px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;';
 
-            // Füge das Label und Input nach der Checkbox hinzu
+            // Add the label and input after the checkbox
             parentLabel.parentNode.insertBefore(newLabel, parentLabel.nextSibling);
             newLabel.parentNode.insertBefore(newInput, newLabel.nextSibling);
         } else {
-            // Wenn das Feld bereits existiert, stelle sicher, dass es sichtbar ist
+            // If the field already exists, ensure it is visible
             inputElement.style.display = '';
-            inputElement.previousElementSibling.style.display = ''; // Label auch anzeigen
+            inputElement.previousElementSibling.style.display = ''; // Also show label
         }
     } else {
-        // Wenn die Checkbox deaktiviert ist, verstecke das Feld
+        // If the checkbox is unchecked, hide the field
         if (inputElement && inputElement.name === fieldType) {
             inputElement.style.display = 'none';
-            inputElement.previousElementSibling.style.display = 'none'; // Label auch verstecken
+            inputElement.previousElementSibling.style.display = 'none'; // Also hide label
         }
     }
 }
@@ -720,12 +719,12 @@ function closeModal() {
   document.getElementById("detailModal").style.display = "none";
 }
 
-// NEU: Funktion zum Schließen des Tagesübersicht-Modals
+// NEW: Function to close the day overview modal
 function closeDayOverviewModal() {
     document.getElementById('dayOverviewModal').style.display = 'none';
 }
 
-// Event Listener für ESC-Taste zum Schließen aller Modals
+// Event Listener for ESC key to close all modals
 document.addEventListener('keydown', (e) => {
   if (e.key === "Escape") {
     closeModal();
@@ -734,7 +733,7 @@ document.addEventListener('keydown', (e) => {
     closeStatisticsModal();
     closeEmailConfirmationModal();
     closeEmailPreviewModal();
-    closeDayOverviewModal(); // NEU: Auch das Tagesübersicht-Modal schließen
+    closeDayOverviewModal(); // NEW: Also close the day overview modal
   }
 });
 
@@ -758,33 +757,33 @@ async function saveDetails() {
     data[key] = value;
   });
 
-  // Überprüfe Pflichtfelder (Beispiel: Airline, Flugnummer, Flight Date, Tonnage)
-  const requiredFields = ['Airline', 'Flugnummer', 'Flight Date', 'Tonnage'];
-  for (const field of requiredFields) {
-      if (!data[field] || String(data[field]).trim() === '') {
-          showSaveFeedback(`Fehler: Das Feld '${field}' ist ein Pflichtfeld.`, false);
-          return; // Abbruch bei fehlendem Pflichtfeld
-      }
-  }
+  // Removed required field validation
+  // const requiredFields = ['Airline', 'Flugnummer', 'Flight Date', 'Tonnage'];
+  // for (const field of requiredFields) {
+  //     if (!data[field] || String(data[field]).trim() === '') {
+  //         showSaveFeedback(`Fehler: Das Feld '${field}' ist ein Pflichtfeld.`, false);
+  //         return; // Abort if required field is missing
+  //     }
+  // }
 
-  // Zusätzliche Prüfungen für 'Flight Type Import' und 'Flight Type Export'
+  // Additional checks for 'Flight Type Import' and 'Flight Type Export'
   if (data['Flight Type Import'] === 'Ja' && (!data['Origin'] || String(data['Origin']).trim() === '')) {
-      showSaveFeedback('Fehler: Wenn "Flight Type Import" ausgewählt ist, muss "Origin" ausgefüllt sein.', false);
+      showSaveFeedback('Error: If "Flight Type Import" is selected, "Origin" must be filled.', false);
       return;
   }
   if (data['Flight Type Export'] === 'Ja' && (!data['Destination'] || String(data['Destination']).trim() === '')) {
-      showSaveFeedback('Fehler: Wenn "Flight Type Export" ausgewählt ist, muss "Destination" ausgefüllt sein.', false);
+      showSaveFeedback('Error: If "Flight Type Export" is selected, "Destination" must be filled.', false);
       return;
   }
 
-  // Ref und Created At sollten nicht änderbar sein
-  data.Ref = currentModalData.Ref; // Stelle sicher, dass die Referenz beibehalten wird
+  // Ref and Created At should not be changeable
+  data.Ref = currentModalData.Ref; // Ensure reference is retained
   data['Created At'] = currentModalData['Created At'];
 
   const payload = {
     mode: "write",
     data: data,
-    user: currentUser ? currentUser.name : "Unknown", // Benutzername für Audit-Log
+    user: currentUser ? currentUser.name : "Unknown", // Username for audit log
   };
 
   try {
@@ -799,30 +798,30 @@ async function saveDetails() {
     const result = await response.json();
 
     if (response.ok && result.status === "success") {
-      showSaveFeedback("Daten erfolgreich gespeichert!", true);
+      showSaveFeedback("Data saved successfully!", true);
       closeModal();
-      fetchData(); // Daten neu laden und Tabelle aktualisieren
+      fetchData(); // Reload data and update table
     } else {
       showSaveFeedback(
-        result.message || "Fehler beim Speichern der Daten!",
+        result.message || "Error saving data!",
         false
       );
     }
   } catch (error) {
-    console.error("Speicherfehler:", error);
-    showSaveFeedback("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.", false);
+    console.error("Save error:", error);
+    showSaveFeedback("An error occurred. Please try again later.", false);
   }
 }
 
 async function deleteRow(buttonElement) {
   if (!currentUser || currentUser.role !== 'admin') {
-      showSaveFeedback("Sie haben keine Berechtigung, Daten zu löschen.", false);
+      showSaveFeedback("You do not have permission to delete data.", false);
       return;
   }
 
   const ref = buttonElement.dataset.ref; // Get ref from data-ref attribute
 
-  if (!confirm("Sind Sie sicher, dass Sie diesen Eintrag löschen möchten?")) {
+  if (!confirm("Are you sure you want to delete this entry?")) {
     return;
   }
 
@@ -831,23 +830,23 @@ async function deleteRow(buttonElement) {
 
 async function deleteRowFromModal(ref) {
   if (!currentUser || currentUser.role !== 'admin') {
-      showSaveFeedback("Sie haben keine Berechtigung, Daten zu löschen.", false);
+      showSaveFeedback("You do not have permission to delete data.", false);
       return;
   }
 
-  if (!confirm(`Sind Sie sicher, dass Sie den Eintrag mit Referenz "${ref}" löschen möchten?`)) {
+  if (!confirm(`Are you sure you want to delete the entry with reference "${ref}"?`)) {
     return;
   }
 
   await deleteData(ref);
-  closeModal(); // Modal schließen nach dem Löschen
+  closeModal(); // Close modal after deleting
 }
 
 async function deleteData(ref) {
   const payload = {
     mode: "delete",
     ref: ref,
-    user: currentUser ? currentUser.name : "Unknown", // Benutzername für Audit-Log
+    user: currentUser ? currentUser.name : "Unknown", // Username for audit log
   };
 
   try {
@@ -862,17 +861,17 @@ async function deleteData(ref) {
     const result = await response.json();
 
     if (response.ok && result.status === "success") {
-      showSaveFeedback("Eintrag erfolgreich gelöscht!", true);
-      fetchData(); // Daten neu laden und Tabelle aktualisieren
+      showSaveFeedback("Entry deleted successfully!", true);
+      fetchData(); // Reload data and update table
     } else {
       showSaveFeedback(
-        result.message || "Fehler beim Löschen des Eintrags!",
+        result.message || "Error deleting entry!",
         false
       );
     }
   } catch (error) {
-    console.error("Löschfehler:", error);
-    showSaveFeedback("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.", false);
+    console.error("Deletion error:", error);
+    showSaveFeedback("An error occurred. Please try again later.", false);
   }
 }
 
@@ -884,7 +883,7 @@ function generateReference() {
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
   const seconds = String(date.getSeconds()).padStart(2, '0');
-  const random = String(Math.floor(Math.random() * 10000)).padStart(4, '0'); // 4 zufällige Ziffern
+  const random = String(Math.floor(Math.random() * 10000)).padStart(4, '0'); // 4 random digits
   return `REF-${year}${month}${day}-${hours}${minutes}${seconds}-${random}`;
 }
 
@@ -892,7 +891,7 @@ function generateReference() {
 function showSaveFeedback(message, isSuccess) {
   const feedbackElement = document.getElementById("saveFeedback");
   if (!feedbackElement) {
-    // Wenn das Feedback-Element nicht existiert, erstellen wir es
+    // If the feedback element does not exist, create it
     const mainContent = document.querySelector('.main');
     if (mainContent) {
         const div = document.createElement('div');
@@ -907,11 +906,11 @@ function showSaveFeedback(message, isSuccess) {
         div.style.textAlign = 'center';
         div.style.opacity = '0';
         div.style.transition = 'opacity 0.5s ease-in-out';
-        div.style.zIndex = '3000'; // Sicherstellen, dass es über anderen Inhalten liegt
+        div.style.zIndex = '3000'; // Ensure it's above other content
         mainContent.appendChild(div);
         feedbackElement = div;
     } else {
-        console.warn("Feedback-Element und .main-Container nicht gefunden. Feedback kann nicht angezeigt werden.");
+        console.warn("Feedback element and .main container not found. Feedback cannot be displayed.");
         return;
     }
   }
@@ -919,11 +918,11 @@ function showSaveFeedback(message, isSuccess) {
   feedbackElement.textContent = message;
   feedbackElement.style.backgroundColor = isSuccess ? "#28a745" : "#dc3545";
   feedbackElement.style.opacity = '1';
-  feedbackElement.style.display = 'block'; // Sicherstellen, dass es sichtbar ist
+  feedbackElement.style.display = 'block'; // Ensure it's visible
 
   setTimeout(() => {
     feedbackElement.style.opacity = '0';
-    // Warte, bis die Transition beendet ist, bevor display auf 'none' gesetzt wird
+    // Wait until the transition is finished before setting display to 'none'
     feedbackElement.addEventListener('transitionend', function handler() {
         feedbackElement.style.display = 'none';
         feedbackElement.removeEventListener('transitionend', handler);
@@ -932,15 +931,15 @@ function showSaveFeedback(message, isSuccess) {
 }
 
 
-// === KALENDER FUNKTIONEN ===
+// === CALENDAR FUNCTIONS ===
 function renderCalendars() {
   const calendarArea = document.getElementById("calendarArea");
   calendarArea.innerHTML = "";
 
-  // Monate für die Anzeige festlegen (aktueller und nächster Monat)
+  // Set months for display (current and next month)
   const monthsToShow = [
-    new Date(baseYear, baseMonth),     // Aktueller Monat
-    new Date(baseYear, baseMonth + 1)  // Nächster Monat
+    new Date(baseYear, baseMonth),     // Current month
+    new Date(baseYear, baseMonth + 1)  // Next month
   ];
 
   monthsToShow.forEach(date => {
@@ -954,7 +953,7 @@ function createMonthCalendar(date) {
   const monthName = date.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
 
   const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0); // Letzter Tag des Monats
+  const lastDay = new Date(year, month + 1, 0); // Last day of the month
   const daysInMonth = lastDay.getDate();
 
   const calendarBlock = document.createElement("div");
@@ -974,9 +973,9 @@ function createMonthCalendar(date) {
 
   const tbody = calendarBlock.querySelector("tbody");
   let dayCounter = 1;
-  const startDay = (firstDay.getDay() + 6) % 7; // Montag = 0, Sonntag = 6
+  const startDay = (firstDay.getDay() + 6) % 7; // Monday = 0, Sunday = 6
 
-  for (let i = 0; i < 6; i++) { // Max 6 Wochen im Monat
+  for (let i = 0; i < 6; i++) { // Max 6 weeks in a month
     const row = document.createElement("tr");
     for (let j = 0; j < 7; j++) {
       const cell = document.createElement("td");
@@ -987,9 +986,9 @@ function createMonthCalendar(date) {
       } else {
         const currentDay = dayCounter;
         const fullDate = new Date(year, month, currentDay);
-        fullDate.setHours(0,0,0,0); // Zeit auf Mitternacht setzen
+        fullDate.setHours(0,0,0,0); // Set time to midnight
 
-        // Filter Flüge für diesen Tag und erfasse Typen
+        // Filter flights for this day and capture types
         const flightsOnDay = requestData.filter(d => {
             let flightDateObj;
             if (typeof d['Flight Date'] === 'string' && d['Flight Date'].match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -1000,7 +999,7 @@ function createMonthCalendar(date) {
             } else {
                 flightDateObj = new Date('Invalid Date');
             }
-            flightDateObj.setHours(0,0,0,0); // Auch Flugdatum auf Mitternacht setzen
+            flightDateObj.setHours(0,0,0,0); // Also set flight date to midnight
             return flightDateObj.getTime() === fullDate.getTime();
         });
 
@@ -1016,7 +1015,7 @@ function createMonthCalendar(date) {
                 hasExport = true;
             }
 
-            // Tooltip-Inhalt erstellen
+            // Create tooltip content
             tooltipContent.push(`Ref: ${flight.Ref || '-'}`);
             tooltipContent.push(`Airline: ${flight.Airline || '-'}`);
             tooltipContent.push(`Flugnummer: ${flight.Flugnummer || '-'}`);
@@ -1028,34 +1027,34 @@ function createMonthCalendar(date) {
             } else if (String(flight['Flight Type Export']).toLowerCase() === 'ja' && flight.Destination) {
                 tooltipContent.push(`Destination: ${flight.Destination}`);
             } else {
-                tooltipContent.push(`Typ: N/A`); // Wenn weder Import noch Export
+                tooltipContent.push(`Type: N/A`); // If neither import nor export
             }
             tooltipContent.push(`Tonnage: ${parseFloat(String(flight.Tonnage).replace(',', '.') || "0").toLocaleString('de-DE')} kg`);
-            tooltipContent.push('---'); // Trennlinie zwischen Flügen
+            tooltipContent.push('---'); // Separator between flights
         });
 
         if (tooltipContent.length > 0) {
-            tooltipContent.pop(); // Entferne die letzte Trennlinie
+            tooltipContent.pop(); // Remove the last separator
         }
 
 
         cell.textContent = currentDay;
         cell.className = "calendar-day";
         
-        // NEU: Logik für den Klick auf Kalenderzellen
+        // NEW: Logic for clicking on calendar cells
         if (flightsOnDay.length === 1) {
             const singleFlightIndex = requestData.findIndex(item => item.Ref === flightsOnDay[0].Ref);
             cell.onclick = () => openModal(singleFlightIndex);
         } else if (flightsOnDay.length > 1) {
-            cell.onclick = () => showSaveFeedback('Mehrere Flüge für diesen Tag. Bitte nutzen Sie die Tabellenansicht zur Filterung.', false);
+            cell.onclick = () => showSaveFeedback('Multiple flights for this day. Please use the table view for filtering.', false);
         } else {
-            // Keine Flüge, kein Klick-Handler
+            // No flights, no click handler
             cell.onclick = null;
         }
 
 
         if (flightsOnDay.length > 0) {
-            cell.dataset.tooltip = tooltipContent.join('\n'); // Füge alle Flüge zum Tooltip hinzu
+            cell.dataset.tooltip = tooltipContent.join('\n'); // Add all flights to the tooltip
             if (hasImport && hasExport) {
                 cell.classList.add('import-export');
             } else if (hasImport) {
@@ -1063,7 +1062,7 @@ function createMonthCalendar(date) {
             } else if (hasExport) {
                 cell.classList.add('export-only');
             } else {
-                cell.classList.add('has-flights'); // Bestehende Klasse für andere Flüge
+                cell.classList.add('has-flights'); // Existing class for other flights
             }
         }
         dayCounter++;
@@ -1071,7 +1070,7 @@ function createMonthCalendar(date) {
       row.appendChild(cell);
     }
     tbody.appendChild(row);
-    if (dayCounter > daysInMonth) break; // Schleife beenden, wenn alle Tage des Monats gerendert wurden
+    if (dayCounter > daysInMonth) break; // End loop if all days of the month have been rendered
   }
 
   return calendarBlock;
@@ -1090,18 +1089,18 @@ function shiftCalendar(direction) {
   renderCalendars();
 }
 
-// Diese Funktion ist nicht mehr direkt über Kalenderzellen-Klicks erreichbar,
-// aber bleibt für andere potenzielle Verwendungen oder Debugging erhalten.
+// This function is no longer directly accessible via calendar cell clicks,
+// but remains for other potential uses or debugging.
 function openDayOverview(dateString, flights) {
     const dayOverviewModal = document.getElementById('dayOverviewModal');
     const dayOverviewDateSpan = document.getElementById('dayOverviewDate');
     const dayOverviewBody = document.getElementById('dayOverviewBody');
 
     dayOverviewDateSpan.textContent = new Date(dateString).toLocaleDateString('de-DE');
-    dayOverviewBody.innerHTML = ''; // Alten Inhalt leeren
+    dayOverviewBody.innerHTML = ''; // Clear old content
 
     if (flights.length === 0) {
-        dayOverviewBody.innerHTML = '<p>Keine Flüge für dieses Datum.</p>';
+        dayOverviewBody.innerHTML = '<p>No flights for this date.</p>';
     } else {
         const ul = document.createElement('ul');
         flights.forEach(flight => {
@@ -1116,7 +1115,7 @@ function openDayOverview(dateString, flights) {
                 <strong>Call Sign:</strong> ${flight['Call Sign'] || '-'}<br>
                 <strong>Tonnage:</strong> ${parseFloat(String(flight.Tonnage).replace(',', '.') || "0").toLocaleString('de-DE')} kg<br>
                 <strong>Abflugzeit:</strong> ${flight['Abflugzeit'] || '-'}<br>
-                <strong>Bestätigt:</strong> ${String(flight['Final Confirmation Sent']).toLowerCase() === 'ja' ? 'Ja' : 'Nein'}
+                <strong>Confirmed:</strong> ${String(flight['Final Confirmation Sent']).toLowerCase() === 'ja' ? 'Yes' : 'No'}
             `;
             ul.appendChild(li);
 
@@ -1129,8 +1128,8 @@ function openDayOverview(dateString, flights) {
                         openModal(indexToOpen);
                         closeDayOverviewModal();
                     } else {
-                        console.error("Ungültiger Index für openModal aus Tagesübersicht:", indexToOpen);
-                        showSaveFeedback("Fehler: Konnte Details für diesen Flug nicht laden.", false);
+                        console.error("Invalid index for openModal from day overview:", indexToOpen);
+                        showSaveFeedback("Error: Could not load details for this flight.", false);
                     }
                 });
             }
@@ -1147,7 +1146,7 @@ function showHistory(ref) {
     const historyBody = document.getElementById('historyBody');
 
     historyRefSpan.textContent = ref;
-    historyBody.innerHTML = 'Lade Historie...';
+    historyBody.innerHTML = 'Loading history...';
 
     fetch(`${API_URL}?mode=history&ref=${encodeURIComponent(ref)}`)
         .then(response => {
@@ -1157,10 +1156,10 @@ function showHistory(ref) {
             return response.json();
         })
         .then(data => {
-            historyBody.innerHTML = ''; // Alten Inhalt leeren
+            historyBody.innerHTML = ''; // Clear old content
             if (data.history && data.history.length > 0) {
                 const ul = document.createElement('ul');
-                data.history.reverse().forEach(entry => { // Neueste zuerst
+                data.history.reverse().forEach(entry => { // Newest first
                     const li = document.createElement('li');
                     const timestamp = new Date(entry.timestamp).toLocaleString('de-DE');
                     const user = entry.user || 'System';
@@ -1169,26 +1168,26 @@ function showHistory(ref) {
                         const parsedChanges = JSON.parse(entry.changes);
                         changes = Object.entries(parsedChanges).map(([key, value]) => {
                             if (typeof value === 'object' && value !== null && 'old' in value && 'new' in value) {
-                                return `<li><strong>${key}:</strong> von "${value.old}" zu "${value.new}"</li>`;
+                                return `<li><strong>${key}:</strong> from "${value.old}" to "${value.new}"</li>`;
                             }
-                            return `<li><strong>${key}:</strong> ${JSON.stringify(value)}</li>`; // Fallback für andere Formate
+                            return `<li><strong>${key}:</strong> ${JSON.stringify(value)}</li>`; // Fallback for other formats
                         }).join('');
                         changes = `<ul>${changes}</ul>`;
                     } catch (e) {
-                        changes = `<pre>${entry.changes}</pre>`; // Rohtext, wenn JSON-Parsing fehlschlägt
+                        changes = `<pre>${entry.changes}</pre>`; // Raw text if JSON parsing fails
                     }
                     li.innerHTML = `<strong>${timestamp}</strong> by <i>${user}</i>:<br>${changes}`;
                     ul.appendChild(li);
                 });
                 historyBody.appendChild(ul);
             } else {
-                historyBody.innerHTML = '<p>Keine Historie für diese Referenz gefunden.</p>';
+                historyBody.innerHTML = '<p>No history found for this reference.</p>';
             }
             historyModal.style.display = 'flex';
         })
         .catch(error => {
-            console.error('Fehler beim Laden der Historie:', error);
-            historyBody.innerHTML = `<p style="color: red;">Fehler beim Laden der Historie: ${error.message}</p>`;
+            console.error('Error loading history:', error);
+            historyBody.innerHTML = `<p style="color: red;">Error loading history: ${error.message}</p>`;
             historyModal.style.display = 'flex';
         });
 }
@@ -1198,7 +1197,7 @@ function closeHistoryModal() {
 }
 
 
-// === STATISTIK FUNKTIONEN ===
+// === STATISTICS FUNCTIONS ===
 function openStatisticsModal() {
     console.log("openStatisticsModal called. Opening statistics modal."); // Debug: Check if function is called
     document.getElementById('statisticsModal').style.display = 'flex';
@@ -1211,12 +1210,12 @@ function openStatisticsModal() {
         statFromDateInput.value = firstDayOfMonth.toISOString().split('T')[0];
         statToDateInput.value = today.toISOString().split('T')[0];
     }
-    generateStatistics(); // Statistiken generieren, wenn das Modal geöffnet wird
+    generateStatistics(); // Generate statistics when the modal is opened
 }
 
 function closeStatisticsModal() {
     document.getElementById('statisticsModal').style.display = 'none';
-    // Charts zerstören, um Speicherlecks zu vermeiden und bei erneutem Öffnen neu zu rendern
+    // Destroy charts to prevent memory leaks and re-render them when opened again
     if (tonnagePerMonthChartInstance) {
         tonnagePerMonthChartInstance.destroy();
         tonnagePerMonthChartInstance = null;
@@ -1241,14 +1240,14 @@ function generateStatistics() {
     });
 
     if (!statFromDateInput || !statToDateInput) {
-        statisticsBody.insertAdjacentHTML('beforeend', '<p style="text-align: center; color: red;">Bitte wählen Sie einen Start- und Enddatum für die Statistik.</p>');
+        statisticsBody.insertAdjacentHTML('beforeend', '<p style="text-align: center; color: red;">Please select a start and end date for the statistics.</p>');
         return;
     }
 
     const fromDate = new Date(statFromDateInput);
     fromDate.setHours(0, 0, 0, 0);
     const toDate = new Date(statToDateInput);
-    toDate.setHours(23, 59, 59, 999); // Setze auf Ende des Tages für inklusiven Bereich
+    toDate.setHours(23, 59, 59, 999); // Set to end of day for inclusive range
 
     const filteredData = requestData.filter(r => {
         let flightDateFromData = r['Flight Date'];
@@ -1262,14 +1261,14 @@ function generateStatistics() {
         } else {
             flightDateObj = new Date('Invalid Date');
         }
-        flightDateObj.setHours(0, 0, 0, 0); // Normalisiere für den Vergleich
+        flightDateObj.setHours(0, 0, 0, 0); // Normalize for comparison
 
         return flightDateObj >= fromDate && flightDateObj <= toDate;
     });
 
     console.log("Filtered Data for Statistics:", filteredData); // Debugging: Check filtered data
 
-    // Statistiken initialisieren
+    // Initialize statistics
     let totalFlights = filteredData.length;
     let totalTonnage = 0;
     const dangerousGoodsCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
@@ -1284,23 +1283,23 @@ function generateStatistics() {
         
         totalTonnage += tonnage;
 
-        // Dangerous Goods Statistik
+        // Dangerous Goods Statistics
         const dgStatus = String(item['Dangerous Goods'] || '').toLowerCase() === 'ja' ? 'Ja' : (String(item['Dangerous Goods'] || '').toLowerCase() === 'nein' ? 'Nein' : 'N/A');
         dangerousGoodsCount[dgStatus]++;
 
-        // Vorfeldbegleitung Statistik
+        // Vorfeldbegleitung Statistics
         const vbStatus = String(item['Vorfeldbegleitung'] || '').toLowerCase() === 'ja' ? 'Ja' : (String(item['Vorfeldbegleitung'] || '').toLowerCase() === 'nein' ? 'Nein' : 'N/A');
         VorfeldbegleitungCount[vbStatus]++;
 
-        // Airline-spezifische Statistik
-        const airlineName = item.Airline || 'Unbekannt';
+        // Airline-specific statistics
+        const airlineName = item.Airline || 'Unknown';
         if (!airlineStats[airlineName]) {
             airlineStats[airlineName] = { totalTonnage: 0, totalFlights: 0 };
         }
         airlineStats[airlineName].totalTonnage += tonnage;
         airlineStats[airlineName].totalFlights++;
 
-        // Tonnage pro Monat Statistik
+        // Tonnage per Month Statistics
         const flightDate = item['Flight Date'];
         if (flightDate && typeof flightDate === 'string' && flightDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
             const yearMonth = flightDate.substring(0, 7); // "YYYY-MM"
@@ -1308,8 +1307,8 @@ function generateStatistics() {
             tonnagePerMonth[yearMonth] = (tonnagePerMonth[yearMonth] || 0) + tonnage;
         }
 
-        // Tonnage pro Kunde Statistik (nutzt 'Billing Company' als Kunde)
-        const customerName = item['Billing Company'] || 'Unbekannt';
+        // Tonnage per Customer Statistics (uses 'Billing Company' as customer)
+        const customerName = item['Billing Company'] || 'Unknown';
         tonnagePerCustomer[customerName] = (tonnagePerCustomer[customerName] || 0) + tonnage;
     });
 
@@ -1317,37 +1316,37 @@ function generateStatistics() {
     console.log("Tonnage per Customer:", tonnagePerCustomer); // Debugging: Check aggregated data
 
 
-    // --- TEXT-BASIERTE STATISTIKEN RENDERN ---
-    let statsHTML = '<div class="statistics-section"><h4>Gesamtübersicht</h4>';
-    statsHTML += `<p>Gesamtzahl Flüge: <strong>${totalFlights}</strong></p>`;
-    statsHTML += `<p>Gesamte Tonnage: <strong>${totalTonnage.toLocaleString('de-DE', { maximumFractionDigits: 2 })} kg</strong></p></div>`;
+    // --- RENDER TEXT-BASED STATISTICS ---
+    let statsHTML = '<div class="statistics-section"><h4>Overall Summary</h4>';
+    statsHTML += `<p>Total Flights: <strong>${totalFlights}</strong></p>`;
+    statsHTML += `<p>Total Tonnage: <strong>${totalTonnage.toLocaleString('de-DE', { maximumFractionDigits: 2 })} kg</strong></p></div>`;
 
 
-    statsHTML += '<div class="statistics-section"><h4>Dangerous Goods Statistik</h4>';
+    statsHTML += '<div class="statistics-section"><h4>Dangerous Goods Statistics</h4>';
     statsHTML += `<ul>`;
-    statsHTML += `<li>Ja: ${dangerousGoodsCount["Ja"]} (${(dangerousGoodsCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
-    statsHTML += `<li>Nein: ${dangerousGoodsCount["Nein"]} (${(dangerousGoodsCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
+    statsHTML += `<li>Yes: ${dangerousGoodsCount["Ja"]} (${(dangerousGoodsCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
+    statsHTML += `<li>No: ${dangerousGoodsCount["Nein"]} (${(dangerousGoodsCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
     if (dangerousGoodsCount["N/A"] > 0) {
-        statsHTML += `<li>Nicht angegeben: ${dangerousGoodsCount["N/A"]} (${(dangerousGoodsCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
+        statsHTML += `<li>Not specified: ${dangerousGoodsCount["N/A"]} (${(dangerousGoodsCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
     }
     statsHTML += `</ul></div>`;
 
-    statsHTML += '<div class="statistics-section"><h4>Vorfeldbegleitung Statistik</h4>';
+    statsHTML += '<div class="statistics-section"><h4>Vorfeldbegleitung Statistics</h4>';
     statsHTML += `<ul>`;
-    statsHTML += `<li>Ja: ${VorfeldbegleitungCount["Ja"]} (${(VorfeldbegleitungCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
-    statsHTML += `<li>Nein: ${VorfeldbegleitungCount["Nein"]} (${(VorfeldbegleitungCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
+    statsHTML += `<li>Yes: ${VorfeldbegleitungCount["Ja"]} (${(VorfeldbegleitungCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
+    statsHTML += `<li>No: ${VorfeldbegleitungCount["Nein"]} (${(VorfeldbegleitungCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
     if (VorfeldbegleitungCount["N/A"] > 0) {
-        statsHTML += `<li>Nicht angegeben: ${VorfeldbegleitungCount["N/A"]} (${(VorfeldbegleitungCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
+        statsHTML += `<li>Not specified: ${VorfeldbegleitungCount["N/A"]} (${(VorfeldbegleitungCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%)</li>`;
     }
     statsHTML += `</ul></div>`;
 
 
-    statsHTML += '<div class="statistics-section"><h4>Statistik nach Airline</h4>';
+    statsHTML += '<div class="statistics-section"><h4>Statistics by Airline</h4>';
     if (Object.keys(airlineStats).length > 0) {
-        statsHTML += `<table id="airlineStatisticsTable"><thead><tr><th>Airline</th><th>Flüge</th><th>Tonnage (kg)</th>`;
+        statsHTML += `<table id="airlineStatisticsTable"><thead><tr><th>Airline</th><th>Flights</th><th>Tonnage (kg)</th>`;
         statsHTML += `</tr></thead><tbody>`;
 
-        // Sortiere Airlines nach Gesamtflügen absteigend
+        // Sort airlines by total flights descending
         const sortedAirlines = Object.entries(airlineStats).sort(([, a], [, b]) => b.totalFlights - a.totalFlights);
 
         sortedAirlines.forEach(([airlineName, stats]) => {
@@ -1359,7 +1358,7 @@ function generateStatistics() {
         });
         statsHTML += `</tbody></table>`;
     } else {
-        statsHTML += '<p>Keine Flüge für die ausgewählten Daten gefunden.</p>';
+        statsHTML += '<p>No flights found for the selected dates.</p>';
     }
     statsHTML += '</div>'; // Close statistics-section for airline stats
 
@@ -1371,7 +1370,7 @@ function generateStatistics() {
         statisticsBody.insertAdjacentHTML('beforeend', statsHTML);
     }
 
-    // --- DIAGRAMME RENDERN ---
+    // --- RENDER CHARTS ---
     renderTonnagePerMonthChart(tonnagePerMonth);
     renderTonnagePerCustomerChart(tonnagePerCustomer);
 }
@@ -1385,16 +1384,16 @@ function renderTonnagePerMonthChart(data) {
     }
     const chartCtx = ctx.getContext('2d');
 
-    // Zerstöre die vorherige Chart-Instanz, falls vorhanden
+    // Destroy previous chart instance, if any
     if (tonnagePerMonthChartInstance) {
         tonnagePerMonthChartInstance.destroy();
     }
 
-    const labels = Object.keys(data).sort(); // Sortiere nach Monat (YYYY-MM)
+    const labels = Object.keys(data).sort(); // Sort by month (YYYY-MM)
     const tonnageValues = labels.map(label => data[label]);
 
     tonnagePerMonthChartInstance = new Chart(chartCtx, {
-        type: 'bar', // Balkendiagramm
+        type: 'bar', // Bar chart
         data: {
             labels: labels,
             datasets: [{
@@ -1407,7 +1406,7 @@ function renderTonnagePerMonthChart(data) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false, // Wichtig für feste Höhe des Canvas
+            maintainAspectRatio: false, // Important for fixed canvas height
             scales: {
                 y: {
                     beginAtZero: true,
@@ -1419,7 +1418,7 @@ function renderTonnagePerMonthChart(data) {
                 x: {
                     title: {
                         display: true,
-                        text: 'Monat'
+                        text: 'Month'
                     }
                 }
             },
@@ -1454,29 +1453,29 @@ function renderTonnagePerCustomerChart(data) {
     }
     const chartCtx = ctx.getContext('2d');
 
-    // Zerstöre die vorherige Chart-Instanz, falls vorhanden
+    // Destroy previous chart instance, if any
     if (tonnagePerCustomerChartInstance) {
         tonnagePerCustomerChartInstance.destroy();
     }
 
-    // Sortiere Kunden nach Tonnage (absteigend) und zeige nur die Top X (z.B. Top 10)
+    // Sort customers by tonnage (descending) and show only the Top X (e.g., Top 10)
     const sortedCustomers = Object.entries(data).sort(([, tonnageA], [, tonnageB]) => tonnageB - tonnageA);
-    const topCustomers = sortedCustomers.slice(0, 10); // Zeige nur die Top 10 Kunden
+    const topCustomers = sortedCustomers.slice(0, 10); // Show only the Top 10 customers
 
     const labels = topCustomers.map(([customer]) => customer);
     const tonnageValues = topCustomers.map(([, tonnage]) => tonnage);
 
-    // Farben für die Balken generieren
+    // Generate colors for the bars
     const backgroundColors = [
         'rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)', 'rgba(255, 206, 86, 0.6)',
         'rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)', 'rgba(255, 159, 64, 0.6)',
         'rgba(199, 199, 199, 0.6)', 'rgba(83, 102, 255, 0.6)', 'rgba(40, 159, 64, 0.6)',
         'rgba(210, 50, 50, 0.6)'
     ];
-    const borderColors = backgroundColors.map(color => color.replace('0.6', '1')); // Feste Ränder
+    const borderColors = backgroundColors.map(color => color.replace('0.6', '1')); // Solid borders
 
     tonnagePerCustomerChartInstance = new Chart(chartCtx, {
-        type: 'bar', // Balkendiagramm
+        type: 'bar', // Bar chart
         data: {
             labels: labels,
             datasets: [{
@@ -1501,32 +1500,13 @@ function renderTonnagePerCustomerChart(data) {
                 x: {
                     title: {
                         display: true,
-                        text: 'Kunde'
+                        text: 'Customer'
                     },
-                    // Optional: Labels drehen, wenn sie zu lang sind
+                    // Optional: Rotate labels if they are too long
                     ticks: {
                         autoSkip: false,
                         maxRotation: 90,
                         minRotation: 45
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false // Hide legend for single dataset
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            if (context.parsed.y !== null) {
-                                label += context.parsed.y.toLocaleString('de-DE') + ' kg';
-                            }
-                            return label;
-                        }
                     }
                 }
             }
@@ -1539,7 +1519,7 @@ function downloadStatisticsToCSV() {
     const statToDateInput = document.getElementById('statToDate').value;
 
     if (!statFromDateInput || !statToDateInput) {
-        showSaveFeedback("Bitte wählen Sie einen Start- und Enddatum für den Download aus.", false);
+        showSaveFeedback("Please select a start and end date for the download.", false);
         return;
     }
 
@@ -1567,7 +1547,7 @@ function downloadStatisticsToCSV() {
 
     let csvContent = "";
 
-    // --- Gesamtübersicht Statistik ---
+    // --- Overall Summary Statistics ---
     let totalFlights = filteredData.length;
     let totalTonnage = 0;
 
@@ -1576,43 +1556,43 @@ function downloadStatisticsToCSV() {
         totalTonnage += tonnage;
     });
 
-    csvContent += "Gesamtuebersicht\n";
-    csvContent += "Gesamtzahl Fluege," + totalFlights + "\n";
-    csvContent += "Gesamte Tonnage (kg)," + totalTonnage.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n"; // Nutze en-US für CSV-Konsistenz
-    csvContent += "\n"; // Leere Zeile zur Trennung
+    csvContent += "Overall Summary\n";
+    csvContent += "Total Flights," + totalFlights + "\n";
+    csvContent += "Total Tonnage (kg)," + totalTonnage.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }) + "\n"; // Use en-US for CSV consistency
+    csvContent += "\n"; // Empty line for separation
 
-    // --- Dangerous Goods Statistik ---
+    // --- Dangerous Goods Statistics ---
     const dangerousGoodsCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
     filteredData.forEach(item => {
-        // Sicherstellen, dass item['Dangerous Goods'] immer ein String ist
+        // Ensure item['Dangerous Goods'] is always a string
         const dgStatus = String(item['Dangerous Goods'] || '').toLowerCase() === 'ja' ? 'Ja' : (String(item['Dangerous Goods'] || '').toLowerCase() === 'nein' ? 'Nein' : 'N/A');
         dangerousGoodsCount[dgStatus]++;
     });
-    csvContent += "Dangerous Goods Statistik\n";
-    csvContent += "Status,Anzahl,Prozentsatz\n";
-    csvContent += `Ja,${dangerousGoodsCount["Ja"]},${(dangerousGoodsCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
-    csvContent += `Nein,${dangerousGoodsCount["Nein"]},${(dangerousGoodsCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
+    csvContent += "Dangerous Goods Statistics\n";
+    csvContent += "Status,Count,Percentage\n";
+    csvContent += `Yes,${dangerousGoodsCount["Ja"]},${(dangerousGoodsCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
+    csvContent += `No,${dangerousGoodsCount["Nein"]},${(dangerousGoodsCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
     if (dangerousGoodsCount["N/A"] > 0) {
-        csvContent += `Nicht angegeben,${dangerousGoodsCount["N/A"]},${(dangerousGoodsCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
+        csvContent += `Not specified,${dangerousGoodsCount["N/A"]},${(dangerousGoodsCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
     }
     csvContent += "\n";
 
-    // --- Vorfeldbegleitung Statistik ---
+    // --- Vorfeldbegleitung Statistics ---
     const VorfeldbegleitungCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
     filteredData.forEach(item => {
         const vbStatus = String(item['Vorfeldbegleitung'] || '').toLowerCase() === 'ja' ? 'Ja' : (String(item['Vorfeldbegleitung'] || '').toLowerCase() === 'nein' ? 'Nein' : 'N/A');
         VorfeldbegleitungCount[vbStatus]++;
     });
-    csvContent += "Vorfeldbegleitung Statistik\n";
-    csvContent += "Status,Anzahl,Prozentsatz\n";
-    csvContent += `Ja,${VorfeldbegleitungCount["Ja"]},${(VorfeldbegleitungCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
-    csvContent += `Nein,${VorfeldbegleitungCount["Nein"]},${(VorfeldbegleitungCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
+    csvContent += "Vorfeldbegleitung Statistics\n";
+    csvContent += "Status,Count,Percentage\n";
+    csvContent += `Yes,${VorfeldbegleitungCount["Ja"]},${(VorfeldbegleitungCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
+    csvContent += `No,${VorfeldbegleitungCount["Nein"]},${(VorfeldbegleitungCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
     if (VorfeldbegleitungCount["N/A"] > 0) {
-        csvContent += `Nicht angegeben,${VorfeldbegleitungCount["N/A"]},${(VorfeldbegleitungCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
+        csvContent += `Not specified,${VorfeldbegleitungCount["N/A"]},${(VorfeldbegleitungCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
     }
     csvContent += "\n";
 
-    // --- Tonnage pro Monat Statistik ---
+    // --- Tonnage per Month Statistics ---
     const tonnagePerMonth = {};
     filteredData.forEach(item => {
         const flightDate = item['Flight Date'];
@@ -1622,32 +1602,32 @@ function downloadStatisticsToCSV() {
             tonnagePerMonth[yearMonth] = (tonnagePerMonth[yearMonth] || 0) + tonnage;
         }
     });
-    csvContent += "Tonnage pro Monat\n";
-    csvContent += "Monat,Tonnage (kg)\n";
+    csvContent += "Tonnage per Month\n";
+    csvContent += "Month,Tonnage (kg)\n";
     Object.keys(tonnagePerMonth).sort().forEach(month => {
         csvContent += `${month},${tonnagePerMonth[month].toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 })}\n`;
     });
     csvContent += "\n";
 
-    // --- Tonnage pro Kunde Statistik ---
+    // --- Tonnage per Customer Statistics ---
     const tonnagePerCustomer = {};
     filteredData.forEach(item => {
-        const customerName = item['Billing Company'] || 'Unbekannt';
+        const customerName = item['Billing Company'] || 'Unknown';
         const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
         tonnagePerCustomer[customerName] = (tonnagePerCustomer[customerName] || 0) + tonnage;
     });
-    csvContent += "Tonnage pro Kunde\n";
-    csvContent += "Kunde,Tonnage (kg)\n";
-    // Sortiere Kunden nach Tonnage absteigend für bessere Lesbarkeit
+    csvContent += "Tonnage per Customer\n";
+    csvContent += "Customer,Tonnage (kg)\n";
+    // Sort customers by tonnage descending for better readability
     Object.entries(tonnagePerCustomer).sort(([, a], [, b]) => b - a).forEach(([customer, tonnage]) => {
-        csvContent += `"${customer}",${tonnage.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 })}\n`; // Kundenname in Anführungszeichen setzen, um Kommas zu behandeln
+        csvContent += `"${customer}",${tonnage.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 })}\n`; // Enclose customer name in quotes to handle commas
     });
     csvContent += "\n";
 
-    // --- Airline Statistik ---
+    // --- Airline Statistics ---
     const airlineStats = {};
     filteredData.forEach(item => {
-        const airlineName = item.Airline || 'Unbekannt';
+        const airlineName = item.Airline || 'Unknown';
         const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
 
         if (!airlineStats[airlineName]) {
@@ -1657,8 +1637,8 @@ function downloadStatisticsToCSV() {
         airlineStats[airlineName].totalFlights++;
     });
 
-    csvContent += "Statistik nach Airline\n";
-    let airlineHeader = "Airline,Fluege,Tonnage (kg)";
+    csvContent += "Statistics by Airline\n";
+    let airlineHeader = "Airline,Flights,Tonnage (kg)";
     csvContent += airlineHeader + "\n";
 
     Object.entries(airlineStats).sort(([, a], [, b]) => b.totalFlights - a.totalFlights).forEach(([airlineName, stats]) => {
@@ -1666,30 +1646,30 @@ function downloadStatisticsToCSV() {
         csvContent += row + "\n";
     });
 
-    // Erstelle ein Blob und lade es herunter
+    // Create a Blob and download it
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    if (link.download !== undefined) { // Feature-Erkennung für das HTML5-Download-Attribut
+    if (link.download !== undefined) { // Feature detection for HTML5 download attribute
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `Charter_Dashboard_Statistik_${statFromDateInput}_bis_${statToDateInput}.csv`);
+        link.setAttribute('download', `Charter_Dashboard_Statistics_${statFromDateInput}_to_${statToDateInput}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        showSaveFeedback("Statistik erfolgreich heruntergeladen!", true);
+        showSaveFeedback("Statistics downloaded successfully!", true);
     } else {
-        // Fallback für Browser, die das Download-Attribut nicht unterstützen (heute weniger wahrscheinlich)
-        showSaveFeedback("Ihr Browser unterstützt das direkt Herunterladen nicht. Bitte kopieren Sie den Text manuell.", false);
-        console.warn("Download-Attribut wird nicht unterstützt. Fallback erforderlich.");
+        // Fallback for browsers that do not support the download attribute (less likely today)
+        showSaveFeedback("Your browser does not support direct download. Please copy the text manually.", false);
+        console.warn("Download attribute not supported. Fallback required.");
     }
 }
 
 
-// === E-MAIL BESTÄTIGUNG MODAL FUNKTIONEN ===
+// === EMAIL CONFIRMATION MODAL FUNCTIONS ===
 function openEmailConfirmationModal(data) {
-    currentModalData = data; // Setze die aktuellen Daten für das Modal
+    currentModalData = data; // Set the current data for the modal
     const confirmRefSpan = document.getElementById('confirmRef');
     const confirmEmailSpan = document.getElementById('confirmEmail');
     const additionalEmailInput = document.getElementById('additionalEmail');
@@ -1697,40 +1677,40 @@ function openEmailConfirmationModal(data) {
 
     confirmRefSpan.textContent = data.Ref;
     confirmEmailSpan.textContent = data['Contact E-Mail Invoicing'] || 'N/A';
-    additionalEmailInput.value = ''; // Zusätzliches E-Mail-Feld leeren
+    additionalEmailInput.value = ''; // Clear additional email field
 
-    // Event Listener neu zuweisen, um sicherzustellen, dass er die aktuelle `data` erfasst
-    sendEmailConfirmBtn.onclick = () => sendFinalConfirmationEmail(data); // Ruft direkt die Sende-Funktion auf
+    // Reassign event listener to ensure it captures the current `data`
+    sendEmailConfirmBtn.onclick = () => sendFinalConfirmationEmail(data); // Calls the send function directly
 
     document.getElementById('emailConfirmationModal').style.display = 'flex';
 }
 
 function closeEmailConfirmationModal() {
     document.getElementById('emailConfirmationModal').style.display = 'none';
-    document.getElementById('additionalEmail').value = ''; // Eingabefeld leeren
-    document.getElementById('emailConfirmationMessage').textContent = ''; // Nachricht leeren
+    document.getElementById('additionalEmail').value = ''; // Clear input field
+    document.getElementById('emailConfirmationMessage').textContent = ''; // Clear message
 }
 
-// NEU: Funktion zum direkten Senden der E-Mail
+// NEW: Function to send email directly
 async function sendFinalConfirmationEmail(data) {
     const additionalEmail = document.getElementById('additionalEmail').value.trim();
     const recipientEmail = additionalEmail || data['Contact E-Mail Invoicing'];
     const emailMessageElem = document.getElementById('emailConfirmationMessage');
 
     if (!recipientEmail) {
-        emailMessageElem.textContent = "Keine E-Mail-Adresse für den Empfänger gefunden. Bitte geben Sie eine zusätzliche E-Mail ein.";
+        emailMessageElem.textContent = "No email address found for the recipient. Please enter an additional email.";
         emailMessageElem.style.color = 'red';
         return;
     }
 
-    emailMessageElem.textContent = "Sende E-Mail...";
+    emailMessageElem.textContent = "Sending email...";
     emailMessageElem.style.color = 'blue';
 
     const payload = {
-        mode: 'markAsSent', // Dies wird die E-Mail senden und den Status aktualisieren
+        mode: 'markAsSent', // This will send the email and update the status
         ref: data.Ref,
         user: currentUser ? currentUser.name : "Unknown",
-        sendEmail: true, // Explizit zum Senden der E-Mail
+        sendEmail: true, // Explicitly to send the email
         recipient: recipientEmail
     };
 
@@ -1746,47 +1726,47 @@ async function sendFinalConfirmationEmail(data) {
         const result = await response.json();
 
         if (response.ok && result.status === 'success') {
-            emailMessageElem.textContent = "E-Mail erfolgreich gesendet und als 'Final Confirmation Sent' markiert!";
+            emailMessageElem.textContent = "Email sent successfully and marked as 'Final Confirmation Sent'!";
             emailMessageElem.style.color = 'green';
             setTimeout(() => {
                 closeEmailConfirmationModal();
-                closeModal(); // Detailansicht schließen, da Bestätigung abgeschlossen
-                fetchData(); // Daten neu laden, um den Status-Update anzuzeigen
+                closeModal(); // Close detail view as confirmation is complete
+                fetchData(); // Reload data to show status update
             }, 1500);
         } else {
-            emailMessageElem.textContent = result.message || "Fehler beim Senden der E-Mail.";
+            emailMessageElem.textContent = result.message || "Error sending email.";
             emailMessageElem.style.color = 'red';
         }
     } catch (error) {
-        console.error('Fehler beim Senden der E-Mail:', error);
-        emailMessageElem.textContent = 'Ein Fehler ist beim Senden der E-Mail aufgetreten. Bitte versuchen Sie es später erneut.';
+        console.error('Error sending email:', error);
+        emailMessageElem.textContent = 'An error occurred while sending the email. Please try again later.';
         emailMessageElem.style.color = 'red';
     }
 }
 
 
 async function generateEmailPreview() {
-    closeEmailConfirmationModal(); // Bestätigungsmodal schließen
+    closeEmailConfirmationModal(); // Close confirmation modal
 
     const previewRefSpan = document.getElementById('previewRef');
     const emailPreviewContentDiv = document.getElementById('emailPreviewContent');
     const markAsSentBtn = document.getElementById('markAsSentBtn');
 
     previewRefSpan.textContent = currentModalData.Ref;
-    emailPreviewContentDiv.innerHTML = 'Lade E-Mail Vorschau...';
+    emailPreviewContentDiv.innerHTML = 'Loading email preview...';
 
     const additionalEmail = document.getElementById('additionalEmail').value.trim();
     const recipientEmail = additionalEmail || currentModalData['Contact E-Mail Invoicing'];
 
     if (!recipientEmail) {
-        showSaveFeedback("Keine E-Mail-Adresse für den Empfänger gefunden. Bitte geben Sie eine zusätzliche E-Mail ein.", false);
+        showSaveFeedback("No email address found for the recipient. Please enter an additional email.", false);
         return;
     }
 
     const payload = {
-        mode: 'generateEmailPreview', // Diese Aktion muss in Ihrem Google Apps Script Backend implementiert sein!
+        mode: 'generateEmailPreview', // This action must be implemented in your Google Apps Script backend!
         ref: currentModalData.Ref,
-        recipient: recipientEmail // Empfänger für die Vorschau
+        recipient: recipientEmail // Recipient for the preview
     };
 
     try {
@@ -1802,23 +1782,23 @@ async function generateEmailPreview() {
 
         if (response.ok && result.status === 'success' && result.htmlContent) {
             emailPreviewContentDiv.innerHTML = result.htmlContent;
-            // Der Button im Vorschau-Modal soll die Anfrage MANUELL als gesendet markieren, ohne eine weitere E-Mail zu senden
-            markAsSentBtn.textContent = "Anfrage manuell senden"; // Textänderung hier
-            markAsSentBtn.onclick = () => markAsSentManually(currentModalData.Ref, false); // sendEmail auf false setzen
+            // The button in the preview modal should MANUALLY mark the request as sent, without sending another email
+            markAsSentBtn.textContent = "Manually send request"; // Text change here
+            markAsSentBtn.onclick = () => markAsSentManually(currentModalData.Ref, false); // Set sendEmail to false
             document.getElementById('emailPreviewModal').style.display = 'flex';
         } else {
-            emailPreviewContentDiv.innerHTML = `<p style="color: red;">Fehler beim Laden der E-Mail-Vorschau: ${result.message || 'Unbekannter Fehler'}<br>
-            <strong>Bitte stellen Sie sicher, dass Ihr Google Apps Script Backend die 'generateEmailPreview'-Aktion korrekt verarbeitet.</strong></p>`;
-            markAsSentBtn.textContent = "Anfrage manuell senden"; // Textänderung auch bei Fehler
-            markAsSentBtn.onclick = () => markAsSentManually(currentModalData.Ref, false); // Nur markieren, wenn Vorschau fehlschlägt
+            emailPreviewContentDiv.innerHTML = `<p style="color: red;">Error loading email preview: ${result.message || 'Unknown error'}<br>
+            <strong>Please ensure your Google Apps Script backend correctly handles the 'generateEmailPreview' action.</strong></p>`;
+            markAsSentBtn.textContent = "Manually send request"; // Text change even on error
+            markAsSentBtn.onclick = () => markAsSentManually(currentModalData.Ref, false); // Only mark if preview fails
             document.getElementById('emailPreviewModal').style.display = 'flex';
         }
     } catch (error) {
-        console.error('Fehler beim Abrufen der E-Mail-Vorschau:', error);
-        emailPreviewContentDiv.innerHTML = `<p style="color: red;">Ein Netzwerkfehler ist aufgetreten: ${error.message}<br>
-        <strong>Bitte stellen Sie sicher, dass Ihr Google Apps Script Backend die 'generateEmailPreview'-Aktion korrekt verarbeitet.</strong></p>`;
-        markAsSentBtn.textContent = "Anfrage manuell senden"; // Textänderung auch bei Fehler
-        markAsSentBtn.onclick = () => markAsSentManually(currentModalData.Ref, false); // Nur markieren, wenn Vorschau fehlschlägt
+        console.error('Error retrieving email preview:', error);
+        emailPreviewContentDiv.innerHTML = `<p style="color: red;">A network error occurred: ${error.message}<br>
+        <strong>Please ensure your Google Apps Script backend correctly handles the 'generateEmailPreview' action.</strong></p>`;
+        markAsSentBtn.textContent = "Manually send request"; // Text change even on error
+        markAsSentBtn.onclick = () => markAsSentManually(currentModalData.Ref, false); // Only mark if preview fails
         document.getElementById('emailPreviewModal').style.display = 'flex';
     }
 }
@@ -1827,22 +1807,22 @@ function closeEmailPreviewModal() {
     document.getElementById('emailPreviewModal').style.display = 'none';
 }
 
-// Funktion zum manuellen Markieren als gesendet (oder tatsächlich senden)
+// Function to manually mark as sent (or actually send)
 async function markAsSentManually(ref, sendEmail = false) {
     let payload = {
         mode: 'markAsSent',
         ref: ref,
         user: currentUser ? currentUser.name : "Unknown",
-        sendEmail: sendEmail // Steuert, ob die E-Mail tatsächlich gesendet werden soll
+        sendEmail: sendEmail // Controls whether the email should actually be sent
     };
 
-    // Wenn die E-Mail gesendet werden soll, fügen Sie die Empfänger hinzu
+    // If the email is to be sent, add the recipients
     if (sendEmail) {
-        // Hier sollte die E-Mail-Adresse aus dem currentModalData oder einem zusätzlichen Feld kommen
-        // Da dies aus dem Preview-Modal aufgerufen wird, nehmen wir die E-Mail aus currentModalData
+        // Here, the email address should come from currentModalData or an additional field
+        // Since this is called from the Preview modal, we take the email from currentModalData
         const recipientEmail = currentModalData['Contact E-Mail Invoicing'];
         if (!recipientEmail) {
-            showSaveFeedback("Keine E-Mail-Adresse für den Empfänger gefunden. E-Mail kann nicht gesendet werden.", false);
+            showSaveFeedback("No email address found for the recipient. Email cannot be sent.", false);
             return;
         }
         payload.recipient = recipientEmail;
@@ -1860,29 +1840,29 @@ async function markAsSentManually(ref, sendEmail = false) {
         const result = await response.json();
 
         if (response.ok && result.status === 'success') {
-            showSaveFeedback(`Eintrag als 'Final Confirmation Sent' markiert. ${sendEmail ? 'E-Mail gesendet.' : ''}`, true);
+            showSaveFeedback(`Entry marked as 'Final Confirmation Sent'. ${sendEmail ? 'Email sent.' : ''}`, true);
             closeEmailPreviewModal();
-            closeEmailConfirmationModal(); // Auch das Bestätigungsmodal schließen
-            closeModal(); // Und das Detailmodal, da die Bestätigung nun abgeschlossen ist
-            fetchData(); // Daten neu laden, um den Status-Update anzuzeigen
+            closeEmailConfirmationModal(); // Also close the confirmation modal
+            closeModal(); // And the detail modal, as confirmation is now complete
+            fetchData(); // Reload data to show status update
         } else {
-            showSaveFeedback(result.message || `Fehler beim Markieren als gesendet. ${sendEmail ? 'E-Mail wurde nicht gesendet.' : ''}`, false);
+            showSaveFeedback(result.message || `Error marking as sent. ${sendEmail ? 'Email was not sent.' : ''}`, false);
         }
     } catch (error) {
-        console.error('Fehler beim Markieren/Senden:', error);
-        showSaveFeedback('Ein Fehler ist beim Markieren oder Senden aufgetreten. Bitte versuchen Sie es später erneut.', false);
+        console.error('Error marking/sending:', error);
+        showSaveFeedback('An error occurred while marking or sending. Please try again later.', false);
     }
 }
 
 
-// === Initialisierung ===
+// === Initialization ===
 document.addEventListener('DOMContentLoaded', () => {
   checkAuthStatus();
   updateClock();
-  setInterval(updateClock, 1000); // Aktualisiert die Uhr jede Sekunde
-  renderCalendars(); // Initialisiere den Kalender nach dem Laden der Daten
+  setInterval(updateClock, 1000); // Updates the clock every second
+  renderCalendars(); // Initialize the calendar after data loading
 
-  // Event Listener für die Buttons "Charter Anfrage erstellen" und "Statistik anzeigen"
+  // Event Listener for "Create Charter Request" and "Show Statistics" buttons
   const createNewRequestBtn = document.getElementById('createNewRequestBtn');
   if (createNewRequestBtn) {
       createNewRequestBtn.addEventListener('click', createNewRequest);
@@ -1901,47 +1881,47 @@ document.addEventListener('DOMContentLoaded', () => {
   statFromDateInput.value = firstDayOfMonth.toISOString().split('T')[0];
   statToDateInput.value = today.toISOString().split('T')[0];
 
-  // Event Listener für den Vorschau-Button im E-Mail Bestätigungsmodal
-  // Dieser Button wurde jetzt in die Detailansicht verschoben und direkt dort behandelt.
+  // Event Listener for the preview button in the email confirmation modal
+  // This button has now been moved to the detail view and handled directly there.
   // const previewEmailBtn = document.getElementById('previewEmailBtn');
   // if (previewEmailBtn) {
   //     previewEmailBtn.addEventListener('click', generateEmailPreview);
   // }
 
-  // Event Listener für den "E-Mail senden" Button im E-Mail Vorschau Modal
+  // Event Listener for the "Send Email" button in the email preview modal
   const markAsSentBtn = document.getElementById('markAsSentBtn');
   if (markAsSentBtn) {
-      // Die Logik für diesen Button wird jetzt in generateEmailPreview gesetzt,
-      // um sicherzustellen, dass currentModalData korrekt ist.
+      // The logic for this button is now set in generateEmailPreview,
+      // to ensure currentModalData is correct.
       // markAsSentBtn.addEventListener('click', () => markAsSentManually(currentModalData.Ref, true));
   }
 });
 
 
-// === Hilfsfunktionen ===
+// === Helper Functions ===
 function updateClock() {
   const now = new Date();
   document.getElementById("currentDate").textContent = `Datum: ${now.toLocaleDateString('de-DE')}`;
   document.getElementById("clock").textContent = `Uhrzeit: ${now.toLocaleTimeString('de-DE')}`;
 }
 
-// Funktion zum Erstellen einer neuen Charteranfrage
+// Function to create a new charter request
 function createNewRequest() {
-    console.log("createNewRequest called."); // Debugging-Ausgabe
-    openModal(-1); // Öffne das Modal mit leeren Feldern für eine neue Anfrage
+    console.log("createNewRequest called."); // Debugging output
+    openModal(-1); // Open the modal with empty fields for a new request
 }
 
-// --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
-// Wenn script.js als type="module" geladen wird, sind Funktionen
-// standardmäßig nicht im globalen "window"-Scope verfügbar,
-// es sei denn, sie werden explizit exportiert oder zugewiesen.
-// Für HTML-onclick-Attribute ist die Zuweisung an "window" erforderlich.
+// --- IMPORTANT CORRECTION: Make functions globally accessible ---
+// If script.js is loaded as type="module", functions are
+// not by default available in the global "window" scope,
+// unless explicitly exported or assigned.
+// For HTML onclick attributes, assignment to "window" is required.
 window.openProfileModal = openProfileModal;
 window.closeProfileModal = closeProfileModal;
 window.changePassword = changePassword;
 window.logoutUser = logoutUser;
 window.fetchData = fetchData;
-window.renderTables = renderTables; // Beibehalten für die geteilte Ansicht
+window.renderTables = renderTables; // Retained for shared view
 window.filterTable = filterTable;
 window.openModal = openModal;
 window.deleteRowFromModal = deleteRowFromModal;
@@ -1951,10 +1931,10 @@ window.deleteRow = deleteRow;
 window.shiftCalendar = shiftCalendar;
 window.renderCalendars = renderCalendars;
 window.openDayOverview = openDayOverview;
-window.closeDayOverviewModal = closeDayOverviewModal; // NEU: Global für das neue Modal
-window.createMonthCalendar = createMonthCalendar; // Muss auch global sein, da es von renderCalendars aufgerufen wird
+window.closeDayOverviewModal = closeDayOverviewModal; // NEW: Global for the new modal
+window.createMonthCalendar = createMonthCalendar; // Must also be global, as it is called by renderCalendars
 window.generateReference = generateReference;
-window.createNewRequest = createNewRequest; // Button "Charter Anfrage erstellen"
+window.createNewRequest = createNewRequest; // Button "Create Charter Request"
 window.showSaveFeedback = showSaveFeedback;
 window.showHistory = showHistory;
 window.closeHistoryModal = closeHistoryModal;
@@ -1966,9 +1946,9 @@ window.renderTonnagePerCustomerChart = renderTonnagePerCustomerChart;
 window.downloadStatisticsToCSV = downloadStatisticsToCSV;
 window.openEmailConfirmationModal = openEmailConfirmationModal;
 window.closeEmailConfirmationModal = closeEmailConfirmationModal;
-window.sendFinalConfirmationEmail = sendFinalConfirmationEmail; // NEU: Direkte Sende-Funktion
-window.toggleOriginDestinationFields = toggleOriginDestinationFields;
+window.sendFinalConfirmationEmail = sendFinalConfirmationEmail; // NEW: Direct send function
+window.toggleOriginDestinationFields = toggleOriginOriginDestinationFields;
 window.generateEmailPreview = generateEmailPreview;
 window.closeEmailPreviewModal = closeEmailPreviewModal;
 window.markAsSentManually = markAsSentManually;
-window.searchFlightRadar24 = searchFlightRadar24; // NEU: FlightRadar24 Suche
+window.searchFlightRadar24 = searchFlightRadar24; // NEW: FlightRadar24 Search
