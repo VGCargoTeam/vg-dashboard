@@ -1826,7 +1826,7 @@ function closeEmailPreviewModal() {
 // Event Listener für den Vorschau-Button
 document.getElementById('previewEmailBtn').addEventListener('click', generateEmailPreview);
 
-// NEU: Funktion zum manuellen Markieren als "Final Confirmation Sent"
+// KORRIGIERT: Funktion zum manuellen Markieren als "Final Confirmation Sent"
 async function markAsSentManually() {
     if (!currentModalData || !currentModalData.Ref) {
         showSaveFeedback("Keine Referenzdaten zum Markieren verfügbar.", false);
@@ -1844,9 +1844,10 @@ async function markAsSentManually() {
 
     try {
         const payload = {
-            mode: 'markAsConfirmed', // Neuer Modus für Google Apps Script
+            mode: 'markAsSent', // KORRIGIERT: Modus an Backend angepasst ('markAsSent' statt 'markAsConfirmed')
             ref: refToMark,
-            user: user
+            user: user,
+            sendEmail: 'false' // Explizit angeben, dass keine E-Mail gesendet werden soll
         };
 
         const response = await fetch(API_URL, {
