@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <title>Charter Dashboard</title>
+  <!-- Google Fonts - Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -277,6 +279,7 @@
       background-color: #90bed4;
     }
     /* Ende NEUE KALENDER-FARBEN */
+
     .calendar-day.empty {
       background-color: #f8f9fa;
       cursor: default;
@@ -288,17 +291,20 @@
       font-size: 1.2em;
       color: #007BFF;
     }
+
     /* TOOLTIP-STILE */
     [data-tooltip] {
       position: relative;
       z-index: 1;
     }
+
     [data-tooltip]:hover::after {
       content: attr(data-tooltip);
       position: absolute;
       bottom: calc(100% + 5px);
       left: 50%; /* Zentriert über dem Element */
       transform: translateX(-50%); /* Korrigiert die Zentrierung */
+
       background-color: rgba(0, 0, 0, 0.9);
       color: #fff;
       padding: 8px 12px;
@@ -312,194 +318,348 @@
       pointer-events: none; /* Tooltip soll Klicks nicht blockieren */
       opacity: 0;
       visibility: hidden;
-      transition: opacity 0.2s, visibility 0.2s; /* Zusätzliche Anpass...
+      transition: opacity 0.2s, visibility 0.2s;
+
+      /* Zusätzliche Anpassung, um sicherzustellen, dass es nicht den Bildschirmrand überlappt */
+      /* Max-width und transform: translateX(-50%) sollten die meisten Fälle abdecken */
+    }
+
+    [data-tooltip]:hover::before {
+      content: '';
+      position: absolute;
+      bottom: 100%; /* Pfeil über dem Tooltip-Inhalt */
+      left: 50%;
+      transform: translateX(-50%) translateY(5px); /* Positioniert den Pfeil */
+      border-width: 5px;
+      border-style: solid;
+      border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
+      z-index: 1001;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
+    }
+
+    /* Tooltip anzeigen bei Hover */
+    [data-tooltip]:hover::after,
+    [data-tooltip]:hover::before {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Modal spezifische Stile */
+    .modal-section {
+      background: #f7f7f7;
+      padding: 15px;
+      border-radius: 10px;
+      width: 100%; /* Wichtig, damit Abschnitte 100% Breite einnehmen */
+    }
+    .modal-section h3 {
+      margin-top: 0;
+      font-size: 1.1rem;
+      color: #444;
+    }
+    .modal-section label {
+      display: block;
+      margin-top: 8px;
+      font-weight: bold;
+    }
+    .modal-section input, .modal-section textarea {
+      width: 100%;
+      padding: 6px;
+      margin-top: 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    /* Stil für Referenzlinks in der Tabelle */
+    #dataTable tbody td a {
+        color: #007BFF; /* Blau */
+        text-decoration: underline; /* Unterstrichen */
+        font-weight: bold;
+        cursor: pointer;
+    }
+    #dataTable tbody td a:hover {
+        color: #0056b3; /* Dunkleres Blau beim Hover */
+    }
+
+    /* Styles for the new email confirmation modal */
+    #emailConfirmationModal .modal-content {
+        max-width: 450px;
+        text-align: center;
+        flex-direction: column;
+        gap: 15px;
+    }
+    #emailConfirmationModal h3 {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+    }
+    #emailConfirmationModal p {
+        margin-bottom: 15px;
+    }
+    #emailConfirmationModal input[type="email"] {
+        width: calc(100% - 20px);
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
+    #emailConfirmationModal .modal-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+    }
+    /* NEUE BUTTON-STILE */
+    .btn-email-action {
+        padding: 10px 20px;
+        border-radius: 8px; /* Etwas runder */
+        cursor: pointer;
+        font-weight: bold;
+        flex-grow: 1; /* Gleichmäßige Breite */
+        transition: all 0.3s ease; /* Sanfte Übergänge */
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Leichter Schatten */
+        border: none; /* Keine Standard-Border */
+    }
+
+    .btn-email-action.send {
+        background: linear-gradient(145deg, #28a745, #218838); /* Grüner Gradient */
+        color: white;
+    }
+    .btn-email-action.send:hover {
+        background: linear-gradient(145deg, #218838, #1e7e34);
+        transform: translateY(-2px); /* Leichter Hover-Effekt */
+        box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+    }
+
+    .btn-email-action.preview {
+        background: linear-gradient(145deg, #007BFF, #0056b3); /* Blauer Gradient */
+        color: white;
+    }
+    .btn-email-action.preview:hover {
+        background: linear-gradient(145deg, #0056b3, #004085);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+    }
+
+    .btn-email-action.cancel {
+        background: linear-gradient(145deg, #6c757d, #5a6268); /* Grauer Gradient */
+        color: white;
+    }
+    .btn-email-action.cancel:hover {
+        background: linear-gradient(145deg, #5a6268, #495057);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+    }
+    /* ENDE NEUE BUTTON-STILE */
+    
+    /* NEU: Klasse für den heutigen Tag im Kalender */
+    .today-red-text {
+        color: red !important; /* Wichtig, um andere Farben zu überschreiben */
+    }
+
+    /* NEU: Styles für das E-Mail-Vorschau-Modal */
+    #emailPreviewModal .modal-content {
+        max-width: 800px;
+        flex-direction: column;
+        gap: 15px;
+    }
+    #emailPreviewModal h3 {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+    /* Angepasst für HTML-Inhalt */
+    #emailPreviewModal #emailPreviewContent {
+        background-color: #f0f0f0;
+        padding: 15px;
+        border-radius: 8px;
+        max-height: 60vh;
+        overflow-y: auto;
+        border: 1px solid #e0e0e0;
+        font-family: Arial, sans-serif; /* Standard-Schriftart für E-Mail-Vorschau */
+        font-size: 0.9em;
+        line-height: 1.5;
+        color: #333;
+        /* Wichtig: Entferne pre-wrap, da wir HTML rendern */
+        white-space: normal; 
+        word-wrap: break-word;
+    }
+    #emailPreviewModal .modal-buttons {
+        margin-top: 10px;
+    }
+
+    /* NEU: Button-Stil für "Manuell gesendet" */
+    .btn-manual-sent {
+        background: linear-gradient(145deg, #6f42c1, #563d7c); /* Lila Gradient */
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border: none;
+    }
+    .btn-manual-sent:hover {
+        background: linear-gradient(145deg, #563d7c, #463260);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+    }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-
 </head>
-<body class="bg-gray-100 flex h-screen text-gray-800 font-inter">
-
-<div class="flex-1 flex flex-col items-center p-4 min-w-[1200px] max-w-[1600px] mx-auto">
-  <header class="w-full bg-white p-4 rounded-lg shadow-md flex items-center justify-between mb-4">
-    <div class="flex items-center">
-      <img src="https://cdn-icons-png.freepik.com/512/2855/2855848.png" alt="Logo" class="h-10 mr-4">
-      <h1 class="text-2xl font-bold">Charter Dashboard</h1>
+<body class="font-inter flex flex-col lg:flex-row min-h-screen text-gray-800">
+  <div class="main">
+    <div class="logo-container"> <!-- NEU: Logo-Container -->
+        <img src="VG_Cargo_Logo_small.png"> <!-- Dein Logo-Bild -->
     </div>
-    <div class="flex items-center space-x-4">
-      <div class="text-sm">
-        <span class="font-semibold">Benutzer:</span> <span id="loggedInUsername"></span>
-        <span class="font-semibold ml-4">Rolle:</span> <span id="loggedInUserRole"></span>
-      </div>
-      <button onclick="openProfileModal()" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors duration-200">Profil</button>
-      <button onclick="logoutUser()" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200">Logout</button>
+
+    <div class="header-area" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h1 style="flex-grow: 1; text-align: center; margin-left: 70px; font-size: 2.5rem;">Charter Dashboard</h1> <!-- Überschrift vergrößert -->
+      <button onclick="openProfileModal()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+        Profil
+      </button>
     </div>
-  </header>
 
-  <div class="w-full flex-grow flex space-x-4">
-    <div class="flex-1 flex flex-col space-y-4">
-      <div class="bg-white p-4 rounded-lg shadow-md flex items-center space-x-4">
-        <label for="refSearch" class="font-medium">Ref-Suche:</label>
-        <input type="text" id="refSearch" onkeyup="filterTable()" placeholder="Referenznummer" class="border p-2 rounded-md flex-1">
-        
-        <label for="airlineSearch" class="font-medium">Airline-Suche:</label>
-        <input type="text" id="airlineSearch" onkeyup="filterTable()" placeholder="Airline" class="border p-2 rounded-md flex-1">
-        
-        <label for="flightNumberSearch" class="font-medium">Flugnr.-Suche:</label>
-        <input type="text" id="flightNumberSearch" onkeyup="filterTable()" placeholder="Flugnummer" class="border p-2 rounded-md flex-1">
+    <div style="display: flex; gap: 10px; margin: 10px 0 20px;">
+        <button onclick="createNewRequest()" style="padding: 10px 16px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+          Charter Anfrage erstellen
+        </button>
+        <button onclick="openStatisticsModal()" style="padding: 10px 16px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            Statistik anzeigen
+        </button>
+    </div>
 
-        <label for="fromDate" class="font-medium">Von:</label>
-        <input type="date" id="fromDate" onchange="filterTable()" class="border p-2 rounded-md">
 
-        <label for="toDate" class="font-medium">Bis:</label>
-        <input type="date" id="toDate" onchange="filterTable()" class="border p-2 rounded-md">
-        
-        <label class="flex items-center space-x-2">
-            <input type="checkbox" id="archiveCheckbox" onchange="filterTable()" class="form-checkbox h-4 w-4 text-blue-600">
-            <span class="font-medium">Vergangene Flüge anzeigen</span>
-        </label>
-
-        <button onclick="openNewModal()" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200 ml-auto">Neue Anfrage</button>
+    <div style="text-align: center; font-size: 16px; color: #e63244;">
+      <span id="currentDate">Date: --</span> | <span id="clock">Time: --:--:--</span>
+    </div>
+    <div style="margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
+      <label>Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
+      <label>Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
+      <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" /> <!-- NEU: Flugnummer Suchfeld -->
+      <label>From:</label> <input type="date" id="fromDate" onchange="filterTable()" />
+      <label>To:</label> <input type="date" id="toDate" onchange="filterTable()" />
+      <!-- Moderne Archiv-Checkbox -->
+      <div class="inline-flex items-center ml-4">
+          <label for="archiveCheckbox" class="font-medium text-gray-700 mr-2 cursor-pointer">Archiv anzeigen:</label>
+          <input type="checkbox" id="archiveCheckbox" class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer border-gray-300 shadow-sm">
       </div>
+    </div>
+    <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
+    <table id="dataTable"><thead><tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage</th><th>Action</th></tr></thead><tbody></tbody></table>
 
-      <div class="bg-white p-6 rounded-lg shadow-md flex-1 overflow-auto">
-        <h2 class="text-xl font-semibold mb-4">Unbestätigte Charteranfragen</h2>
-        <div id="unconfirmedSummaryInfo" class="summary text-sm text-gray-600"></div>
-        <table id="unconfirmedTable" class="min-w-full">
-          <thead>
-            <tr>
-              <th>Ref</th>
-              <th>Flugdatum</th>
-              <th>Airline</th>
-              <th>Tonnage (kg)</th>
-              <th>Aktionen</th>
-            </tr>
-          </thead>
-          <tbody>
-            </tbody>
-        </table>
+    <!-- Detail Modal (existing) -->
+    <div class="modal" id="detailModal">
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeModal()">✖</span>
+        <div id="modalBody" style="width:100%; display:flex; flex-wrap:wrap; gap:20px;"></div>
       </div>
+    </div>
 
-      <div class="bg-white p-6 rounded-lg shadow-md flex-1 overflow-auto">
-        <h2 class="text-xl font-semibold mb-4">Bestätigte Charteranfragen</h2>
-        <div id="confirmedSummaryInfo" class="summary text-sm text-gray-600"></div>
-        <table id="confirmedTable" class="min-w-full">
-          <thead>
-            <tr>
-              <th>Ref</th>
-              <th>Flugdatum</th>
-              <th>Airline</th>
-              <th>Tonnage (kg)</th>
-              <th>Aktionen</th>
-            </tr>
-          </thead>
-          <tbody>
-            </tbody>
-        </table>
-      </div>
-
-
-      <div class="bg-white p-6 rounded-lg shadow-md">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Statistik</h2>
-          <button onclick="openStatisticsModal()" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Statistikdetails</button>
-        </div>
-        <div id="statisticsOverview" class="grid grid-cols-2 gap-4">
-          <div class="bg-blue-50 p-4 rounded-lg">
-            <h3 class="font-medium text-gray-600">Total Tonnage (Monat)</h3>
-            <p id="totalTonnageMonth" class="text-2xl font-bold mt-1 text-blue-800">...</p>
-          </div>
-          <div class="bg-green-50 p-4 rounded-lg">
-            <h3 class="font-medium text-gray-600">Anzahl Charter (Monat)</h3>
-            <p id="totalChartersMonth" class="text-2xl font-bold mt-1 text-green-800">...</p>
-          </div>
+    <!-- NEU: History Modal -->
+    <div class="modal" id="historyModal">
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeHistoryModal()">✖</span>
+        <h3>History for Reference: <span id="historyRef"></span></h3>
+        <div id="historyBody" style="width:100%; max-height: 70vh; overflow-y: auto;">
+          <!-- History content will be loaded here -->
         </div>
       </div>
     </div>
 
-    <div class="calendar">
-      <div class="calendar-wrapper">
-        <div class="nav flex justify-between items-center mb-4">
-          <button onclick="changeMonth(-1)">&#9664;</button>
-          <span id="calendar-month-year" class="text-lg font-bold"></span>
-          <button onclick="changeMonth(1)">&#9654;</button>
+    <!-- NEU: Profil Modal -->
+    <div class="modal" id="profileModal">
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeProfileModal()">✖</span>
+        <h3 style="width:100%; text-align: center;">Profilverwaltung</h3>
+        <p>Angemeldet als: <span id="loggedInUsername"></span> (<span id="loggedInUserRole"></span>)</p>
+        <div style="width:100%; margin-top: 20px;">
+          <label>Neues Passwort:</label>
+          <input type="password" id="newPasswordInput" style="width: calc(100% - 12px);">
+          <label>Passwort bestätigen:</label>
+          <input type="password" id="confirmPasswordInput" style="width: calc(100% - 12px);">
+          <button onclick="changePassword()" style="width: 100%; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 6px; margin-top: 15px; cursor: pointer;">
+            Passwort ändern
+          </button>
+          <p id="passwordChangeMessage" style="color: red; margin-top: 10px;"></p>
         </div>
-        <div class="calendar-block">
-          <table class="w-full">
-            <thead>
-              <tr>
-                <th>Mo</th>
-                <th>Di</th>
-                <th>Mi</th>
-                <th>Do</th>
-                <th>Fr</th>
-                <th>Sa</th>
-                <th>So</th>
-              </tr>
-            </thead>
-            <tbody id="calendar-body">
-              </tbody>
-          </table>
+        <button onclick="logoutUser()" style="width: 100%; padding: 10px; background-color: #dc3545; color: white; border: none; border-radius: 6px; margin-top: 20px; cursor: pointer;">
+          Abmelden
+        </button>
+      </div>
+    </div>
+
+    <!-- NEU: Statistik Modal -->
+    <div class="modal" id="statisticsModal">
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeStatisticsModal()">✖</span>
+        <h3>Statistik</h3>
+        <div id="statisticsBody">
+          <!-- Datumsauswahl und Download-Button zuerst -->
+          <div style="width:100%; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 15px;">
+              <label for="statFromDate">Von:</label>
+              <input type="date" id="statFromDate" onchange="generateStatistics()">
+              <label for="statToDate">Bis:</label>
+              <input type="date" id="statToDate" onchange="generateStatistics()">
+              <button onclick="downloadStatisticsToCSV()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                  Statistik herunterladen
+              </button>
+          </div>
+          <!-- Diagramme und Tabellen werden hier dynamisch von generateStatistics() eingefügt -->
+          <!-- Siehe generateStatistics() in script.js für die genaue Reihenfolge -->
+
+          <div class="chart-container">
+              <h4>Tonnage pro Monat</h4>
+              <canvas id="tonnagePerMonthChart"></canvas>
+          </div>
+          <div class="chart-container">
+              <h4>Tonnage pro Kunde</h4>
+              <canvas id="tonnagePerCustomerChart"></canvas>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- NEU: E-Mail Bestätigungsmodal -->
+    <div class="modal" id="emailConfirmationModal">
+        <div class="modal-content">
+            <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeEmailConfirmationModal()">✖</span>
+            <h3>Charter Bestätigung senden</h3>
+            <p>Bitte geben Sie die E-Mail-Adresse des Empfängers ein:</p>
+            <input type="email" id="recipientEmailInput" placeholder="Empfänger E-Mail" required>
+            <p id="emailConfirmationMessage" style="color: red;"></p>
+            <div class="modal-buttons">
+                <button class="btn-email-action preview" id="previewEmailBtn">Vorschau</button>
+                <button class="btn-email-action send" id="sendEmailConfirmBtn">Senden</button>
+                <button class="btn-email-action cancel" onclick="closeEmailConfirmationModal()">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEU: E-Mail Vorschau Modal -->
+    <div class="modal" id="emailPreviewModal">
+        <div class="modal-content">
+            <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeEmailPreviewModal()">✖</span>
+            <h3>E-Mail Vorschau für Referenz: <span id="previewRef"></span></h3>
+            <!-- Geändert von <pre> zu <div> um HTML zu rendern -->
+            <div id="emailPreviewContent"></div> 
+            <div class="modal-buttons">
+                <button class="btn-manual-sent" id="markAsSentBtn">Charter Confirmation gesendet</button> <!-- NEU: Button hinzugefügt -->
+                <button class="btn-email-action cancel" onclick="closeEmailPreviewModal()">Schließen</button>
+            </div>
+        </div>
+    </div>
+
   </div>
-</div>
-
-<div id="detailModal" class="modal">
-  <div class="modal-content">
-    <div id="modalBody"></div>
-    <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl font-bold">&times;</button>
+  <div class="calendar">
+    <div class="nav">
+      <button onclick="shiftCalendar(-1)">← Back</button>
+      <button onclick="shiftCalendar(1)">Forward →</button>
+    </div>
+    <div id="calendarArea" class="calendar-wrapper"></div>
   </div>
-</div>
-
-<div id="profileModal" class="modal">
-  <div class="modal-content text-left p-6 relative">
-      <h2 class="text-2xl font-bold mb-4 w-full text-center">Benutzerprofil</h2>
-      <p class="w-full"><span class="font-semibold">Benutzername:</span> <span id="loggedInUsernameProfile"></span></p>
-      <p class="w-full mb-4"><span class="font-semibold">Rolle:</span> <span id="loggedInUserRoleProfile"></span></p>
-      <div class="w-full mt-4">
-          <h3 class="text-xl font-semibold mb-2">Passwort ändern</h3>
-          <p class="text-sm text-gray-600 mb-2">Um Ihr Passwort zu ändern, geben Sie unten Ihr neues Passwort ein und bestätigen Sie es.</p>
-          <label for="newPasswordInput" class="block text-sm font-medium text-gray-700">Neues Passwort:</label>
-          <input type="password" id="newPasswordInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
-          <label for="confirmPasswordInput" class="block text-sm font-medium text-gray-700 mt-2">Passwort bestätigen:</label>
-          <input type="password" id="confirmPasswordInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
-          <p id="passwordChangeMessage" class="text-sm mt-2"></p>
-          <button onclick="changePassword()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Passwort ändern</button>
-      </div>
-      <button onclick="closeProfileModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl font-bold">&times;</button>
-  </div>
-</div>
-
-<div id="statisticsModal" class="modal">
-  <div class="modal-content">
-      <h3 class="text-2xl font-bold mb-4">Statistiken</h3>
-      <div id="statisticsBody">
-          </div>
-      <button onclick="closeStatisticsModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl font-bold">&times;</button>
-  </div>
-</div>
-
-<div id="emailConfirmationModal" class="modal">
-  <div class="modal-content">
-      <h3 class="text-2xl font-bold mb-4">Final Charter Confirmation senden</h3>
-      <div id="emailConfirmationBody">
-          </div>
-      <button onclick="closeEmailConfirmationModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl font-bold">&times;</button>
-  </div>
-</div>
-
-<div id="historyModal" class="modal">
-  <div class="modal-content">
-    <h3 class="text-2xl font-bold mb-4">Änderungshistorie</h3>
-    <div id="historyBody">
-      </div>
-    <button onclick="closeHistoryModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl font-bold">&times;</button>
-  </div>
-</div>
-
-<script src="./script.js"></script>
-
+  <!-- WICHTIGE KORREKTUR: script.js hierher verschoben und 'defer' entfernt -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js CDN hinzufügen -->
+  <script src="script.js" type="module"></script>
 </body>
 </html>
