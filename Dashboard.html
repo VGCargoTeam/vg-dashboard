@@ -60,7 +60,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
+      margin-top: 10px; /* Reduzierter oberer Abstand */
       background: white;
       border-radius: 8px;
     }
@@ -372,13 +372,13 @@
       border-radius: 4px;
     }
     /* Stil für Referenzlinks in der Tabelle */
-    #dataTable tbody td a {
+    .data-table tbody td a {
         color: #007BFF; /* Blau */
         text-decoration: underline; /* Unterstrichen */
         font-weight: bold;
         cursor: pointer;
     }
-    #dataTable tbody td a:hover {
+    .data-table tbody td a:hover {
         color: #0056b3; /* Dunkleres Blau beim Hover */
     }
 
@@ -545,8 +545,50 @@
           <input type="checkbox" id="archiveCheckbox" class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer border-gray-300 shadow-sm">
       </div>
     </div>
-    <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
-    <table id="dataTable"><thead><tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage</th><th>Action</th></tr></thead><tbody></tbody></table>
+    
+    <!-- Unbestätigte Anfragen -->
+    <div class="mt-8">
+        <h2 class="text-2xl font-bold mb-2 text-gray-700">Unbestätigte Charteranfragen</h2>
+        <div class="summary" id="unconfirmedSummaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
+        <div class="overflow-x-auto">
+            <table id="unconfirmedTable" class="w-full data-table">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Date</th>
+                        <th>Airline</th>
+                        <th>Tonnage</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Unconfirmed requests will be rendered here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Bestätigte Anfragen -->
+    <div class="mt-8">
+        <h2 class="text-2xl font-bold mb-2 text-gray-700">Bestätigte Charteranfragen</h2>
+        <div class="summary" id="confirmedSummaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
+        <div class="overflow-x-auto">
+            <table id="confirmedTable" class="w-full data-table">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Date</th>
+                        <th>Airline</th>
+                        <th>Tonnage</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Confirmed requests will be rendered here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <!-- Detail Modal (existing) -->
     <div class="modal" id="detailModal">
@@ -644,7 +686,7 @@
             <!-- Geändert von <pre> zu <div> um HTML zu rendern -->
             <div id="emailPreviewContent"></div> 
             <div class="modal-buttons">
-                <button class="btn-manual-sent" id="markAsSentBtn">Charter Confirmation gesendet</button> <!-- NEU: Button hinzugefügt -->
+                <button class="btn-manual-sent" id="markAsSentBtn">Charter Confirmation manuell gesendet</button> <!-- GEÄNDERT: Button-Text -->
                 <button class="btn-email-action cancel" onclick="closeEmailPreviewModal()">Schließen</button>
             </div>
         </div>
