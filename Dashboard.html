@@ -35,870 +35,608 @@
       padding: 30px;
       margin: 20px;
       border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column; /* Behält die Hauptausrichtung als Spalte */
-      gap: 20px;
-      overflow-y: auto; /* Für Scrollbarkeit im Hauptbereich */
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      position: relative;
     }
-    .dashboard-container {
-      display: flex;
-      height: 100vh;
-      width: 100vw;
-      padding: 0; /* Entfernt Padding vom Container */
-      box-sizing: border-box;
-    }
-    .sidebar {
-      width: 250px;
-      background: rgba(255,255,255,0.9);
-      backdrop-filter: blur(8px);
+    .calendar {
+      width: 500px;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(6px);
       padding: 20px;
-      box-shadow: 2px 0 15px rgba(0,0,0,0.05);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      align-items: center;
-      border-radius: 0 12px 12px 0; /* Abgerundete Ecken nur rechts */
+      margin: 20px 20px 20px 0;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      overflow: visible;
     }
-    .logo {
-      width: 100px;
-      height: auto;
-      margin-bottom: 20px;
+    .calendar-wrapper {
+        overflow: visible;
     }
-    .nav-buttons button, .action-buttons button {
-      width: 100%;
-      padding: 12px 15px;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      font-weight: 500;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .nav-buttons button:hover, .action-buttons button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    .nav-buttons button {
-      background-color: #4A5568; /* Grau-Blau */
-      color: white;
-    }
-    .nav-buttons button:hover {
-      background-color: #2D3748;
-    }
-    .action-buttons button {
-      background-color: #3182CE; /* Blau */
-      color: white;
-    }
-    .action-buttons button:hover {
-      background-color: #2B6CB0;
-    }
-    .logout-button {
-      background-color: #E53E3E; /* Rot */
-      color: white;
-    }
-    .logout-button:hover {
-      background-color: #C53030;
-    }
-    .user-info {
-      font-size: 0.9em;
-      color: #4A5568;
-      text-align: center;
-      margin-top: 20px;
-    }
-    .user-info span {
-      font-weight: 600;
-      color: #2D3748;
-    }
-    .dashboard-header-and-calendar-wrapper {
-      display: flex;
-      justify-content: space-between; /* Schiebt Überschrift und Kalender zu den Enden */
-      align-items: flex-start; /* Richtet sie oben aus */
-      gap: 20px; /* Abstand zwischen ihnen */
-      width: 100%; /* Nimmt die volle Breite des Hauptbereichs ein */
-      flex-wrap: wrap; /* Ermöglicht Umbruch auf kleineren Bildschirmen */
-    }
-    .header {
-      display: flex;
-      flex-direction: column; /* Stellt sicher, dass Datum/Uhrzeit unter der Überschrift stehen */
-      justify-content: space-between;
-      align-items: flex-start; /* Links ausrichten */
-      margin-bottom: 20px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #eee;
-      flex-grow: 1; /* Lässt den Header wachsen */
-      min-width: 250px; /* Mindestbreite für den Header */
-    }
-    .search-filter-bar {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      flex-wrap: wrap; /* Ermöglicht Umbruch auf kleineren Bildschirmen */
-    }
-    .search-filter-bar input, .search-filter-bar select {
-      flex: 1;
-      padding: 8px;
+    input[type="text"], input[type="date"] {
+      padding: 6px 10px;
+      margin: 5px;
       border: 1px solid #ccc;
       border-radius: 6px;
-      min-width: 120px; /* Mindestbreite für Eingabefelder */
-    }
-    .search-filter-bar button {
-      padding: 8px 15px;
-      background-color: #4299E1;
-      color: white;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    .search-filter-bar button:hover {
-      background-color: #3182CE;
-    }
-    .table-section {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-      margin-bottom: 20px;
-    }
-    .table-section h3 {
-      margin-top: 0;
-      color: #2D3748;
-      font-size: 1.4em;
-      margin-bottom: 15px;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 15px;
+      margin-top: 20px;
+      background: white;
+      border-radius: 8px;
     }
     th, td {
-      border: 1px solid #ddd;
-      padding: 10px;
-      text-align: left;
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+      font-size: 14px;
     }
     th {
-      background-color: #f4f4f4;
-      font-weight: 600;
-      color: #4A5568;
+      background-color: #007BFF;
+      color: white;
     }
-    tr:nth-child(even) {
-      background-color: #f9f9f9;
-    }
-    tr:hover {
-      background-color: #f1f1f1;
-    }
-    .btn {
+    .nav button, .btn {
       padding: 6px 12px;
-      border-radius: 5px;
+      margin: 3px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
       cursor: pointer;
-      font-size: 0.85em;
-      transition: background-color 0.2s;
     }
-    .btn-view {
-      background-color: #63B3ED;
+    .nav button {
+      background-color: #28a745;
       color: white;
-      border: none;
     }
-    .btn-view:hover {
-      background-color: #4299E1;
+    .nav button:hover {
+      background-color: #218838;
     }
-    .btn-delete {
-      background-color: #FC8181;
-      color: white;
-      border: none;
-      margin-left: 5px;
-    }
-    .btn-delete:hover {
-      background-color: #E53E3E;
+    .btn-view { background-color: #17a2b8; color: white; }
+    .btn-delete { background-color: #dc3545; color: white; }
+    .summary {
+      text-align: right;
+      font-weight: bold;
+      margin-top: 10px;
     }
     .modal {
-      display: none; /* Hidden by default */
-      position: fixed; /* Stay in place */
-      z-index: 1000; /* Sit on top */
-      left: 0;
-      top: 0;
-      width: 100%; /* Full width */
-      height: 100%; /* Full height */
-      overflow: auto; /* Enable scroll if needed */
-      background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-      justify-content: center; /* Center horizontally */
-      align-items: center; /* Center vertically */
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
     }
     .modal-content {
-      background-color: #fefefe;
-      padding: 30px;
+      background: white;
+      padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-      width: 90%; /* Responsive width */
-      max-width: 800px; /* Max width */
-      box-sizing: border-box;
-      position: relative; /* Für Schließen-Button Positionierung */
-      max-height: 90vh; /* Max Höhe, um Scrollen zu ermöglichen */
-      overflow-y: auto; /* Ermöglicht Scrollen innerhalb des Modals */
+      width: 90%;
+      max-width: 700px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      max-height: 90vh;
+      overflow-y: auto;
     }
-    .modal-content h3 {
-      margin-top: 0;
-      color: #2D3748;
-      font-size: 1.6em;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
+    /* Stil für das History-Modal, damit es sich vom Detail-Modal unterscheidet */
+    #historyModal .modal-content {
+        max-width: 800px; /* Breiter für die Historie */
+        flex-direction: column; /* Elemente untereinander anordnen */
+        align-items: flex-start;
     }
-    .modal-section {
-      background-color: #f7fafc; /* Leichter Hintergrund für Sektionen */
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-      border: 1px solid #e2e8f0;
+    #historyModal .modal-content h3 {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 15px;
     }
-    .modal-section h3 {
-      font-size: 1.2em;
-      color: #4A5568;
-      margin-top: 0;
-      margin-bottom: 10px;
-      border-bottom: none; /* Keine Linie unter Sektionsüberschriften */
-      padding-bottom: 0;
+    #historyBody ul {
+        width: 100%;
     }
-    .modal-section label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: 500;
-      color: #2D3748;
+    #historyBody li {
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid #eee;
+        border-radius: 5px;
+        background-color: #fdfdfd;
+        font-size: 0.9em;
     }
-    .modal-section input[type="text"],
-    .modal-section input[type="date"],
-    .modal-section input[type="time"],
-    .modal-section select,
-    .modal-section textarea {
+    #historyBody pre {
+        background-color: #eee;
+        padding: 5px;
+        border-radius: 3px;
+        overflow-x: auto;
+        font-size: 0.8em;
+    }
+
+    /* NEUE STILE FÜR STATISTIK MODAL */
+    #statisticsModal .modal-content {
+        max-width: 900px; /* Breiter für die Statistik */
+        flex-direction: column; /* Stellt sicher, dass die Elemente vertikal gestapelt werden */
+        align-items: flex-start;
+    }
+    #statisticsModal .modal-content h3 {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    #statisticsBody {
+        width: 100%;
+        max-height: 70vh;
+        overflow-y: auto;
+        /* Sicherstellen, dass der Inhalt vertikal gestapelt wird */
+        display: flex;
+        flex-direction: column;
+        gap: 20px; /* Abstand zwischen den Statistikbereichen */
+    }
+    #statisticsBody table {
+        width: 100%;
+        margin-top: 15px;
+    }
+    #statisticsBody th, #statisticsBody td {
+        padding: 10px;
+        border: 1px solid #ccc;
+        text-align: left;
+    }
+    #statisticsBody th {
+        background-color: #f2f2f2;
+    }
+
+    /* NEUE STILE FÜR DIAGRAMME */
+    .chart-container {
+        width: 100%;
+        background: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .chart-container canvas {
+        width: 100% !important; /* Wichtig für Responsivität von Chart.js */
+        height: 300px !important; /* Feste Höhe für die Diagramme */
+    }
+
+
+    .modal-content p {
+      flex: 1 1 45%;
+      margin: 0;
+    }
+    .modal-content input, .modal-content textarea {
       width: 100%;
-      padding: 8px;
-      margin-bottom: 10px;
+      padding: 6px;
+      margin-top: 5px;
       border: 1px solid #ccc;
-      border-radius: 4px;
-      box-sizing: border-box; /* Stellt sicher, dass Padding die Breite nicht erhöht */
-    }
-    .modal-section textarea {
-      min-height: 80px;
-      resize: vertical;
-    }
-    .modal-buttons {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 20px;
-      border-top: 1px solid #eee;
-      padding-top: 15px;
-    }
-    .modal-buttons button {
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .modal-buttons .btn-cancel {
-      background-color: #CBD5E0;
-      color: #2D3748;
-      border: none;
-    }
-    .modal-buttons .btn-cancel:hover {
-      background-color: #A0AEC0;
-    }
-    .modal-buttons .btn-save {
-      background-color: #48BB78;
-      color: white;
-      border: none;
-    }
-    .modal-buttons .btn-save:hover {
-      background-color: #38A169;
-    }
-    .close-button {
-      position: absolute;
-      top: 15px;
-      right: 20px;
-      font-size: 24px;
-      cursor: pointer;
-      color: #718096;
-    }
-    .close-button:hover {
-      color: #2D3748;
-    }
-    .calendar {
-      width: 700px; /* Erhöhte Breite für den Kalenderbereich */
-      display: flex;
-      flex-direction: column; /* Behält interne Elemente gestapelt */
-      align-items: center;
-      gap: 15px;
-      /* REMOVED: overflow-y: auto; */ /* Ermöglicht Scrollen im Kalender */
-      flex-shrink: 0; /* Verhindert, dass der Kalender schrumpft */
-    }
-    .calendar .nav {
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-      margin-bottom: 10px;
-    }
-    .calendar .nav button {
-      background-color: #63B3ED;
-      color: white;
-      padding: 8px 12px;
       border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      transition: background-color 0.2s;
+      font-size: 13px;
     }
-    .calendar .nav button:hover {
-      background-color: #4299E1;
+    .logo-container { /* NEU: Für das Logo */
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 10; /* Damit es über anderen Elementen liegt */
     }
-    .calendar-wrapper {
+    .logo-container img {
+        height: 50px; /* Oder die gewünschte Größe */
+        /* Optional: Schatten, Border-Radius für das Logo selbst */
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .checkbox-label {
       display: flex;
-      flex-direction: row; /* Kalenderblöcke nebeneinander */
-      flex-wrap: wrap; /* Erlaubt Umbruch auf kleineren Bildschirmen */
-      justify-content: center; /* Zentriert die Kalenderblöcke */
-      gap: 10px; /* Abstand zwischen den Monaten */
-      width: 100%; /* Stellt sicher, dass der Wrapper die volle Breite des Kalender-Containers einnimmt */
+      align-items: center;
+      gap: 6px;
+      font-weight: bold;
+      margin-top: 8px;
     }
-    .calendar-block {
-      width: calc(50% - 10px); /* Für zwei Spalten mit 10px Gap dazwischen */
-      min-width: 340px; /* Erhöhte Mindestbreite für größere Darstellung */
-      background-color: white;
-      border-radius: 8px;
-      padding: 15px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    .checkbox-label input[type="checkbox"] {
+      transform: translateY(-1px);
     }
-    .calendar-block h4 {
-      text-align: center;
-      margin-top: 0;
-      margin-bottom: 10px;
-      color: #2D3748;
-    }
+
+    /* KALENDER-STILE */
     .calendar-block table {
       width: 100%;
-      border-collapse: collapse;
+      table-layout: fixed;
     }
     .calendar-block th, .calendar-block td {
-      border: 1px solid #eee;
-      padding: 8px;
-      text-align: center;
-      font-size: 0.9em;
-    }
-    .calendar-block th {
-      background-color: #f7fafc;
-      font-weight: 500;
-      color: #4A5568;
+      width: calc(100% / 7);
+      padding: 10px 5px;
+      height: 50px;
+      vertical-align: top;
+      font-size: 14px;
+      position: relative;
+      overflow: visible; /* Wichtig für Tooltips/Icons */
     }
     .calendar-day {
       cursor: pointer;
-      transition: background-color 0.2s;
-      position: relative; /* Für Tooltip */
+      background-color: #e9ecef;
+      transition: background-color 0.2s ease;
     }
     .calendar-day:hover {
-      background-color: #E2E8F0;
+      background-color: #d1d9e0;
     }
-    .calendar-day.empty {
-      background-color: #f0f0f0;
-      cursor: default;
-    }
-    .calendar-day.has-flights {
-      background-color: #B2F5EA; /* Light Teal for days with flights */
-      font-weight: 600;
-    }
-    .calendar-day.has-flights:hover {
-      background-color: #81E6D9;
-    }
-    /* Tooltip Styles */
-    .calendar-day[data-tooltip]:hover::after {
-      content: attr(data-tooltip);
-      position: absolute;
-      left: 50%;
-      bottom: 100%; /* Position above the cell */
-      transform: translateX(-50%);
-      background-color: #333;
-      color: #fff;
-      padding: 8px;
-      border-radius: 5px;
-      white-space: pre-wrap; /* Preserve newlines */
-      z-index: 9999; /* Erhöhter z-index für Überlappung */
-      font-size: 0.8em;
-      text-align: left;
-      min-width: 200px;
-      max-width: 300px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    }
+    /* NEUE KALENDER-FARBEN */
     .calendar-day.import-only {
-        background-color: #BFEEB2; /* Hellgrün für Import */
+      background-color: #ffc107; /* Gelb für Import */
+      font-weight: bold;
+      color: #333;
     }
     .calendar-day.export-only {
-        background-color: #FFDDAA; /* Hellorange für Export */
+      background-color: #28a745; /* Grün für Export */
+      font-weight: bold;
+      color: #fff; /* Weißer Text für bessere Lesbarkeit auf Grün */
     }
     .calendar-day.import-export {
-        background-color: #C2B2EE; /* Hellviolett für Import & Export */
+      background: linear-gradient(to right, #ffc107 50%, #28a745 50%); /* Halb Gelb, Halb Grün */
+      font-weight: bold;
+      color: #333; /* Standardtextfarbe, da es gemischt ist */
+    }
+    /* Bestehende has-flights Klasse, falls weder Import noch Export zutrifft */
+    .calendar-day.has-flights {
+      background-color: #add8e6; /* Hellblau als Standard für Flüge ohne spezifischen Typ */
+      font-weight: bold;
+      color: #333;
+    }
+    .calendar-day.has-flights:hover {
+      background-color: #90bed4;
+    }
+    /* Ende NEUE KALENDER-FARBEN */
+
+    .calendar-day.empty {
+      background-color: #f8f9fa;
+      cursor: default;
+    }
+    .flight-icon {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      font-size: 1.2em;
+      color: #007BFF;
     }
 
-    /* Feedback Message */
-    #saveFeedback {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 10px 20px;
-        border-radius: 8px;
-        color: white;
-        text-align: center;
-        opacity: 0;
-        transition: opacity 0.5s ease-in-out;
-        z-index: 3000;
-        display: none; /* Start hidden */
+    /* TOOLTIP-STILE */
+    [data-tooltip] {
+      position: relative;
+      z-index: 1;
     }
 
-    /* Profile Modal Specifics */
-    #profileModal .modal-content {
-        max-width: 500px; /* Smaller width for profile modal */
+    [data-tooltip]:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 5px);
+      left: 50%; /* Zentriert über dem Element */
+      transform: translateX(-50%); /* Korrigiert die Zentrierung */
+
+      background-color: rgba(0, 0, 0, 0.9);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      white-space: pre-wrap; /* Zeilenumbrüche im Tooltip erlauben */
+      z-index: 1000;
+      min-width: 180px;
+      max-width: 300px; /* Breitere Tooltips erlauben */
+      text-align: left;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      pointer-events: none; /* Tooltip soll Klicks nicht blockieren */
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
+
+      /* Zusätzliche Anpassung, um sicherzustellen, dass es nicht den Bildschirmrand überlappt */
+      /* Max-width und transform: translateX(-50%) sollten die meisten Fälle abdecken */
     }
-    #profileModal .modal-section {
-        background-color: transparent;
-        border: none;
-        padding: 0;
+
+    [data-tooltip]:hover::before {
+      content: '';
+      position: absolute;
+      bottom: 100%; /* Pfeil über dem Tooltip-Inhalt */
+      left: 50%;
+      transform: translateX(-50%) translateY(5px); /* Positioniert den Pfeil */
+      border-width: 5px;
+      border-style: solid;
+      border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
+      z-index: 1001;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
     }
-    #profileModal input[type="password"] {
-        margin-bottom: 15px;
+
+    /* Tooltip anzeigen bei Hover */
+    [data-tooltip]:hover::after,
+    [data-tooltip]:hover::before {
+      opacity: 1;
+      visibility: visible;
     }
-    #profileModal .modal-buttons {
-        justify-content: center;
+
+    /* Modal spezifische Stile */
+    .modal-section {
+      background: #f7f7f7;
+      padding: 15px;
+      border-radius: 10px;
+      width: 100%; /* Wichtig, damit Abschnitte 100% Breite einnehmen */
     }
-    #passwordChangeMessage {
-        text-align: center;
-        margin-top: 10px;
+    .modal-section h3 {
+      margin-top: 0;
+      font-size: 1.1rem;
+      color: #444;
+    }
+    .modal-section label {
+      display: block;
+      margin-top: 8px;
+      font-weight: bold;
+    }
+    .modal-section input, .modal-section textarea {
+      width: 100%;
+      padding: 6px;
+      margin-top: 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    /* Stil für Referenzlinks in der Tabelle */
+    #dataTable tbody td a {
+        color: #007BFF; /* Blau */
+        text-decoration: underline; /* Unterstrichen */
         font-weight: bold;
-    }
-
-    /* Statistics Modal Specifics */
-    #statisticsModal .modal-content {
-        max-width: 900px; /* Wider for charts */
-    }
-    #statisticsModal .date-filter-group {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
-        justify-content: center;
-        align-items: center;
-    }
-    #statisticsModal .date-filter-group label {
-        white-space: nowrap;
-    }
-    #statisticsModal .date-filter-group input[type="date"] {
-        flex-grow: 1;
-        max-width: 180px;
-    }
-    #statisticsModal .date-filter-group button {
-        padding: 8px 15px;
-        background-color: #4299E1;
-        color: white;
-        border-radius: 6px;
-        border: none;
         cursor: pointer;
-        transition: background-color 0.2s;
     }
-    #statisticsModal .date-filter-group button:hover {
-        background-color: #3182CE;
-    }
-    .chart-container {
-        width: 100%;
-        height: 300px; /* Feste Höhe für die Charts */
-        margin-bottom: 20px;
-        background-color: white;
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center; /* Zentriert den Canvas vertikal */
-    }
-    .chart-container canvas {
-        max-width: 100%;
-        max-height: 100%;
-    }
-    .statistics-section {
-        background-color: #f7fafc;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 15px;
-        border: 1px solid #e2e8f0;
-    }
-    .statistics-section h4 {
-        margin-top: 0;
-        color: #2D3748;
-        font-size: 1.2em;
-        margin-bottom: 10px;
-    }
-    .statistics-section ul {
-        list-style: none;
-        padding: 0;
-    }
-    .statistics-section ul li {
-        margin-bottom: 5px;
-    }
-    #airlineStatisticsTable {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
-    }
-    #airlineStatisticsTable th, #airlineStatisticsTable td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: left;
-    }
-    #airlineStatisticsTable th {
-        background-color: #f4f4f4;
+    #dataTable tbody td a:hover {
+        color: #0056b3; /* Dunkleres Blau beim Hover */
     }
 
-    /* Email Confirmation Modal */
-    #emailConfirmationModal .modal-content,
-    #emailPreviewModal .modal-content {
-        max-width: 600px;
+    /* Styles for the new email confirmation modal */
+    #emailConfirmationModal .modal-content {
+        max-width: 450px;
+        text-align: center;
+        flex-direction: column;
+        gap: 15px;
+    }
+    #emailConfirmationModal h3 {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
     }
     #emailConfirmationModal p {
         margin-bottom: 15px;
-        font-size: 1.1em;
-        text-align: center;
     }
     #emailConfirmationModal input[type="email"] {
         width: calc(100% - 20px);
         padding: 10px;
-        margin-bottom: 15px;
         border: 1px solid #ccc;
-        border-radius: 5px;
+        border-radius: 6px;
+        margin-bottom: 20px;
     }
-    #emailConfirmationModal .modal-buttons,
-    #emailPreviewModal .modal-buttons {
+    #emailConfirmationModal .modal-buttons {
+        display: flex;
         justify-content: center;
-        gap: 15px;
+        gap: 10px;
+        width: 100%;
     }
+    /* NEUE BUTTON-STILE */
     .btn-email-action {
         padding: 10px 20px;
-        border-radius: 8px;
-        font-weight: 600;
+        border-radius: 8px; /* Etwas runder */
         cursor: pointer;
-        transition: background-color 0.2s;
-        border: none;
-        color: white;
-    }
-    .btn-email-action.send {
-        background-color: #4CAF50; /* Green */
-    }
-    .btn-email-action.send:hover {
-        background-color: #45a049;
-    }
-    .btn-email-action.cancel {
-        background-color: #f44336; /* Red */
-    }
-    .btn-email-action.cancel:hover {
-        background-color: #da190b;
-    }
-    #emailPreviewContent {
-        border: 1px solid #eee;
-        padding: 15px;
-        background-color: #fff;
-        min-height: 200px;
-        max-height: 400px;
-        overflow-y: auto;
-        margin-top: 15px;
-        border-radius: 8px;
-        text-align: left; /* Stellt sicher, dass der Inhalt linksbündig ist */
-    }
-    .btn-manual-sent {
-        background-color: #007BFF; /* Blue */
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-    .btn-manual-sent:hover {
-        background-color: #0056b3;
+        font-weight: bold;
+        flex-grow: 1; /* Gleichmäßige Breite */
+        transition: all 0.3s ease; /* Sanfte Übergänge */
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Leichter Schatten */
+        border: none; /* Keine Standard-Border */
     }
 
-    /* Responsive Design */
-    @media (max-width: 1024px) {
-      .dashboard-container {
-        flex-direction: column;
-        height: auto;
-      }
-      .sidebar {
-        width: 100%;
-        border-radius: 0 0 12px 12px;
-        padding-bottom: 0;
-      }
-      .main {
-        margin: 10px;
-        width: auto;
-      }
-      .dashboard-header-and-calendar-wrapper {
-        flex-direction: column; /* Stack header and calendar vertically */
-        align-items: center; /* Center them when stacked */
-      }
-      .header {
-        width: 100%; /* Full width when stacked */
-        align-items: center; /* Center content within header */
-        margin-bottom: 10px; /* Reduce margin when stacked */
-      }
-      .calendar {
-        width: 100%; /* Full width when stacked */
-        margin-top: 10px; /* Add some top margin */
-      }
-      .search-filter-bar {
-        flex-direction: column;
-      }
+    .btn-email-action.send {
+        background: linear-gradient(145deg, #28a745, #218838); /* Grüner Gradient */
+        color: white;
     }
-    @media (max-width: 768px) {
-      .modal-content {
-        width: 95%;
-        padding: 20px;
-      }
-      .modal-buttons {
+    .btn-email-action.send:hover {
+        background: linear-gradient(145deg, #218838, #1e7e34);
+        transform: translateY(-2px); /* Leichter Hover-Effekt */
+        box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+    }
+
+    .btn-email-action.preview {
+        background: linear-gradient(145deg, #007BFF, #0056b3); /* Blauer Gradient */
+        color: white;
+    }
+    .btn-email-action.preview:hover {
+        background: linear-gradient(145deg, #0056b3, #004085);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+    }
+
+    .btn-email-action.cancel {
+        background: linear-gradient(145deg, #6c757d, #5a6268); /* Grauer Gradient */
+        color: white;
+    }
+    .btn-email-action.cancel:hover {
+        background: linear-gradient(145deg, #5a6268, #495057);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+    }
+    /* ENDE NEUE BUTTON-STILE */
+    
+    /* NEU: Klasse für den heutigen Tag im Kalender */
+    .today-red-text {
+        color: red !important; /* Wichtig, um andere Farben zu überschreiben */
+    }
+
+    /* NEU: Styles für das E-Mail-Vorschau-Modal */
+    #emailPreviewModal .modal-content {
+        max-width: 800px;
         flex-direction: column;
-      }
-      .modal-buttons button {
-        width: 100%;
-      }
+        gap: 15px;
+    }
+    #emailPreviewModal h3 {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+    /* Angepasst für HTML-Inhalt */
+    #emailPreviewModal #emailPreviewContent {
+        background-color: #f0f0f0;
+        padding: 15px;
+        border-radius: 8px;
+        max-height: 60vh;
+        overflow-y: auto;
+        border: 1px solid #e0e0e0;
+        font-family: Arial, sans-serif; /* Standard-Schriftart für E-Mail-Vorschau */
+        font-size: 0.9em;
+        line-height: 1.5;
+        color: #333;
+        /* Wichtig: Entferne pre-wrap, da wir HTML rendern */
+        white-space: normal; 
+        word-wrap: break-word;
+    }
+    #emailPreviewModal .modal-buttons {
+        margin-top: 10px;
+    }
+
+    /* NEU: Button-Stil für "Manuell gesendet" */
+    .btn-manual-sent {
+        background: linear-gradient(145deg, #6f42c1, #563d7c); /* Lila Gradient */
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border: none;
+    }
+    .btn-manual-sent:hover {
+        background: linear-gradient(145deg, #563d7c, #463260);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0,0,0,0.15);
     }
   </style>
 </head>
-<body class="font-inter">
-  <div class="dashboard-container">
-    <aside class="sidebar">
-      <div>
-        <!-- Bitte ersetzen Sie 'https://placehold.co/100x100/E0F2F7/000000?text=VG%20Cargo%20Logo' durch den tatsächlichen Pfad zu Ihrem VG Cargo Logo im Verzeichnis. -->
-        <img src="VG_Cargo_Logo_small.png">
-        <div class="nav-buttons">
-          <button onclick="filterTable()">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-            Dashboard
-          </button>
-          <button id="createNewRequestBtn">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-            Charter Anfrage erstellen
-          </button>
-          <button id="openStatisticsBtn" class="admin-only">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+<body class="font-inter flex flex-col lg:flex-row min-h-screen text-gray-800">
+  <div class="main">
+    <div class="logo-container"> <!-- NEU: Logo-Container -->
+        <img src="VG_Cargo_Logo_small.png"> <!-- Dein Logo-Bild -->
+    </div>
+
+    <div class="header-area" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h1 style="flex-grow: 1; text-align: center; margin-left: 70px; font-size: 2.5rem;">Charter Dashboard</h1> <!-- Überschrift vergrößert -->
+      <button onclick="openProfileModal()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+        Profil
+      </button>
+    </div>
+
+    <div style="display: flex; gap: 10px; margin: 10px 0 20px;">
+        <button onclick="createNewRequest()" style="padding: 10px 16px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+          Charter Anfrage erstellen
+        </button>
+        <button onclick="openStatisticsModal()" style="padding: 10px 16px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer;">
             Statistik anzeigen
-          </button>
-        </div>
-      </div>
-      <div class="bottom-section">
-        <div class="user-info">
-          Angemeldet als: <span id="loggedInUsername"></span> (<span id="loggedInUserRole"></span>)
-        </div>
-        <div class="action-buttons mt-4">
-          <button onclick="openProfileModal()">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            Profil
-          </button>
-          <button onclick="logoutUser()" class="logout-button">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-            Abmelden
-          </button>
-        </div>
-      </div>
-    </aside>
+        </button>
+    </div>
 
-    <main class="main">
-      <div class="dashboard-header-and-calendar-wrapper">
-        <div class="header">
-          <h1 class="text-3xl font-bold text-gray-800">Charter Dashboard</h1>
-          <div class="text-right text-gray-600">
-            <div id="currentDate">Datum:</div>
-            <div id="clock">Uhrzeit:</div>
-          </div>
-        </div>
-        <!-- Calendar moved here -->
-        <div class="calendar">
-          <div class="nav">
-            <button onclick="shiftCalendar(-1)">← Back</button>
-            <button onclick="shiftCalendar(1)">Forward →</button>
-          </div>
-          <div id="calendarArea" class="calendar-wrapper">
-            <!-- Calendar blocks will be dynamically added here by script.js -->
-          </div>
-        </div>
+
+    <div style="text-align: center; font-size: 16px; color: #e63244;">
+      <span id="currentDate">Date: --</span> | <span id="clock">Time: --:--:--</span>
+    </div>
+    <div style="margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
+      <label>Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
+      <label>Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
+      <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" /> <!-- NEU: Flugnummer Suchfeld -->
+      <label>From:</label> <input type="date" id="fromDate" onchange="filterTable()" />
+      <label>To:</label> <input type="date" id="toDate" onchange="filterTable()" />
+      <!-- Moderne Archiv-Checkbox -->
+      <div class="inline-flex items-center ml-4">
+          <label for="archiveCheckbox" class="font-medium text-gray-700 mr-2 cursor-pointer">Archiv anzeigen:</label>
+          <input type="checkbox" id="archiveCheckbox" class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer border-gray-300 shadow-sm">
       </div>
+    </div>
+    <div class="summary" id="summaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</div>
+    <table id="dataTable"><thead><tr><th>Reference</th><th>Date</th><th>Airline</th><th>Tonnage</th><th>Action</th></tr></thead><tbody></tbody></table>
 
-      <div class="search-filter-bar">
-        <input type="text" id="refSearch" placeholder="Referenz suchen..." onkeyup="filterTable()">
-        <input type="text" id="airlineSearch" placeholder="Airline suchen..." onkeyup="filterTable()">
-        <input type="text" id="flightNumberSearch" placeholder="Flugnummer suchen..." onkeyup="filterTable()">
-        <label for="fromDate" class="ml-2">Von:</label>
-        <input type="date" id="fromDate" onchange="filterTable()">
-        <label for="toDate">Bis:</label>
-        <input type="date" id="toDate" onchange="filterTable()">
-        <label class="flex items-center space-x-2">
-            <input type="checkbox" id="archiveCheckbox" onchange="filterTable()" class="form-checkbox h-4 w-4 text-blue-600">
-            <span class="text-gray-700">Archiv anzeigen</span>
-        </label>
-        <input type="text" id="callSignSearchInput" placeholder="Call Sign für FlightRadar24..." class="flex-grow">
-        <button onclick="searchFlightRadar24()">FlightRadar24 Suche</button>
-      </div>
-
-      <div id="saveFeedback" class="save-feedback"></div>
-
-      <!-- Unbestätigte Charteranfragen -->
-      <div class="table-section">
-        <h3 class="text-blue-700">Unbestätigte Charteranfragen</h3>
-        <p class="text-gray-600" id="unconfirmedSummaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</p>
-        <table id="unconfirmedDataTable" class="min-w-full bg-white">
-          <thead>
-            <tr>
-              <th>Ref</th>
-              <th>Flight Date</th>
-              <th>Airline</th>
-              <th>Tonnage (kg)</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Daten werden hier dynamisch eingefügt -->
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Bestätigte Charteranfragen -->
-      <div class="table-section">
-        <h3 class="text-green-700">Bestätigte Charteranfragen</h3>
-        <p class="text-gray-600" id="confirmedSummaryInfo">Total Flights: 0 | Total Tonnage: 0 kg</p>
-        <table id="confirmedDataTable" class="min-w-full bg-white">
-          <thead>
-            <tr>
-              <th>Ref</th>
-              <th>Flight Date</th>
-              <th>Airline</th>
-              <th>Tonnage (kg)</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Daten werden hier dynamisch eingefügt -->
-          </tbody>
-        </table>
-      </div>
-    </main>
-
-    <!-- Modals -->
-    <!-- Detail Modal -->
+    <!-- Detail Modal (existing) -->
     <div class="modal" id="detailModal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeModal()">✖</span>
-            <h3>Charteranfrage Details</h3>
-            <div id="modalBody">
-                <!-- Formularfelder werden hier dynamisch geladen -->
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-cancel" onclick="closeModal()">Abbrechen</button>
-                <button class="btn-save" onclick="saveDetails()">Speichern</button>
-            </div>
-        </div>
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeModal()">✖</span>
+        <div id="modalBody" style="width:100%; display:flex; flex-wrap:wrap; gap:20px;"></div>
+      </div>
     </div>
 
-    <!-- Tagesübersicht Flüge Modal (NEU) -->
-    <div class="modal" id="dayOverviewModal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeDayOverviewModal()">✖</span>
-            <h3>Tagesübersicht Flüge: <span id="dayOverviewDate"></span></h3>
-            <div id="dayOverviewBody" class="mt-4 text-gray-700">
-                <!-- Flüge des Tages werden hier geladen -->
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-cancel" onclick="closeDayOverviewModal()">Schließen</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- History Modal -->
+    <!-- NEU: History Modal -->
     <div class="modal" id="historyModal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeHistoryModal()">✖</span>
-            <h3>Historie für Referenz: <span id="historyRef"></span></h3>
-            <div id="historyBody" class="mt-4 text-gray-700">
-                <!-- History-Einträge werden hier geladen -->
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-cancel" onclick="closeHistoryModal()">Schließen</button>
-            </div>
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeHistoryModal()">✖</span>
+        <h3>History for Reference: <span id="historyRef"></span></h3>
+        <div id="historyBody" style="width:100%; max-height: 70vh; overflow-y: auto;">
+          <!-- History content will be loaded here -->
         </div>
+      </div>
     </div>
 
-    <!-- Profile Modal -->
+    <!-- NEU: Profil Modal -->
     <div class="modal" id="profileModal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeProfileModal()">✖</span>
-            <h3>Profil bearbeiten</h3>
-            <div class="modal-section">
-                <p>Benutzername: <span id="loggedInUsernameProfile" class="font-semibold"></span></p>
-                <p>Rolle: <span id="loggedInUserRoleProfile" class="font-semibold"></span></p>
-                <label for="newPasswordInput">Neues Passwort:</label>
-                <input type="password" id="newPasswordInput" placeholder="Neues Passwort eingeben">
-                <label for="confirmPasswordInput">Neues Passwort bestätigen:</label>
-                <input type="password" id="confirmPasswordInput" placeholder="Passwort bestätigen">
-                <p id="passwordChangeMessage" class="text-sm"></p>
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-cancel" onclick="closeProfileModal()">Abbrechen</button>
-                <button class="btn-save" onclick="changePassword()">Passwort ändern</button>
-            </div>
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeProfileModal()">✖</span>
+        <h3 style="width:100%; text-align: center;">Profilverwaltung</h3>
+        <p>Angemeldet als: <span id="loggedInUsername"></span> (<span id="loggedInUserRole"></span>)</p>
+        <div style="width:100%; margin-top: 20px;">
+          <label>Neues Passwort:</label>
+          <input type="password" id="newPasswordInput" style="width: calc(100% - 12px);">
+          <label>Passwort bestätigen:</label>
+          <input type="password" id="confirmPasswordInput" style="width: calc(100% - 12px);">
+          <button onclick="changePassword()" style="width: 100%; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 6px; margin-top: 15px; cursor: pointer;">
+            Passwort ändern
+          </button>
+          <p id="passwordChangeMessage" style="color: red; margin-top: 10px;"></p>
         </div>
+        <button onclick="logoutUser()" style="width: 100%; padding: 10px; background-color: #dc3545; color: white; border: none; border-radius: 6px; margin-top: 20px; cursor: pointer;">
+          Abmelden
+        </button>
+      </div>
     </div>
 
-    <!-- Statistics Modal -->
+    <!-- NEU: Statistik Modal -->
     <div class="modal" id="statisticsModal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeStatisticsModal()">✖</span>
-            <h3>Statistiken</h3>
-            <div class="date-filter-group">
-                <label for="statFromDate">Von:</label>
-                <input type="date" id="statFromDate" onchange="generateStatistics()">
-                <label for="statToDate">Bis:</label>
-                <input type="date" id="statToDate" onchange="generateStatistics()">
-                <button onclick="downloadStatisticsToCSV()">Download CSV</button>
-            </div>
-            <div id="statisticsBody">
-                <!-- Statistiken und Diagramme werden hier geladen -->
-                <div class="chart-container">
-                    <h4>Tonnage pro Monat</h4>
-                    <canvas id="tonnagePerMonthChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <h4>Tonnage pro Kunde</h4>
-                    <canvas id="tonnagePerCustomerChart"></canvas>
-                </div>
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-cancel" onclick="closeStatisticsModal()">Schließen</button>
-            </div>
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeStatisticsModal()">✖</span>
+        <h3>Statistik</h3>
+        <div id="statisticsBody">
+          <!-- Datumsauswahl und Download-Button zuerst -->
+          <div style="width:100%; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 15px;">
+              <label for="statFromDate">Von:</label>
+              <input type="date" id="statFromDate" onchange="generateStatistics()">
+              <label for="statToDate">Bis:</label>
+              <input type="date" id="statToDate" onchange="generateStatistics()">
+              <button onclick="downloadStatisticsToCSV()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                  Statistik herunterladen
+              </button>
+          </div>
+          <!-- Diagramme und Tabellen werden hier dynamisch von generateStatistics() eingefügt -->
+          <!-- Siehe generateStatistics() in script.js für die genaue Reihenfolge -->
+
+          <div class="chart-container">
+              <h4>Tonnage pro Monat</h4>
+              <canvas id="tonnagePerMonthChart"></canvas>
+          </div>
+          <div class="chart-container">
+              <h4>Tonnage pro Kunde</h4>
+              <canvas id="tonnagePerCustomerChart"></canvas>
+          </div>
         </div>
+      </div>
     </div>
 
-    <!-- E-Mail Bestätigungsmodal -->
+    <!-- NEU: E-Mail Bestätigungsmodal -->
     <div class="modal" id="emailConfirmationModal">
         <div class="modal-content">
             <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeEmailConfirmationModal()">✖</span>
-            <h3>Charter Confirmation senden</h3>
-            <p>Möchten Sie die Final Charter Confirmation für Referenz: <span id="confirmRef" class="font-semibold"></span> an <span id="confirmEmail" class="font-semibold"></span> senden?</p>
-            <label for="additionalEmail">Zusätzliche E-Mail (optional):</label>
-            <input type="email" id="additionalEmail" placeholder="Weitere E-Mail-Adresse eingeben">
-            <p id="emailConfirmationMessage" class="text-sm text-red-500"></p>
+            <h3>Charter Bestätigung senden</h3>
+            <p>Bitte geben Sie die E-Mail-Adresse des Empfängers ein:</p>
+            <input type="email" id="recipientEmailInput" placeholder="Empfänger E-Mail" required>
+            <p id="emailConfirmationMessage" style="color: red;"></p>
             <div class="modal-buttons">
-                <button class="btn-email-action send" id="sendEmailConfirmBtn">E-Mail senden</button>
+                <button class="btn-email-action preview" id="previewEmailBtn">Vorschau</button>
+                <button class="btn-email-action send" id="sendEmailConfirmBtn">Senden</button>
                 <button class="btn-email-action cancel" onclick="closeEmailConfirmationModal()">Abbrechen</button>
             </div>
         </div>
     </div>
 
-    <!-- E-Mail Vorschau Modal -->
+    <!-- NEU: E-Mail Vorschau Modal -->
     <div class="modal" id="emailPreviewModal">
         <div class="modal-content">
             <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeEmailPreviewModal()">✖</span>
@@ -906,12 +644,19 @@
             <!-- Geändert von <pre> zu <div> um HTML zu rendern -->
             <div id="emailPreviewContent"></div> 
             <div class="modal-buttons">
-                <button class="btn-manual-sent" id="markAsSentBtn">E-Mail senden</button>
+                <button class="btn-manual-sent" id="markAsSentBtn">Charter Confirmation gesendet</button> <!-- NEU: Button hinzugefügt -->
                 <button class="btn-email-action cancel" onclick="closeEmailPreviewModal()">Schließen</button>
             </div>
         </div>
     </div>
 
+  </div>
+  <div class="calendar">
+    <div class="nav">
+      <button onclick="shiftCalendar(-1)">← Back</button>
+      <button onclick="shiftCalendar(1)">Forward →</button>
+    </div>
+    <div id="calendarArea" class="calendar-wrapper"></div>
   </div>
   <!-- WICHTIGE KORREKTUR: script.js hierher verschoben und 'defer' entfernt -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js CDN hinzufügen -->
