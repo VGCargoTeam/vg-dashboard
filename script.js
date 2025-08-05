@@ -1593,7 +1593,7 @@ function openInvoiceCreationModal(ref) {
     }
 
     const modal = document.getElementById('invoiceCreationModal');
-    document.getElementById('invoiceCreationRef').textContent = ref;
+    // document.getElementById('invoiceCreationRef').textContent = ref; // Entfernt, wie gewünscht
 
     document.getElementById('invoiceRecipient').innerHTML = `
         <h4>Rechnungsempfänger</h4>
