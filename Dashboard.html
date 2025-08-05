@@ -29,7 +29,7 @@
       background-attachment: fixed;
     }
     .main {
-      flex: 1;
+      /* flex: 1; removed */
       background: rgba(255,255,255,0.85);
       backdrop-filter: blur(6px);
       padding: 30px;
@@ -39,11 +39,11 @@
       position: relative;
     }
     .calendar {
-      width: 500px;
+      /* width: 500px; removed */
       background: rgba(255,255,255,0.85);
       backdrop-filter: blur(6px);
       padding: 20px;
-      margin: 20px 20px 20px 0;
+      margin: 20px;
       border-radius: 12px;
       box-shadow: 0 0 20px rgba(0,0,0,0.3);
       overflow: visible;
@@ -531,8 +531,8 @@
     }
   </style>
 </head>
-<body class="font-inter flex flex-col lg:flex-row min-h-screen text-gray-800">
-  <div class="main">
+<body class="font-inter flex flex-col xl:flex-row min-h-screen text-gray-800">
+  <div class="main w-full xl:flex-1">
     <div class="logo-container"> <!-- NEU: Logo-Container -->
         <img src="VG_Cargo_Logo_small.png"> <!-- Dein Logo-Bild -->
     </div>
@@ -780,7 +780,7 @@
     </div>
 
   </div>
-  <div class="calendar">
+  <div class="calendar w-full xl:w-[500px] xl:flex-shrink-0">
     <div class="nav">
       <button onclick="shiftCalendar(-1)">← Back</button>
       <button onclick="shiftCalendar(1)">Forward →</button>
