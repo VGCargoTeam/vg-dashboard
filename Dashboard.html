@@ -51,7 +51,7 @@
     .calendar-wrapper {
         overflow: visible;
     }
-    input[type="text"], input[type="date"] {
+    input[type="text"], input[type="date"], input[type="password"], input[type="email"], input[type="time"], input[type="number"] {
       padding: 6px 10px;
       margin: 5px;
       border: 1px solid #ccc;
@@ -163,7 +163,6 @@
         width: 100%;
         max-height: 70vh;
         overflow-y: auto;
-        /* Sicherstellen, dass der Inhalt vertikal gestapelt wird */
         display: flex;
         flex-direction: column;
         gap: 20px; /* Abstand zwischen den Statistikbereichen */
@@ -199,7 +198,7 @@
       flex: 1 1 45%;
       margin: 0;
     }
-    .modal-content input, .modal-content textarea {
+    .modal-content input, .modal-content textarea, .modal-content select {
       width: 100%;
       padding: 6px;
       margin-top: 5px;
@@ -215,7 +214,6 @@
     }
     .logo-container img {
         height: 50px; /* Oder die gewünschte Größe */
-        /* Optional: Schatten, Border-Radius für das Logo selbst */
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
@@ -319,9 +317,6 @@
       opacity: 0;
       visibility: hidden;
       transition: opacity 0.2s, visibility 0.2s;
-
-      /* Zusätzliche Anpassung, um sicherzustellen, dass es nicht den Bildschirmrand überlappt */
-      /* Max-width und transform: translateX(-50%) sollten die meisten Fälle abdecken */
     }
 
     [data-tooltip]:hover::before {
@@ -480,7 +475,6 @@
         font-size: 0.9em;
         line-height: 1.5;
         color: #333;
-        /* Wichtig: Entferne pre-wrap, da wir HTML rendern */
         white-space: normal; 
         word-wrap: break-word;
     }
@@ -505,6 +499,36 @@
         transform: translateY(-2px);
         box-shadow: 0 6px 8px rgba(0,0,0,0.15);
     }
+
+    /* NEU: STILE FÜR RECHNUNGS-MODALS */
+    #invoiceListModal .modal-content, #invoiceCreationModal .modal-content {
+        max-width: 1000px; /* Breiter für Rechnungsdetails */
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    #invoiceCreationModal .invoice-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        width: 100%;
+    }
+    #invoiceCreationModal .invoice-section {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #eee;
+    }
+    #invoiceCreationModal .invoice-section h4 {
+        margin-top: 0;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 5px;
+    }
+    #invoiceCostsTable th, #invoiceCostsTable td {
+        text-align: left;
+    }
+    #invoiceCostsTable input {
+        width: 100%;
+    }
   </style>
 </head>
 <body class="font-inter flex flex-col lg:flex-row min-h-screen text-gray-800">
@@ -527,6 +551,12 @@
         <button onclick="openStatisticsModal()" style="padding: 10px 16px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer;">
             Statistik anzeigen
         </button>
+        <!-- NEU: Button nur für Admins -->
+        <span class="admin-only" style="display: none;">
+          <button onclick="openInvoiceListModal()" style="padding: 10px 16px; background-color: #ffc107; color: black; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+              Rechnung erstellen
+          </button>
+        </span>
     </div>
 
 
@@ -558,6 +588,7 @@
                         <th>Date</th>
                         <th>Airline</th>
                         <th>Tonnage</th>
+                        <th>Rechnung</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -580,6 +611,7 @@
                         <th>Date</th>
                         <th>Airline</th>
                         <th>Tonnage</th>
+                        <th>Rechnung</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -690,6 +722,60 @@
                 <button class="btn-email-action cancel" onclick="closeEmailPreviewModal()">Schließen</button>
             </div>
         </div>
+    </div>
+
+    <!-- NEU: Modal für Rechnungsliste -->
+    <div class="modal" id="invoiceListModal">
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeInvoiceListModal()">✖</span>
+        <h3>Noch nicht abgerechnete Flüge</h3>
+        <div id="invoiceListBody" style="width:100%; max-height: 70vh; overflow-y: auto;">
+          <!-- Liste der Flüge wird hier von script.js eingefügt -->
+        </div>
+      </div>
+    </div>
+
+    <!-- NEU: Modal für Rechnungserstellung -->
+    <div class="modal" id="invoiceCreationModal">
+      <div class="modal-content">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeInvoiceCreationModal()">✖</span>
+        <h3>Rechnung erstellen für Referenz: <span id="invoiceCreationRef"></span></h3>
+        <div id="invoiceCreationBody" style="width:100%;">
+          <div class="invoice-grid">
+            <div class="invoice-section" id="invoiceRecipient">
+              <h4>Rechnungsempfänger</h4>
+              <!-- Empfängerdetails werden hier von script.js eingefügt -->
+            </div>
+            <div class="invoice-section" id="invoiceSender">
+              <h4>Rechnungsersteller</h4>
+              <!-- Erstellerdetails werden hier von script.js eingefügt -->
+            </div>
+          </div>
+          <div class="invoice-section" style="margin-top: 20px;">
+            <h4>Kostenpositionen</h4>
+            <table id="invoiceCostsTable" class="w-full">
+              <thead>
+                <tr>
+                  <th>Leistungsbeschreibung</th>
+                  <th style="width: 150px;">Preis (€)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Kostenpositionen werden hier von script.js eingefügt -->
+              </tbody>
+            </table>
+          </div>
+          <div class="invoice-section" style="margin-top: 20px;">
+            <label for="invoiceNumberInput"><b>Rechnungsnummer:</b></label>
+            <input type="text" id="invoiceNumberInput" placeholder="Rechnungsnummer manuell eintragen">
+          </div>
+          <div style="width:100%; text-align:center; margin-top: 20px;">
+            <button onclick="saveInvoice()" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+              Rechnung erstellen und speichern
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>
