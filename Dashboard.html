@@ -508,9 +508,15 @@
     }
     #invoiceCreationModal .invoice-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr; /* Standard: eine Spalte */
         gap: 20px;
         width: 100%;
+    }
+    /* KORREKTUR: Media Query für zwei Spalten auf größeren Bildschirmen */
+    @media (min-width: 768px) {
+      #invoiceCreationModal .invoice-grid {
+        grid-template-columns: repeat(2, 1fr); /* Zwei Spalten ab 768px Breite */
+      }
     }
     #invoiceCreationModal .invoice-section {
         background: #f9f9f9;
