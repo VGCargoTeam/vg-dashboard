@@ -237,7 +237,9 @@ function renderRequestTables(dataToRender = requestData) {
 
         // NEU: Rechnungsstatus
         const isInvoiced = String(r.RechnungErstellt || '').toLowerCase() === 'ja';
-        const invoiceStatusHTML = isInvoiced ? `<span class="text-green-600 font-bold">${r.Rechnungsnummer || 'Erstellt'}</span>` : '<span class="text-red-600">Offen</span>';
+        const invoiceStatusHTML = isInvoiced 
+            ? `<a href="javascript:void(0);" onclick="openInvoiceView('${r.Ref}')" class="text-green-600 font-bold underline">${r.Rechnungsnummer || 'Ansehen'}</a>` 
+            : '<span class="text-red-600">Offen</span>';
 
         const row = document.createElement("tr");
         row.innerHTML = `
@@ -279,8 +281,8 @@ function renderRequestTables(dataToRender = requestData) {
 function filterTable() {
   const refSearch = document.getElementById("refSearch").value.toLowerCase();
   const airlineSearch = document.getElementById("airlineSearch").value.toLowerCase();
-  const flightNumberSearchInput = document.getElementById("flightNumberSearch");
-  const flightNumberSearch = flightNumberSearchInput ? flightNumberSearchInput.value.toLowerCase() : '';
+  const flightNumberSearch = (document.getElementById("flightNumberSearch")?.value || '').toLowerCase();
+  const invoiceNumberSearch = (document.getElementById("invoiceNumberSearch")?.value || '').toLowerCase(); // NEU
   const fromDateInput = document.getElementById("fromDate").value;
   const toDateInput = document.getElementById("toDate").value;
   const showArchive = document.getElementById("archiveCheckbox") ? document.getElementById("archiveCheckbox").checked : false;
@@ -289,6 +291,7 @@ function filterTable() {
     const matchesRef = (r.Ref || '').toLowerCase().includes(refSearch);
     const matchesAirline = (r.Airline || '').toLowerCase().includes(airlineSearch);
     const matchesFlightNumber = (r.Flugnummer || '').toLowerCase().includes(flightNumberSearch);
+    const matchesInvoiceNumber = (r.Rechnungsnummer || '').toLowerCase().includes(invoiceNumberSearch); // NEU
 
     let flightDateObj;
     if (r['Flight Date'] && typeof r['Flight Date'] === 'string' && r['Flight Date'].includes('-')) {
@@ -313,7 +316,7 @@ function filterTable() {
         if (flightDateObj > toDateObj) matchesDateRange = false;
     }
 
-    return matchesRef && matchesAirline && matchesFlightNumber && matchesDateRange && passesPastFlightFilter;
+    return matchesRef && matchesAirline && matchesFlightNumber && matchesInvoiceNumber && matchesDateRange && passesPastFlightFilter; // NEU: matchesInvoiceNumber
   });
   renderRequestTables(filtered);
   renderCalendars();
@@ -393,7 +396,15 @@ function openModal(originalIndex) {
       if (isPriceRelatedOrZusatzkostenField && currentUser.role === 'viewer') {
           return ''; // Leerer String, um das Feld komplett zu überspringen
       }
-      // Für Admins sind diese Felder editierbar, es sei denn, sie sind in isAlwaysReadOnlyField.
+      
+      // NEU: Logik für Rechnungsnummer im Detail-Modal
+      if (key === "Rechnungsnummer") {
+        if (r.RechnungErstellt === 'Ja' && r.Rechnungsnummer) {
+          return `<label>${label}:</label><p><a href="javascript:void(0);" onclick="openInvoiceView('${r.Ref}')" class="text-blue-600 font-bold underline">${r.Rechnungsnummer}</a></p>`;
+        } else {
+          return `<label>${label}:</label><p>Noch nicht erstellt</p>`;
+        }
+      }
 
 
       if (key === "Flight Date") {
@@ -463,7 +474,8 @@ function openModal(originalIndex) {
     { label: "Service Description Accepted", key: "Service Description Accepted" },
     { label: "Accepted By Name", key: "Accepted By Name" },
     { label: "Acceptance Timestamp", key: "Acceptance Timestamp" },
-    { label: "Final Confirmation Sent", key: "Final Confirmation Sent" } // NEU: Feld hinzugefügt
+    { label: "Final Confirmation Sent", key: "Final Confirmation Sent" },
+    { label: "Rechnungsnummer", key: "Rechnungsnummer" } // NEU
   ];
 
   const flightFields = [
@@ -1076,7 +1088,9 @@ function generateStatistics() {
 
     let totalFlights = filteredData.length;
     let totalTonnage = 0;
-    let totalRevenue = 0; // NEU: Gesamtumsatz
+    let totalRevenue = 0;
+    const dangerousGoodsCount = { "Ja": 0, "Nein": 0, "N/A": 0 };
+    const vorfeldbegleitungCount = { "Ja": 0, "Nein": 0 };
     const tonnagePerMonth = {};
     const tonnagePerCustomer = {};
 
@@ -1084,12 +1098,17 @@ function generateStatistics() {
         const tonnage = parseFloat(String(item.Tonnage).replace(',', '.') || "0") || 0;
         totalTonnage += tonnage;
 
-        // NEU: Umsatzberechnung
         const rate = parseFloat(String(item.Rate).replace(',', '.') || "0") || 0;
         const security = parseFloat(String(item['Security charges']).replace(',', '.') || "0") || 0;
         const cons10ft = parseFloat(String(item['10ft consumables']).replace(',', '.') || "0") || 0;
         const cons20ft = parseFloat(String(item['20ft consumables']).replace(',', '.') || "0") || 0;
         totalRevenue += rate + security + cons10ft + cons20ft;
+
+        const dgStatus = String(item['Dangerous Goods'] || 'N/A');
+        dangerousGoodsCount[dgStatus]++;
+        
+        const vbStatus = String(item['Vorfeldbegleitung'] || 'Nein').toLowerCase() === 'ja' ? 'Ja' : 'Nein';
+        vorfeldbegleitungCount[vbStatus]++;
         
         if (item['Flight Date']) {
             const yearMonth = item['Flight Date'].substring(0, 7);
@@ -1103,10 +1122,15 @@ function generateStatistics() {
     let statsHTML = '<h4>Gesamtübersicht</h4>';
     statsHTML += `<p>Gesamtzahl Flüge: <strong>${totalFlights}</strong></p>`;
     statsHTML += `<p>Gesamte Tonnage: <strong>${totalTonnage.toLocaleString('de-DE')} kg</strong></p>`;
-    // NEU: Anzeige Gesamtumsatz
     if (currentUser.role === 'admin') {
         statsHTML += `<p>Gesamtumsatz: <strong>${totalRevenue.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</strong></p>`;
     }
+    
+    statsHTML += '<h4>Vorfeldbegleitung</h4>';
+    statsHTML += `<ul><li>Ja: ${vorfeldbegleitungCount["Ja"]}</li><li>Nein: ${vorfeldbegleitungCount["Nein"]}</li></ul>`;
+
+    statsHTML += '<h4>Dangerous Goods (DGR)</h4>';
+    statsHTML += `<ul><li>Ja: ${dangerousGoodsCount["Ja"]}</li><li>Nein: ${dangerousGoodsCount["Nein"]}</li><li>N/A: ${dangerousGoodsCount["N/A"]}</li></ul>`;
     
     const firstChartContainer = statisticsBody.querySelector('.chart-container');
     if (firstChartContainer) {
@@ -1584,7 +1608,7 @@ function closeInvoiceListModal() {
     document.getElementById('invoiceListModal').style.display = 'none';
 }
 
-function openInvoiceCreationModal(ref) {
+function openInvoiceCreationModal(ref, isViewOnly = false) {
     currentInvoiceRef = ref;
     const flightData = requestData.find(r => r.Ref === ref);
     if (!flightData) {
@@ -1593,48 +1617,44 @@ function openInvoiceCreationModal(ref) {
     }
 
     const modal = document.getElementById('invoiceCreationModal');
-    // document.getElementById('invoiceCreationRef').textContent = ref; // Entfernt, wie gewünscht
-
-    document.getElementById('invoiceRecipient').innerHTML = `
-        <h4>Rechnungsempfänger</h4>
-        <p><strong>Firma:</strong> ${flightData['Billing Company'] || '-'}</p>
-        <p><strong>Adresse:</strong> ${flightData['Billing Address'] || '-'}</p>
-        <p><strong>Steuernr.:</strong> ${flightData['Tax Number'] || '-'}</p>
-        <p><strong>Kontakt:</strong> ${flightData['Contact Name Invoicing'] || '-'}</p>
-    `;
-    document.getElementById('invoiceSender').innerHTML = `
-        <h4>Rechnungsersteller</h4>
-        <p>VG Cargo GmbH</p>
-        <p>Gebäude 860</p>
-        <p>55483 Hahn-Flughafen</p>
-        <p><strong>Bearbeiter:</strong> ${currentUser.name}</p>
-    `;
+    
+    document.getElementById('invoiceRecipient').innerHTML = `<h4>Rechnungsempfänger</h4><p><strong>Firma:</strong> ${flightData['Billing Company'] || '-'}</p><p><strong>Adresse:</strong> ${flightData['Billing Address'] || '-'}</p><p><strong>Steuernr.:</strong> ${flightData['Tax Number'] || '-'}</p>`;
+    document.getElementById('invoiceSender').innerHTML = `<h4>Rechnungsersteller</h4><p>VG Cargo GmbH</p><p>Gebäude 860</p><p>55483 Hahn-Flughafen</p><p><strong>Bearbeiter:</strong> ${currentUser.name}</p>`;
 
     const costsBody = document.querySelector('#invoiceCostsTable tbody');
     costsBody.innerHTML = '';
-    const costFields = {
-      'Rate': 'Rate',
-      'Security charges': 'Security charges (X-Ray, ETD, EDD)',
-      '10ft consumables': '10ft consumables',
-      '20ft consumables': '20ft consumables',
-      'Zusatzkosten': 'Zusatzkosten'
-    };
+    const costFields = { 'Rate': 'Rate', 'Security charges': 'Security charges', '10ft consumables': '10ft consumables', '20ft consumables': '20ft consumables', 'Zusatzkosten': 'Zusatzkosten' };
     
     for (const key in costFields) {
         const value = parseFloat(String(flightData[key] || '0').replace(',', '.')) || 0;
         const description = key === 'Zusatzkosten' && flightData[key] ? flightData[key] : costFields[key];
-        const row = `
-            <tr>
-                <td><input type="text" data-cost-key="${key}" class="invoice-desc" value="${description}"></td>
-                <td><input type="number" step="0.01" data-cost-value="${key}" class="invoice-price" value="${value.toFixed(2)}"></td>
-            </tr>
-        `;
+        const readonlyAttr = isViewOnly ? 'readonly' : '';
+        const row = `<tr>
+            <td><input type="text" value="${description}" ${readonlyAttr}></td>
+            <td><input type="number" step="0.01" value="${value.toFixed(2)}" ${readonlyAttr}></td>
+        </tr>`;
         costsBody.innerHTML += row;
     }
     
-    document.getElementById('invoiceNumberInput').value = '';
+    const invoiceNumberInput = document.getElementById('invoiceNumberInput');
+    const invoiceButtonContainer = document.getElementById('invoiceButtonContainer');
+
+    if (isViewOnly) {
+        invoiceNumberInput.value = flightData.Rechnungsnummer || 'N/A';
+        invoiceNumberInput.readOnly = true;
+        invoiceButtonContainer.innerHTML = `<button onclick="closeInvoiceCreationModal()" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Schließen</button>`;
+    } else {
+        invoiceNumberInput.value = '';
+        invoiceNumberInput.readOnly = false;
+        invoiceButtonContainer.innerHTML = `<button onclick="saveInvoice()" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Rechnung erstellen und speichern</button>`;
+    }
+    
     closeInvoiceListModal();
     modal.style.display = 'flex';
+}
+
+function openInvoiceView(ref) {
+    openInvoiceCreationModal(ref, true);
 }
 
 function closeInvoiceCreationModal() {
@@ -1718,5 +1738,6 @@ window.closeInvoiceListModal = closeInvoiceListModal;
 window.openInvoiceCreationModal = openInvoiceCreationModal;
 window.closeInvoiceCreationModal = closeInvoiceCreationModal;
 window.saveInvoice = saveInvoice;
+window.openInvoiceView = openInvoiceView; // KORREKTUR: Diese Zeile wurde hinzugefügt
 // Initialisiere Auth-Status, sobald das DOM geladen ist.
 checkAuthStatus();
