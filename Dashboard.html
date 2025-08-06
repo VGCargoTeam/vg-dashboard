@@ -572,7 +572,8 @@
     <div style="margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
       <label>Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
       <label>Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
-      <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" /> <!-- NEU: Flugnummer Suchfeld -->
+      <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" />
+      <label>Rechnungsnr:</label> <input type="text" id="invoiceNumberSearch" onkeyup="filterTable()" /> <!-- NEU -->
       <label>From:</label> <input type="date" id="fromDate" onchange="filterTable()" />
       <label>To:</label> <input type="date" id="toDate" onchange="filterTable()" />
       <!-- Moderne Archiv-Checkbox -->
@@ -745,8 +746,7 @@
     <div class="modal" id="invoiceCreationModal">
       <div class="modal-content">
         <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeInvoiceCreationModal()">✖</span>
-        <!-- KORRIGIERTE POSITION DER ÜBERSCHRIFT -->
-        <!-- <h3 style="width:100%; text-align: center; margin-bottom: 15px;">Rechnung erstellen für Referenz: <span id="invoiceCreationRef"></span></h3> -->
+        <!-- KORREKTUR: Überschrift entfernt -->
         <div id="invoiceCreationBody" style="width:100%;">
           <div class="invoice-grid">
             <div class="invoice-section" id="invoiceRecipient">
@@ -776,7 +776,7 @@
             <label for="invoiceNumberInput"><b>Rechnungsnummer:</b></label>
             <input type="text" id="invoiceNumberInput" placeholder="Rechnungsnummer manuell eintragen">
           </div>
-          <div style="width:100%; text-align:center; margin-top: 20px;">
+          <div id="invoiceButtonContainer" style="width:100%; text-align:center; margin-top: 20px;">
             <button onclick="saveInvoice()" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
               Rechnung erstellen und speichern
             </button>
