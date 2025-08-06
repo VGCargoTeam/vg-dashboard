@@ -1628,10 +1628,11 @@ function openInvoiceCreationModal(ref, isViewOnly = false) {
     for (const key in costFields) {
         const value = parseFloat(String(flightData[key] || '0').replace(',', '.')) || 0;
         const description = key === 'Zusatzkosten' && flightData[key] ? flightData[key] : costFields[key];
-        const readonlyAttr = isViewOnly ? 'readonly' : '';
+        // KORREKTUR: readonly-Attribut wird jetzt entfernt, wenn isViewOnly true ist
+        const readonlyAttr = ''; // Immer bearbeitbar
         const row = `<tr>
-            <td><input type="text" value="${description}" ${readonlyAttr}></td>
-            <td><input type="number" step="0.01" value="${value.toFixed(2)}" ${readonlyAttr}></td>
+            <td><input type="text" data-cost-key="${key}" class="invoice-desc" value="${description}" ${readonlyAttr}></td>
+            <td><input type="number" step="0.01" data-cost-value="${key}" class="invoice-price" value="${value.toFixed(2)}" ${readonlyAttr}></td>
         </tr>`;
         costsBody.innerHTML += row;
     }
@@ -1641,15 +1642,20 @@ function openInvoiceCreationModal(ref, isViewOnly = false) {
 
     if (isViewOnly) {
         invoiceNumberInput.value = flightData.Rechnungsnummer || 'N/A';
-        invoiceNumberInput.readOnly = true;
-        invoiceButtonContainer.innerHTML = `<button onclick="closeInvoiceCreationModal()" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Schließen</button>`;
+        invoiceNumberInput.readOnly = true; // Rechnungsnummer bleibt gesperrt
+        invoiceButtonContainer.innerHTML = `<button onclick="updateInvoice()" style="padding: 10px 20px; background-color: #ffc107; color: black; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Rechnung aktualisieren</button>`;
     } else {
         invoiceNumberInput.value = '';
         invoiceNumberInput.readOnly = false;
         invoiceButtonContainer.innerHTML = `<button onclick="saveInvoice()" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Rechnung erstellen und speichern</button>`;
     }
     
-    closeInvoiceListModal();
+    if (document.getElementById('invoiceListModal').style.display === 'flex') {
+        closeInvoiceListModal();
+    }
+    if (document.getElementById('detailModal').style.display === 'flex') {
+        closeModal();
+    }
     modal.style.display = 'flex';
 }
 
@@ -1677,6 +1683,19 @@ async function saveInvoice() {
         Rechnungsnummer: invoiceNumber,
         user: currentUser.name
     };
+
+    // Kostenpositionen aus dem Formular sammeln
+    document.querySelectorAll('#invoiceCostsTable .invoice-desc').forEach(input => {
+        const key = input.dataset.costKey;
+        const descValue = input.value;
+        const priceValue = document.querySelector(`.invoice-price[data-cost-value="${key}"]`).value;
+        
+        // Sende die Kosten nur, wenn sie sich von den Standard-Keys unterscheiden oder es Zusatzkosten sind
+        if (key === 'Zusatzkosten') {
+            payload[key] = descValue; // Hier wird die Beschreibung der Zusatzkosten gespeichert
+        }
+        payload[key + '_price'] = priceValue; // Sende immer den Preis
+    });
     
     try {
         const response = await fetch(API_URL, {
@@ -1695,6 +1714,49 @@ async function saveInvoice() {
     } catch (error) {
         showSaveFeedback('Ein Netzwerkfehler ist aufgetreten.', false);
         console.error('Fehler beim Speichern der Rechnung:', error);
+    }
+}
+
+async function updateInvoice() {
+    if (!confirm(`Sollen die Änderungen an dieser Rechnung wirklich gespeichert werden?`)) {
+        return;
+    }
+
+    const payload = {
+        mode: 'updateInvoice',
+        Ref: currentInvoiceRef,
+        user: currentUser.name
+    };
+
+    // Sammle die aktualisierten Kosten und Beschreibungen
+    document.querySelectorAll('#invoiceCostsTable .invoice-desc').forEach(input => {
+        const key = input.dataset.costKey;
+        const descValue = input.value;
+        const priceValue = document.querySelector(`.invoice-price[data-cost-value="${key}"]`).value;
+        
+        if (key === 'Zusatzkosten') {
+            payload[key] = descValue;
+        }
+        payload[key + '_price'] = priceValue;
+    });
+    
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(payload)
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            showSaveFeedback('Rechnung erfolgreich aktualisiert!', true);
+            closeInvoiceCreationModal();
+            fetchData();
+        } else {
+            showSaveFeedback(result.message || 'Fehler beim Aktualisieren der Rechnung.', false);
+        }
+    } catch (error) {
+        showSaveFeedback('Ein Netzwerkfehler ist aufgetreten.', false);
+        console.error('Fehler beim Aktualisieren der Rechnung:', error);
     }
 }
 
@@ -1738,6 +1800,7 @@ window.closeInvoiceListModal = closeInvoiceListModal;
 window.openInvoiceCreationModal = openInvoiceCreationModal;
 window.closeInvoiceCreationModal = closeInvoiceCreationModal;
 window.saveInvoice = saveInvoice;
-window.openInvoiceView = openInvoiceView; // KORREKTUR: Diese Zeile wurde hinzugefügt
+window.openInvoiceView = openInvoiceView;
+window.updateInvoice = updateInvoice; // NEU
 // Initialisiere Auth-Status, sobald das DOM geladen ist.
 checkAuthStatus();
