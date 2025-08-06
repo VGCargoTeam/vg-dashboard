@@ -293,30 +293,38 @@ function filterTable() {
     const matchesFlightNumber = (r.Flugnummer || '').toLowerCase().includes(flightNumberSearch);
     const matchesInvoiceNumber = (r.Rechnungsnummer || '').toLowerCase().includes(invoiceNumberSearch); // NEU
 
-    let flightDateObj;
+    let flightDateObj = null;
     if (r['Flight Date'] && typeof r['Flight Date'] === 'string' && r['Flight Date'].includes('-')) {
         const parts = r['Flight Date'].split('-');
         flightDateObj = new Date(Date.UTC(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])));
-    } else {
-        return false; // Einträge ohne gültiges Datum ignorieren
     }
 
-    const isPastFlight = flightDateObj < today;
-    const passesPastFlightFilter = showArchive || !isPastFlight;
-    
+    // KORREKTUR: Logik für Datumsfilterung
     let matchesDateRange = true;
-    if (fromDateInput) {
-        const fromDateParts = fromDateInput.split('-');
-        const fromDateObj = new Date(Date.UTC(parseInt(fromDateParts[0]), parseInt(fromDateParts[1]) - 1, parseInt(fromDateParts[2])));
-        if (flightDateObj < fromDateObj) matchesDateRange = false;
+    if (fromDateInput || toDateInput) { // Nur filtern, wenn ein Datum eingegeben wurde
+        if (!flightDateObj) {
+            matchesDateRange = false; // Einträge ohne Datum ausblenden, wenn nach Datum gefiltert wird
+        } else {
+            if (fromDateInput) {
+                const fromDateObj = new Date(Date.UTC.apply(null, fromDateInput.split('-').map((n, i) => i === 1 ? n - 1 : n)));
+                if (flightDateObj < fromDateObj) matchesDateRange = false;
+            }
+            if (toDateInput) {
+                const toDateObj = new Date(Date.UTC.apply(null, toDateInput.split('-').map((n, i) => i === 1 ? n - 1 : n)));
+                if (flightDateObj > toDateObj) matchesDateRange = false;
+            }
+        }
     }
-    if (toDateInput) {
-        const toDateParts = toDateInput.split('-');
-        const toDateObj = new Date(Date.UTC(parseInt(toDateParts[0]), parseInt(toDateParts[1]) - 1, parseInt(toDateParts[2])));
-        if (flightDateObj > toDateObj) matchesDateRange = false;
+    
+    // KORREKTUR: Logik für Archiv-Filter
+    let passesArchiveFilter = true;
+    if (!showArchive && flightDateObj) {
+        if (flightDateObj < today) {
+            passesArchiveFilter = false;
+        }
     }
 
-    return matchesRef && matchesAirline && matchesFlightNumber && matchesInvoiceNumber && matchesDateRange && passesPastFlightFilter; // NEU: matchesInvoiceNumber
+    return matchesRef && matchesAirline && matchesFlightNumber && matchesInvoiceNumber && matchesDateRange && passesArchiveFilter;
   });
   renderRequestTables(filtered);
   renderCalendars();
@@ -1628,7 +1636,6 @@ function openInvoiceCreationModal(ref, isViewOnly = false) {
     for (const key in costFields) {
         const value = parseFloat(String(flightData[key] || '0').replace(',', '.')) || 0;
         const description = key === 'Zusatzkosten' && flightData[key] ? flightData[key] : costFields[key];
-        // KORREKTUR: readonly-Attribut wird jetzt entfernt, wenn isViewOnly true ist
         const readonlyAttr = ''; // Immer bearbeitbar
         const row = `<tr>
             <td><input type="text" data-cost-key="${key}" class="invoice-desc" value="${description}" ${readonlyAttr}></td>
