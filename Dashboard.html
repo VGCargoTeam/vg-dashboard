@@ -7,6 +7,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- NEU: jsPDF für PDF-Erstellung -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -51,7 +53,7 @@
     .calendar-wrapper {
         overflow: visible;
     }
-    input[type="text"], input[type="date"], input[type="password"], input[type="email"], input[type="time"], input[type="number"] {
+    input[type="text"], input[type="date"], input[type="password"], input[type="email"], input[type="time"], input[type="number"], input[type="file"] {
       padding: 6px 10px;
       margin: 5px;
       border: 1px solid #ccc;
@@ -535,6 +537,19 @@
     #invoiceCostsTable input {
         width: 100%;
     }
+    /* NEU: Stile für Status-Indikatoren */
+    .status-dot {
+      height: 12px;
+      width: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+    }
+    .status-blue { background-color: #007BFF; }
+    .status-green { background-color: #28a745; }
+    .status-yellow { background-color: #ffc107; }
+    .status-black { background-color: #343a40; }
+    .status-red { background-color: #dc3545; }
   </style>
 </head>
 <body class="font-inter flex flex-col xl:flex-row min-h-screen text-gray-800">
@@ -591,6 +606,7 @@
             <table id="unconfirmedTable" class="w-full data-table">
                 <thead>
                     <tr>
+                        <th>Status</th>
                         <th>Reference</th>
                         <th>Date</th>
                         <th>Airline</th>
@@ -614,6 +630,7 @@
             <table id="confirmedTable" class="w-full data-table">
                 <thead>
                     <tr>
+                        <th>Status</th>
                         <th>Reference</th>
                         <th>Date</th>
                         <th>Airline</th>
@@ -687,8 +704,14 @@
               </button>
           </div>
           <!-- Diagramme und Tabellen werden hier dynamisch von generateStatistics() eingefügt -->
-          <!-- Siehe generateStatistics() in script.js für die genaue Reihenfolge -->
-
+          <div class="chart-container">
+              <h4>Umsatz pro Airline</h4>
+              <canvas id="revenuePerAirlineChart"></canvas>
+          </div>
+          <div class="chart-container">
+              <h4>Durchschn. Tonnage pro Flugzeugtyp</h4>
+              <canvas id="tonnagePerAircraftTypeChart"></canvas>
+          </div>
           <div class="chart-container">
               <h4>Tonnage pro Monat</h4>
               <canvas id="tonnagePerMonthChart"></canvas>
