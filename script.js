@@ -289,7 +289,7 @@ function filterTable() {
   const refSearch = document.getElementById("refSearch").value.toLowerCase();
   const airlineSearch = document.getElementById("airlineSearch").value.toLowerCase();
   const flightNumberSearch = (document.getElementById("flightNumberSearch")?.value || '').toLowerCase();
-  const invoiceNumberSearch = (document.getElementById("invoiceNumberSearch")?.value || '').toLowerCase(); // NEU
+  const invoiceNumberSearch = (document.getElementById("invoiceNumberSearch")?.value || '').toLowerCase();
   const fromDateInput = document.getElementById("fromDate").value;
   const toDateInput = document.getElementById("toDate").value;
   const showArchive = document.getElementById("archiveCheckbox") ? document.getElementById("archiveCheckbox").checked : false;
@@ -298,7 +298,7 @@ function filterTable() {
     const matchesRef = (r.Ref || '').toLowerCase().includes(refSearch);
     const matchesAirline = (r.Airline || '').toLowerCase().includes(airlineSearch);
     const matchesFlightNumber = (r.Flugnummer || '').toLowerCase().includes(flightNumberSearch);
-    const matchesInvoiceNumber = (r.Rechnungsnummer || '').toLowerCase().includes(invoiceNumberSearch); // NEU
+    const matchesInvoiceNumber = (r.Rechnungsnummer || '').toLowerCase().includes(invoiceNumberSearch);
 
     let flightDateObj = null;
     if (r['Flight Date'] && typeof r['Flight Date'] === 'string' && r['Flight Date'].includes('-')) {
@@ -306,11 +306,10 @@ function filterTable() {
         flightDateObj = new Date(Date.UTC(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])));
     }
 
-    // KORREKTUR: Logik für Datumsfilterung
     let matchesDateRange = true;
-    if (fromDateInput || toDateInput) { // Nur filtern, wenn ein Datum eingegeben wurde
+    if (fromDateInput || toDateInput) {
         if (!flightDateObj) {
-            matchesDateRange = false; // Einträge ohne Datum ausblenden, wenn nach Datum gefiltert wird
+            matchesDateRange = false;
         } else {
             if (fromDateInput) {
                 const fromDateObj = new Date(Date.UTC.apply(null, fromDateInput.split('-').map((n, i) => i === 1 ? n - 1 : n)));
@@ -323,13 +322,14 @@ function filterTable() {
         }
     }
     
-    // Filter für Archiv-Status
+    // GEÄNDERTE LOGIK: Standardmäßig nur aktuelle und zukünftige Flüge anzeigen.
+    // Vergangene Flüge gelten als "Archiv" und werden nur angezeigt, wenn die Checkbox aktiviert ist.
     let passesArchiveFilter = true;
-    const isArchived = r.Status === 'Archiviert';
-    if (!showArchive && isArchived) {
-        passesArchiveFilter = false;
+    if (!showArchive) { // Wenn "Archiv anzeigen" NICHT aktiviert ist
+        if (!flightDateObj || flightDateObj < today) {
+            passesArchiveFilter = false; // Verstecke Flüge, die in der Vergangenheit liegen oder kein Datum haben
+        }
     }
-
 
     return matchesRef && matchesAirline && matchesFlightNumber && matchesInvoiceNumber && matchesDateRange && passesArchiveFilter;
   });
