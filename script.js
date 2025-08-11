@@ -1,8 +1,5 @@
-// Charter Dashboard Script – 3-spaltige strukturierte Detailansicht
+// Charter Dashboard Script
 const API_URL = 'https://script.google.com/macros/s/AKfycbzo-FgxA6TMJYK4xwLbrsRnNTAU_AN-FEJJoZH6w7aJ3BlcsaB751LjdUJ9nieGtu1P/exec'; // <<< AKTUALISIERT: NEUER LINK VOM BENUTZER
-
-// !!! WICHTIG: Die users.js-Importzeile wird entfernt, da die Benutzerdaten nun aus Google Sheets kommen. !!!
-// import { users } from './users.js';
 
 let currentUser = null; // Speichert den aktuell angemeldeten Benutzer
 let requestData = []; // Speichert alle abgerufenen Charterdaten
@@ -18,7 +15,11 @@ let tonnagePerCustomerChartInstance = null;
 
 // Variable zum Speichern der aktuell im Modal angezeigten Daten
 let currentModalData = null;
-let currentInvoiceRef = null; // NEU: Globale Variable für die aktuelle Rechnungsreferenz
+let currentInvoiceRef = null;
+
+// NEU: Variablen für Benutzerverwaltung
+let allUsers = [];
+let editingUsername = null;
 
 
 // === AUTHENTIFIZIERUNG UND BENUTZERVERWALTUNG ===
@@ -26,8 +27,6 @@ function checkAuthStatus() {
   const storedUser = localStorage.getItem('currentUser');
   if (storedUser) {
     currentUser = JSON.parse(storedUser);
-    // Da die Benutzerdaten nun aus Google Sheets kommen, brauchen wir hier keine users-Datei-Überprüfung mehr.
-    // Wir vertrauen darauf, dass das currentUser-Objekt gültig ist, wenn es im localStorage ist.
     updateUIBasedOnUserRole();
     fetchData(); // Daten laden, wenn angemeldet
   } else {
@@ -40,16 +39,10 @@ function updateUIBasedOnUserRole() {
   const adminElements = document.querySelectorAll(".admin-only");
   const loggedInUsernameSpan = document.getElementById('loggedInUsername');
   const loggedInUserRoleSpan = document.getElementById('loggedInUserRole');
-  const loggedInUsernameProfileSpan = document.getElementById('loggedInUsernameProfile');
-  const loggedInUserRoleProfileSpan = document.getElementById('loggedInUserRoleProfile');
-
 
   if (currentUser) {
     if (loggedInUsernameSpan) loggedInUsernameSpan.textContent = currentUser.name;
     if (loggedInUserRoleSpan) loggedInUserRoleSpan.textContent = currentUser.role;
-    if (loggedInUsernameProfileSpan) loggedInUsernameProfileSpan.textContent = currentUser.name;
-    if (loggedInUserRoleProfileSpan) loggedInUserRoleProfileSpan.textContent = currentUser.role;
-
 
     if (currentUser.role === 'admin') {
       adminElements.forEach(el => el.style.display = "inline-block"); // Oder 'block', je nach Element
@@ -57,12 +50,9 @@ function updateUIBasedOnUserRole() {
       adminElements.forEach(el => el.style.display = "none");
     }
   } else {
-    // Falls kein Benutzer angemeldet ist (sollte durch checkAuthStatus abgefangen werden)
     adminElements.forEach(el => el.style.display = "none");
     if (loggedInUsernameSpan) loggedInUsernameSpan.textContent = 'N/A';
     if (loggedInUserRoleSpan) loggedInUserRoleSpan.textContent = 'N/A';
-    if (loggedInUsernameProfileSpan) loggedInUsernameProfileSpan.textContent = 'N/A';
-    if (loggedInUserRoleProfileSpan) loggedInUserRoleProfileSpan.textContent = 'N/A';
   }
 }
 
@@ -701,6 +691,7 @@ document.addEventListener('keydown', (e) => {
     closeEmailPreviewModal();
     closeInvoiceListModal(); // NEU
     closeInvoiceCreationModal(); // NEU
+    closeUserManagementModal(); // NEU
   }
 });
 
@@ -1768,13 +1759,159 @@ async function updateInvoice() {
 }
 
 
+// === NEUE FUNKTIONEN FÜR BENUTZERVERWALTUNG ===
+
+async function openUserManagementModal() {
+    const modal = document.getElementById('userManagementModal');
+    if (!modal) return;
+
+    // Formular zurücksetzen
+    clearUserForm();
+
+    // Ladeanzeige
+    document.getElementById('userListContainer').innerHTML = '<p>Lade Benutzerliste...</p>';
+    modal.style.display = 'flex';
+
+    try {
+        const response = await fetch(API_URL + "?mode=getUsers");
+        if (!response.ok) {
+            throw new Error('Netzwerk-Antwort war nicht ok.');
+        }
+        const result = await response.json();
+        if (result.status === 'success') {
+            allUsers = result.data;
+            renderUserList();
+        } else {
+            throw new Error(result.message || 'Fehler beim Laden der Benutzer.');
+        }
+    } catch (error) {
+        document.getElementById('userListContainer').innerHTML = `<p style="color: red;">${error.message}</p>`;
+    }
+}
+
+function renderUserList() {
+    const container = document.getElementById('userListContainer');
+    if (allUsers.length === 0) {
+        container.innerHTML = '<p>Keine Benutzer gefunden.</p>';
+        return;
+    }
+
+    let tableHTML = `<table class="w-full data-table"><thead><tr><th>Username</th><th>Name</th><th>Rolle</th><th>Aktionen</th></tr></thead><tbody>`;
+    allUsers.forEach(user => {
+        tableHTML += `<tr>
+            <td>${user.username}</td>
+            <td>${user.name}</td>
+            <td>${user.role}</td>
+            <td>
+                <button class="btn btn-view" onclick="editUser('${user.username}')">Edit</button>
+                <button class="btn btn-delete" onclick="deleteUser('${user.username}')">Delete</button>
+            </td>
+        </tr>`;
+    });
+    tableHTML += `</tbody></table>`;
+    container.innerHTML = tableHTML;
+}
+
+function editUser(username) {
+    const user = allUsers.find(u => u.username === username);
+    if (!user) return;
+
+    document.getElementById('userFormTitle').textContent = `Benutzer bearbeiten: ${username}`;
+    document.getElementById('userInputUsername').value = user.username;
+    document.getElementById('userInputName').value = user.name;
+    document.getElementById('userInputRole').value = user.role;
+    document.getElementById('userInputPassword').value = ''; // Passwortfeld aus Sicherheitsgründen leeren
+    document.getElementById('userInputPassword').placeholder = 'Leer lassen, um nicht zu ändern';
+
+    editingUsername = username;
+}
+
+function clearUserForm() {
+    document.getElementById('userFormTitle').textContent = 'Neuen Benutzer anlegen';
+    document.getElementById('userInputUsername').value = '';
+    document.getElementById('userInputName').value = '';
+    document.getElementById('userInputRole').value = 'viewer';
+    document.getElementById('userInputPassword').value = '';
+    document.getElementById('userInputPassword').placeholder = 'Passwort erforderlich';
+    editingUsername = null;
+}
+
+function closeUserManagementModal() {
+    document.getElementById('userManagementModal').style.display = 'none';
+}
+
+async function saveUser() {
+    const payload = {
+        mode: 'saveUser',
+        originalUsername: editingUsername, // ist `null` bei neuen Benutzern
+        username: document.getElementById('userInputUsername').value.trim(),
+        name: document.getElementById('userInputName').value.trim(),
+        role: document.getElementById('userInputRole').value,
+        password: document.getElementById('userInputPassword').value,
+        user: currentUser.name // Admin, der die Aktion ausführt
+    };
+
+    if (!payload.username || !payload.name) {
+        return showSaveFeedback('Username und Name dürfen nicht leer sein.', false);
+    }
+    if (!editingUsername && !payload.password) {
+        return showSaveFeedback('Für neue Benutzer ist ein Passwort erforderlich.', false);
+    }
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(payload)
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            showSaveFeedback(result.message, true);
+            openUserManagementModal(); // Liste und Formular neu laden/zurücksetzen
+        } else {
+            throw new Error(result.message || 'Unbekannter Fehler beim Speichern.');
+        }
+    } catch (error) {
+        showSaveFeedback(error.message, false);
+    }
+}
+
+async function deleteUser(username) {
+    if (!confirm(`Möchten Sie den Benutzer "${username}" wirklich unwiderruflich löschen?`)) {
+        return;
+    }
+
+    const payload = {
+        mode: 'deleteUser',
+        username: username,
+        user: currentUser.name // Admin, der die Aktion ausführt
+    };
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(payload)
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            showSaveFeedback(result.message, true);
+            openUserManagementModal(); // Liste neu laden
+        } else {
+            throw new Error(result.message || 'Unbekannter Fehler beim Löschen.');
+        }
+    } catch (error) {
+        showSaveFeedback(error.message, false);
+    }
+}
+
 // --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
 window.openProfileModal = openProfileModal;
 window.closeProfileModal = closeProfileModal;
 window.changePassword = changePassword;
 window.logoutUser = logoutUser;
 window.fetchData = fetchData;
-window.renderRequestTables = renderRequestTables; // GEÄNDERT: Neue Funktion
+window.renderRequestTables = renderRequestTables;
 window.filterTable = filterTable;
 window.openModal = openModal;
 window.deleteRowFromModal = deleteRowFromModal;
@@ -1789,18 +1926,18 @@ window.createNewRequest = createNewRequest;
 window.showSaveFeedback = showSaveFeedback;
 window.showHistory = showHistory;
 window.closeHistoryModal = closeHistoryModal;
-window.openStatisticsModal = openStatisticsModal; // Mache neue Funktion global zugänglich
-window.closeStatisticsModal = closeStatisticsModal; // Mache neue Funktion global zugänglich
-window.generateStatistics = generateStatistics; // Mache neue Funktion global zugänglich
-window.renderTonnagePerMonthChart = renderTonnagePerMonthChart; // Mache neue Funktion global zugänglich
-window.renderTonnagePerCustomerChart = renderTonnagePerCustomerChart; // Mache neue Funktion global zugänglich
-window.downloadStatisticsToCSV = downloadStatisticsToCSV; // Mache neue Download-Funktion global zugänglich
-window.openEmailConfirmationModal = openEmailConfirmationModal; // NEU: E-Mail Bestätigungsmodal öffnen
-window.closeEmailConfirmationModal = closeEmailConfirmationModal; // NEU: E-Mail Bestätigungsmodal schließen
-window.toggleOriginDestinationFields = toggleOriginDestinationFields; // NEU: Funktion global zugänglich machen
-window.generateEmailPreview = generateEmailPreview; // NEU: Funktion für E-Mail-Vorschau
-window.closeEmailPreviewModal = closeEmailPreviewModal; // NEU: Funktion zum Schließen der E-Mail-Vorschau
-window.markAsSentManually = markAsSentManually; // NEU: Funktion zum manuellen Markieren als gesendet
+window.openStatisticsModal = openStatisticsModal;
+window.closeStatisticsModal = closeStatisticsModal;
+window.generateStatistics = generateStatistics;
+window.renderTonnagePerMonthChart = renderTonnagePerMonthChart;
+window.renderTonnagePerCustomerChart = renderTonnagePerCustomerChart;
+window.downloadStatisticsToCSV = downloadStatisticsToCSV;
+window.openEmailConfirmationModal = openEmailConfirmationModal;
+window.closeEmailConfirmationModal = closeEmailConfirmationModal;
+window.toggleOriginDestinationFields = toggleOriginDestinationFields;
+window.generateEmailPreview = generateEmailPreview;
+window.closeEmailPreviewModal = closeEmailPreviewModal;
+window.markAsSentManually = markAsSentManually;
 // NEUE GLOBALE FUNKTIONEN FÜR RECHNUNGEN
 window.openInvoiceListModal = openInvoiceListModal;
 window.closeInvoiceListModal = closeInvoiceListModal;
@@ -1808,6 +1945,13 @@ window.openInvoiceCreationModal = openInvoiceCreationModal;
 window.closeInvoiceCreationModal = closeInvoiceCreationModal;
 window.saveInvoice = saveInvoice;
 window.openInvoiceView = openInvoiceView;
-window.updateInvoice = updateInvoice; // NEU
+window.updateInvoice = updateInvoice;
+// NEUE GLOBALE FUNKTIONEN FÜR BENUTZERVERWALTUNG
+window.openUserManagementModal = openUserManagementModal;
+window.closeUserManagementModal = closeUserManagementModal;
+window.saveUser = saveUser;
+window.deleteUser = deleteUser;
+window.editUser = editUser;
+window.clearUserForm = clearUserForm;
 // Initialisiere Auth-Status, sobald das DOM geladen ist.
 checkAuthStatus();
