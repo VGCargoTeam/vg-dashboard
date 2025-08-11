@@ -7,6 +7,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- jsPDF Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -505,12 +508,12 @@
     }
 
     /* NEU: STILE FÜR RECHNUNGS-MODALS */
-    #invoiceListModal .modal-content, #invoiceCreationModal .modal-content {
+    #invoiceListModal .modal-content, #invoiceModal .modal-content {
         max-width: 1000px; /* Breiter für Rechnungsdetails */
         flex-direction: column;
         align-items: flex-start;
     }
-    #invoiceCreationModal .invoice-grid {
+    #invoiceModal .invoice-grid {
         display: grid;
         grid-template-columns: 1fr; /* Standard: eine Spalte */
         gap: 20px;
@@ -518,17 +521,17 @@
     }
     /* KORREKTUR: Media Query für zwei Spalten auf größeren Bildschirmen */
     @media (min-width: 768px) {
-      #invoiceCreationModal .invoice-grid {
+      #invoiceModal .invoice-grid {
         grid-template-columns: repeat(2, 1fr); /* Zwei Spalten ab 768px Breite */
       }
     }
-    #invoiceCreationModal .invoice-section {
+    #invoiceModal .invoice-section {
         background: #f9f9f9;
         padding: 15px;
         border-radius: 8px;
         border: 1px solid #eee;
     }
-    #invoiceCreationModal .invoice-section h4 {
+    #invoiceModal .invoice-section h4 {
         margin-top: 0;
         border-bottom: 1px solid #ddd;
         padding-bottom: 5px;
@@ -538,6 +541,15 @@
     }
     #invoiceCostsTable input {
         width: 100%;
+    }
+    /* Status Indikator Stile */
+    .status-indicator {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+        color: white;
     }
   </style>
 </head>
@@ -602,6 +614,7 @@
                 <thead>
                     <tr>
                         <th>Reference</th>
+                        <th>Status</th>
                         <th>Date</th>
                         <th>Airline</th>
                         <th>Tonnage</th>
@@ -625,6 +638,7 @@
                 <thead>
                     <tr>
                         <th>Reference</th>
+                        <th>Status</th>
                         <th>Date</th>
                         <th>Airline</th>
                         <th>Tonnage</th>
@@ -753,11 +767,10 @@
     </div>
 
     <!-- NEU: Modal für Rechnungserstellung -->
-    <div class="modal" id="invoiceCreationModal">
+    <div class="modal" id="invoiceModal">
       <div class="modal-content">
-        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeInvoiceCreationModal()">✖</span>
-        <!-- KORREKTUR: Überschrift entfernt -->
-        <div id="invoiceCreationBody" style="width:100%;">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeInvoiceModal()">✖</span>
+        <div id="invoiceBody" style="width:100%;">
           <div class="invoice-grid">
             <div class="invoice-section" id="invoiceRecipient">
               <h4>Rechnungsempfänger</h4>
@@ -782,13 +795,25 @@
               </tbody>
             </table>
           </div>
-          <div class="invoice-section" style="margin-top: 20px;">
-            <label for="invoiceNumberInput"><b>Rechnungsnummer:</b></label>
-            <input type="text" id="invoiceNumberInput" placeholder="Rechnungsnummer manuell eintragen">
+          <div class="invoice-section" style="margin-top: 20px; display: flex; align-items: center; gap: 20px;">
+            <div>
+                <label for="invoiceNumberInput"><b>Rechnungsnummer:</b></label>
+                <input type="text" id="invoiceNumberInput" placeholder="Rechnungsnummer manuell eintragen">
+            </div>
+            <div>
+                <label for="vatSelection"><b>MwSt.:</b></label>
+                <select id="vatSelection">
+                    <option value="19">19% MwSt.</option>
+                    <option value="0">0% MwSt. (Airlines)</option>
+                </select>
+            </div>
           </div>
-          <div id="invoiceButtonContainer" style="width:100%; text-align:center; margin-top: 20px;">
+          <div id="invoiceButtonContainer" style="width:100%; text-align:center; margin-top: 20px; display: flex; gap: 15px; justify-content: center;">
             <button onclick="saveInvoice()" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
               Rechnung erstellen und speichern
+            </button>
+            <button onclick="generateInvoicePDF()" style="padding: 10px 20px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+              PDF Herunterladen
             </button>
           </div>
         </div>
