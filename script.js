@@ -6,9 +6,6 @@ let requestData = []; // Speichert alle abgerufenen Charterdaten
 let baseMonth = new Date().getMonth(); // Aktueller Monat (0-indexed)
 let baseYear = new Date().getFullYear(); // Aktuelles Jahr
 
-const today = new Date();
-today.setHours(0, 0, 0, 0); // Setzt die Zeit auf Mitternacht für den Vergleich
-
 // Globale Variablen für Chart-Instanzen, um sie bei Bedarf zu zerstören
 let tonnagePerMonthChartInstance = null;
 let tonnagePerCustomerChartInstance = null;
@@ -182,9 +179,17 @@ function fetchData() {
       return r.json();
     })
     .then(d => {
-      requestData = d.data; // Speichert das Array der Daten
-      console.log("Rohdaten von API:", JSON.parse(JSON.stringify(d.data))); // Zum Debuggen
-      filterTable(); // Ruft filterTable auf, um sowohl Tabelle als auch Kalender zu aktualisieren
+      // Robustere Prüfung, ob die Daten im erwarteten Format sind
+      if (d && Array.isArray(d.data)) {
+        requestData = d.data;
+        console.log("Rohdaten von API:", JSON.parse(JSON.stringify(d.data)));
+        filterTable();
+      } else {
+        console.error("API-Antwort ist nicht im erwarteten Format:", d);
+        showSaveFeedback("Fehler: Unerwartetes Datenformat vom Server.", false);
+        requestData = []; // Daten leeren, um Fehler zu vermeiden
+        filterTable(); // Filter aufrufen, um den leeren Zustand anzuzeigen
+      }
     })
     .catch((error) => {
       console.error("Fehler beim Laden der Daten:", error);
@@ -204,6 +209,27 @@ function renderRequestTables(dataToRender = requestData) {
 
     unconfirmedTbody.innerHTML = "";
     confirmedTbody.innerHTML = "";
+
+    // NEU: Zeigt eine hilfreiche Nachricht an, wenn keine Daten vorhanden sind
+    if (dataToRender.length === 0) {
+        const isSearching = document.getElementById("refSearch").value || document.getElementById("airlineSearch").value || document.getElementById("flightNumberSearch").value || document.getElementById("invoiceNumberSearch").value || document.getElementById("fromDate").value || document.getElementById("toDate").value;
+        const showArchive = document.getElementById("archiveCheckbox") ? document.getElementById("archiveCheckbox").checked : false;
+
+        let message = "Keine zukünftigen Flüge gefunden.";
+        if (isSearching) {
+            message = "Keine Flüge für die aktuellen Filter gefunden.";
+        } else if (!showArchive) {
+            message += ' Aktivieren Sie "Archiv anzeigen", um vergangene Flüge zu sehen.';
+        }
+
+        const messageRow = `<tr><td colspan="7" style="text-align:center; padding: 20px;">${message}</td></tr>`;
+        unconfirmedTbody.innerHTML = messageRow;
+        confirmedTbody.innerHTML = messageRow;
+        
+        document.getElementById("unconfirmedSummaryInfo").textContent = "Total Flights: 0 | Total Tonnage: 0 kg";
+        document.getElementById("confirmedSummaryInfo").textContent = "Total Flights: 0 | Total Tonnage: 0 kg";
+        return;
+    }
 
     let unconfirmedFlights = 0;
     let unconfirmedWeight = 0;
@@ -293,6 +319,10 @@ function filterTable() {
   const fromDateInput = document.getElementById("fromDate").value;
   const toDateInput = document.getElementById("toDate").value;
   const showArchive = document.getElementById("archiveCheckbox") ? document.getElementById("archiveCheckbox").checked : false;
+
+  // NEU: 'today' wird hier definiert, um immer aktuell zu sein
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   const filtered = requestData.filter(r => {
     const matchesRef = (r.Ref || '').toLowerCase().includes(refSearch);
@@ -2271,4 +2301,4 @@ window.populateCustomerFields = populateCustomerFields;
 // Initialisiere Auth-Status, sobald das DOM geladen ist.
 checkAuthStatus();
 " in the document.
-I want you to fix the bug in the given co
+I want you to fix the bug in the given
