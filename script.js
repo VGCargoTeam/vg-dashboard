@@ -777,9 +777,26 @@ async function saveDetails() {
     return;
   }
 
+  // Start with the essential data: Ref, mode, and user
+  const data = {
+    Ref: currentModalData.Ref, // Use the Ref from the data object that opened the modal
+    mode: "write",
+    user: currentUser.name
+  };
+
+  // If Ref is missing, something is wrong.
+  if (!data.Ref) {
+    showSaveFeedback("Fehler: Referenznummer nicht gefunden. Speichern abgebrochen.", false);
+    return;
+  }
+
   const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled]), #modalBody select[name]:not([disabled])");
-  const data = {};
+  
+  // Add all other form values to the data object
   inputs.forEach(i => {
+    // Skip Ref because we already have it.
+    if (i.name === 'Ref') return;
+
     if (i.name === "Flight Date") {
         data[i.name] = i.value;
     } else if (['Tonnage', 'Rate', 'Security charges', '10ft consumables', '20ft consumables'].includes(i.name)) {
@@ -792,9 +809,6 @@ async function saveDetails() {
         }
     }
   });
-
-  data.mode = "write";
-  data.user = currentUser.name;
 
   console.log('Payload for saving:', data);
   try {
@@ -2256,3 +2270,5 @@ window.clearCustomerForm = clearCustomerForm;
 window.populateCustomerFields = populateCustomerFields;
 // Initialisiere Auth-Status, sobald das DOM geladen ist.
 checkAuthStatus();
+" in the document.
+I want you to fix the bug in the given co
