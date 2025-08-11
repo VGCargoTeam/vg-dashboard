@@ -21,6 +21,10 @@ let currentInvoiceRef = null;
 let allUsers = [];
 let editingUsername = null;
 
+// NEU: Variablen für Kundenverwaltung (CRM)
+let allCustomers = [];
+let editingCustomerID = null;
+
 
 // === AUTHENTIFIZIERUNG UND BENUTZERVERWALTUNG ===
 function checkAuthStatus() {
@@ -29,6 +33,9 @@ function checkAuthStatus() {
     currentUser = JSON.parse(storedUser);
     updateUIBasedOnUserRole();
     fetchData(); // Daten laden, wenn angemeldet
+    if (currentUser.role === 'admin') {
+        fetchCustomers(); // CRM-Daten nur für Admins laden
+    }
   } else {
     // Wenn nicht angemeldet, zur Login-Seite umleiten
     window.location.href = 'login.html';
@@ -330,7 +337,8 @@ function openModal(originalIndex) {
       return;
   }
 
-  const r = originalIndex === -1 ? {
+  const isNewRequest = originalIndex === -1;
+  const r = isNewRequest ? {
     Ref: generateReference(),
     'Created At': new Date().toLocaleString('de-DE'),
     'Billing Company': "", 'Billing Address': "", 'Tax Number': "",
@@ -367,7 +375,12 @@ function openModal(originalIndex) {
   };
 
   const renderFields = (fields) => {
-    return fields.map(({ label, key, type }) => {
+    return fields.map(({ label, key, type, content }) => { // NEU: 'content' für Dropdown
+      // NEU: Wenn 'content' (z.B. für das CRM-Dropdown) übergeben wird, direkt rendern
+      if (content) {
+          return content;
+      }
+        
       let value = r[key];
       if (value === undefined || value === null) value = "";
 
@@ -460,21 +473,57 @@ function openModal(originalIndex) {
     }).join("");
   };
 
-  const customerFields = [
-    { label: "Ref", key: "Ref" },
-    { label: "Created At", key: "Created At" },
-    { label: "Billing Company", key: "Billing Company" },
-    { label: "Billing Address", key: "Billing Address" },
-    { label: "Tax Number", key: "Tax Number" },
-    { label: "Contact Name Invoicing", key: "Contact Name Invoicing" },
-    { label: "Contact E-Mail Invoicing", key: "Contact E-Mail Invoicing" },
-    { label: "AGB Accepted", key: "AGB Accepted" },
-    { label: "Service Description Accepted", key: "Service Description Accepted" },
-    { label: "Accepted By Name", key: "Accepted By Name" },
-    { label: "Acceptance Timestamp", key: "Acceptance Timestamp" },
-    { label: "Final Confirmation Sent", key: "Final Confirmation Sent" },
-    { label: "Rechnungsnummer", key: "Rechnungsnummer" } // NEU
-  ];
+  // ===== CRM Integration =====
+  let customerFields;
+  if (isNewRequest && currentUser.role === 'admin' && allCustomers.length > 0) {
+      let options = '<option value="">-- Bestandskunden auswählen --</option>';
+      allCustomers.sort((a,b) => a['Billing Company'].localeCompare(b['Billing Company'])).forEach(c => {
+          options += `<option value="${c.KundenID}">${c['Billing Company']}</option>`;
+      });
+
+      customerFields = [
+          { label: "Ref", key: "Ref" },
+          { label: "Created At", key: "Created At" },
+          {
+              label: "Kunde aus CRM auswählen",
+              key: "customerSelector",
+              content: `
+                  <label for="customerSelector">Kunde aus CRM auswählen</label>
+                  <select id="customerSelector" onchange="populateCustomerFields(this.value)">
+                      ${options}
+                  </select>
+              `
+          },
+          { label: "Billing Company", key: "Billing Company" },
+          { label: "Billing Address", key: "Billing Address" },
+          { label: "Tax Number", key: "Tax Number" },
+          { label: "Contact Name Invoicing", key: "Contact Name Invoicing" },
+          { label: "Contact E-Mail Invoicing", key: "Contact E-Mail Invoicing" },
+          { label: "AGB Accepted", key: "AGB Accepted" },
+          { label: "Service Description Accepted", key: "Service Description Accepted" },
+          { label: "Accepted By Name", key: "Accepted By Name" },
+          { label: "Acceptance Timestamp", key: "Acceptance Timestamp" },
+          { label: "Final Confirmation Sent", key: "Final Confirmation Sent" },
+          { label: "Rechnungsnummer", key: "Rechnungsnummer" }
+      ];
+  } else {
+      // Standard-Ansicht für bestehende Einträge oder wenn kein Admin/keine Kunden
+      customerFields = [
+          { label: "Ref", key: "Ref" },
+          { label: "Created At", key: "Created At" },
+          { label: "Billing Company", key: "Billing Company" },
+          { label: "Billing Address", key: "Billing Address" },
+          { label: "Tax Number", key: "Tax Number" },
+          { label: "Contact Name Invoicing", key: "Contact Name Invoicing" },
+          { label: "Contact E-Mail Invoicing", key: "Contact E-Mail Invoicing" },
+          { label: "AGB Accepted", key: "AGB Accepted" },
+          { label: "Service Description Accepted", key: "Service Description Accepted" },
+          { label: "Accepted By Name", key: "Accepted By Name" },
+          { label: "Acceptance Timestamp", key: "Acceptance Timestamp" },
+          { label: "Final Confirmation Sent", key: "Final Confirmation Sent" },
+          { label: "Rechnungsnummer", key: "Rechnungsnummer" }
+      ];
+  }
 
   const flightFields = [
     { label: "Airline", key: "Airline" },
@@ -594,6 +643,28 @@ function openModal(originalIndex) {
   modal.style.display = "flex";
 }
 
+// NEU: Funktion zum Befüllen der Kundendaten aus dem CRM-Dropdown
+function populateCustomerFields(kundenID) {
+    const modalBody = document.getElementById("modalBody");
+    const selectedCustomer = allCustomers.find(c => c.KundenID === kundenID);
+
+    if (selectedCustomer) {
+        modalBody.querySelector('input[name="Billing Company"]').value = selectedCustomer['Billing Company'] || '';
+        modalBody.querySelector('input[name="Billing Address"]').value = selectedCustomer['Billing Address'] || '';
+        modalBody.querySelector('input[name="Tax Number"]').value = selectedCustomer['Tax Number'] || '';
+        modalBody.querySelector('input[name="Contact Name Invoicing"]').value = selectedCustomer['Contact Name Invoicing'] || '';
+        modalBody.querySelector('input[name="Contact E-Mail Invoicing"]').value = selectedCustomer['Contact E-Mail Invoicing'] || '';
+    } else {
+        // Leere die Felder, wenn die "Auswählen"-Option gewählt wird
+        modalBody.querySelector('input[name="Billing Company"]').value = '';
+        modalBody.querySelector('input[name="Billing Address"]').value = '';
+        modalBody.querySelector('input[name="Tax Number"]').value = '';
+        modalBody.querySelector('input[name="Contact Name Invoicing"]').value = '';
+        modalBody.querySelector('input[name="Contact E-Mail Invoicing"]').value = '';
+    }
+}
+
+
 // NEU: Funktion zum Umschalten der Origin/Destination Felder basierend auf Checkbox
 function toggleOriginDestinationFields(checkbox, fieldType) {
     const parentLabel = checkbox.closest('label');
@@ -692,6 +763,7 @@ document.addEventListener('keydown', (e) => {
     closeInvoiceListModal(); // NEU
     closeInvoiceCreationModal(); // NEU
     closeUserManagementModal(); // NEU
+    closeCustomerManagementModal(); // NEU (CRM)
   }
 });
 
@@ -1905,6 +1977,179 @@ async function deleteUser(username) {
     }
 }
 
+// =======================================================
+// === NEUE FUNKTIONEN FÜR KUNDENVERWALTUNG (CRM)       ===
+// =======================================================
+
+async function fetchCustomers() {
+    try {
+        const response = await fetch(API_URL + "?mode=getCustomers");
+        if (!response.ok) throw new Error('Failed to fetch customers.');
+        const result = await response.json();
+        if (result.status === 'success') {
+            allCustomers = result.data;
+            console.log("Customers loaded:", allCustomers.length);
+        } else {
+            throw new Error(result.message || 'Error fetching customers.');
+        }
+    } catch (error) {
+        showSaveFeedback(error.message, false);
+    }
+}
+
+async function openCustomerManagementModal() {
+    const modal = document.getElementById('customerManagementModal');
+    if (!modal) return;
+
+    clearCustomerForm();
+    document.getElementById('customerListContainer').innerHTML = '<p>Lade Kundenliste...</p>';
+    modal.style.display = 'flex';
+    
+    // Daten werden bereits beim Login geladen, hier nur Liste rendern
+    if (allCustomers.length > 0) {
+        renderCustomerList();
+    } else {
+        // Falls die Liste leer ist, neu laden
+        await fetchCustomers();
+        renderCustomerList();
+    }
+}
+
+function renderCustomerList() {
+    const container = document.getElementById('customerListContainer');
+    if (!container) return;
+    if (allCustomers.length === 0) {
+        container.innerHTML = '<p>Keine Kunden in der Datenbank gefunden.</p>';
+        return;
+    }
+
+    let tableHTML = `<table class="w-full data-table">
+        <thead>
+            <tr>
+                <th>Firma</th>
+                <th>Kontaktperson</th>
+                <th>E-Mail</th>
+                <th>Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>`;
+    
+    allCustomers.sort((a,b) => a['Billing Company'].localeCompare(b['Billing Company'])).forEach(customer => {
+        tableHTML += `<tr>
+            <td>${customer['Billing Company'] || '-'}</td>
+            <td>${customer['Contact Name Invoicing'] || '-'}</td>
+            <td>${customer['Contact E-Mail Invoicing'] || '-'}</td>
+            <td>
+                <button class="btn btn-view" onclick="editCustomer('${customer.KundenID}')">Edit</button>
+                <button class="btn btn-delete" onclick="deleteCustomer('${customer.KundenID}')">Delete</button>
+            </td>
+        </tr>`;
+    });
+    tableHTML += `</tbody></table>`;
+    container.innerHTML = tableHTML;
+}
+
+function editCustomer(kundenID) {
+    const customer = allCustomers.find(c => c.KundenID === kundenID);
+    if (!customer) return;
+
+    document.getElementById('customerFormTitle').textContent = `Kunden bearbeiten: ${customer['Billing Company']}`;
+    document.getElementById('customerInputID').value = customer.KundenID;
+    document.getElementById('customerInputCompany').value = customer['Billing Company'];
+    document.getElementById('customerInputAddress').value = customer['Billing Address'];
+    document.getElementById('customerInputTaxNumber').value = customer['Tax Number'];
+    document.getElementById('customerInputContactName').value = customer['Contact Name Invoicing'];
+    document.getElementById('customerInputEmail').value = customer['Contact E-Mail Invoicing'];
+    document.getElementById('customerInputNotes').value = customer['Bemerkungen'];
+
+    editingCustomerID = kundenID;
+}
+
+function clearCustomerForm() {
+    document.getElementById('customerFormTitle').textContent = 'Neuen Kunden anlegen';
+    document.getElementById('customerInputID').value = '';
+    document.getElementById('customerInputCompany').value = '';
+    document.getElementById('customerInputAddress').value = '';
+    document.getElementById('customerInputTaxNumber').value = '';
+    document.getElementById('customerInputContactName').value = '';
+    document.getElementById('customerInputEmail').value = '';
+    document.getElementById('customerInputNotes').value = '';
+    editingCustomerID = null;
+}
+
+function closeCustomerManagementModal() {
+    document.getElementById('customerManagementModal').style.display = 'none';
+}
+
+async function saveCustomer() {
+    const payload = {
+        mode: 'saveCustomer',
+        KundenID: editingCustomerID, // ist `null` bei neuen Kunden
+        'Billing Company': document.getElementById('customerInputCompany').value.trim(),
+        'Billing Address': document.getElementById('customerInputAddress').value.trim(),
+        'Tax Number': document.getElementById('customerInputTaxNumber').value.trim(),
+        'Contact Name Invoicing': document.getElementById('customerInputContactName').value.trim(),
+        'Contact E-Mail Invoicing': document.getElementById('customerInputEmail').value.trim(),
+        'Bemerkungen': document.getElementById('customerInputNotes').value.trim(),
+        user: currentUser.name
+    };
+
+    if (!payload['Billing Company']) {
+        return showSaveFeedback('Der Firmenname darf nicht leer sein.', false);
+    }
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(payload)
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            showSaveFeedback(result.message, true);
+            await fetchCustomers(); // Kundendaten neu laden
+            renderCustomerList();   // Liste aktualisieren
+            clearCustomerForm();    // Formular zurücksetzen
+        } else {
+            throw new Error(result.message || 'Unbekannter Fehler beim Speichern des Kunden.');
+        }
+    } catch (error) {
+        showSaveFeedback(error.message, false);
+    }
+}
+
+async function deleteCustomer(kundenID) {
+    const customer = allCustomers.find(c => c.KundenID === kundenID);
+    if (!confirm(`Möchten Sie den Kunden "${customer['Billing Company']}" wirklich löschen?`)) {
+        return;
+    }
+
+    const payload = {
+        mode: 'deleteCustomer',
+        KundenID: kundenID,
+        user: currentUser.name
+    };
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(payload)
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            showSaveFeedback(result.message, true);
+            await fetchCustomers(); // Daten neu laden
+            renderCustomerList();   // Liste aktualisieren
+        } else {
+            throw new Error(result.message || 'Unbekannter Fehler beim Löschen.');
+        }
+    } catch (error) {
+        showSaveFeedback(error.message, false);
+    }
+}
+
+
 // --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
 window.openProfileModal = openProfileModal;
 window.closeProfileModal = closeProfileModal;
@@ -1953,5 +2198,13 @@ window.saveUser = saveUser;
 window.deleteUser = deleteUser;
 window.editUser = editUser;
 window.clearUserForm = clearUserForm;
+// NEUE GLOBALE FUNKTIONEN FÜR KUNDENVERWALTUNG (CRM)
+window.openCustomerManagementModal = openCustomerManagementModal;
+window.closeCustomerManagementModal = closeCustomerManagementModal;
+window.saveCustomer = saveCustomer;
+window.deleteCustomer = deleteCustomer;
+window.editCustomer = editCustomer;
+window.clearCustomerForm = clearCustomerForm;
+window.populateCustomerFields = populateCustomerFields;
 // Initialisiere Auth-Status, sobald das DOM geladen ist.
 checkAuthStatus();
