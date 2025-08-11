@@ -7,8 +7,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- NEU: jsPDF für PDF-Erstellung -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -53,7 +51,7 @@
     .calendar-wrapper {
         overflow: visible;
     }
-    input[type="text"], input[type="date"], input[type="password"], input[type="email"], input[type="time"], input[type="number"], input[type="file"] {
+    input[type="text"], input[type="date"], input[type="password"], input[type="email"], input[type="time"], input[type="number"], select {
       padding: 6px 10px;
       margin: 5px;
       border: 1px solid #ccc;
@@ -219,6 +217,9 @@
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
+    /* Benutzerverwaltungs-Modal: Tabellen-Styling */
+    #userManagementModal table { margin-top: 15px; }
+    #userManagementModal th, #userManagementModal td { padding: 8px; font-size: 14px; }
 
     .checkbox-label {
       display: flex;
@@ -537,19 +538,6 @@
     #invoiceCostsTable input {
         width: 100%;
     }
-    /* NEU: Stile für Status-Indikatoren */
-    .status-dot {
-      height: 12px;
-      width: 12px;
-      border-radius: 50%;
-      display: inline-block;
-      margin-right: 8px;
-    }
-    .status-blue { background-color: #007BFF; }
-    .status-green { background-color: #28a745; }
-    .status-yellow { background-color: #ffc107; }
-    .status-black { background-color: #343a40; }
-    .status-red { background-color: #dc3545; }
   </style>
 </head>
 <body class="font-inter flex flex-col xl:flex-row min-h-screen text-gray-800">
@@ -576,6 +564,12 @@
         <span class="admin-only" style="display: none;">
           <button onclick="openInvoiceListModal()" style="padding: 10px 16px; background-color: #ffc107; color: black; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
               Rechnung erstellen
+          </button>
+        </span>
+        <!-- NEU: Button für Benutzerverwaltung (nur Admins) -->
+        <span class="admin-only" style="display: none;">
+          <button onclick="openUserManagementModal()" style="padding: 10px 16px; background-color: #6f42c1; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+              Benutzer verwalten
           </button>
         </span>
     </div>
@@ -606,7 +600,6 @@
             <table id="unconfirmedTable" class="w-full data-table">
                 <thead>
                     <tr>
-                        <th>Status</th>
                         <th>Reference</th>
                         <th>Date</th>
                         <th>Airline</th>
@@ -630,7 +623,6 @@
             <table id="confirmedTable" class="w-full data-table">
                 <thead>
                     <tr>
-                        <th>Status</th>
                         <th>Reference</th>
                         <th>Date</th>
                         <th>Airline</th>
@@ -704,14 +696,8 @@
               </button>
           </div>
           <!-- Diagramme und Tabellen werden hier dynamisch von generateStatistics() eingefügt -->
-          <div class="chart-container">
-              <h4>Umsatz pro Airline</h4>
-              <canvas id="revenuePerAirlineChart"></canvas>
-          </div>
-          <div class="chart-container">
-              <h4>Durchschn. Tonnage pro Flugzeugtyp</h4>
-              <canvas id="tonnagePerAircraftTypeChart"></canvas>
-          </div>
+          <!-- Siehe generateStatistics() in script.js für die genaue Reihenfolge -->
+
           <div class="chart-container">
               <h4>Tonnage pro Monat</h4>
               <canvas id="tonnagePerMonthChart"></canvas>
@@ -805,6 +791,39 @@
             </button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- NEU: Modal für Benutzerverwaltung -->
+    <div class="modal" id="userManagementModal">
+      <div class="modal-content" style="max-width: 800px; flex-direction: column;">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeUserManagementModal()">✖</span>
+        <h3>Benutzerverwaltung</h3>
+        
+        <!-- Formular zum Bearbeiten/Erstellen -->
+        <div class="modal-section" style="background-color: #e9f5ff;">
+          <h4 id="userFormTitle">Neuen Benutzer anlegen</h4>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+            <div><label>Username:</label><input type="text" id="userInputUsername"></div>
+            <div><label>Voller Name:</label><input type="text" id="userInputName"></div>
+            <div>
+                <label>Rolle:</label>
+                <select id="userInputRole">
+                    <option value="viewer">Viewer</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div><label>Passwort:</label><input type="password" id="userInputPassword" placeholder="Leer lassen, um nicht zu ändern"></div>
+          </div>
+          <div style="text-align: right; margin-top: 15px;">
+            <button onclick="clearUserForm()" style="background-color: #6c757d; color: white; padding: 8px 12px; border-radius: 5px;">Abbrechen / Leeren</button>
+            <button onclick="saveUser()" style="background-color: #28a745; color: white; padding: 8px 12px; border-radius: 5px;">Benutzer speichern</button>
+          </div>
+        </div>
+
+        <!-- Liste existierender Benutzer -->
+        <h4>Existierende Benutzer</h4>
+        <div id="userListContainer" style="width: 100%; max-height: 40vh; overflow-y: auto;"></div>
       </div>
     </div>
 
