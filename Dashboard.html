@@ -218,8 +218,9 @@
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     /* Benutzerverwaltungs-Modal: Tabellen-Styling */
-    #userManagementModal table { margin-top: 15px; }
-    #userManagementModal th, #userManagementModal td { padding: 8px; font-size: 14px; }
+    #userManagementModal table, #customerManagementModal table { margin-top: 15px; }
+    #userManagementModal th, #userManagementModal td,
+    #customerManagementModal th, #customerManagementModal td { padding: 8px; font-size: 14px; }
 
     .checkbox-label {
       display: flex;
@@ -362,7 +363,7 @@
       margin-top: 8px;
       font-weight: bold;
     }
-    .modal-section input, .modal-section textarea {
+    .modal-section input, .modal-section textarea, .modal-section select {
       width: 100%;
       padding: 6px;
       margin-top: 4px;
@@ -560,14 +561,14 @@
         <button onclick="openStatisticsModal()" style="padding: 10px 16px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer;">
             Statistik anzeigen
         </button>
-        <!-- NEU: Button nur für Admins -->
+        <!-- NEU: Admin-spezifische Buttons -->
         <span class="admin-only" style="display: none;">
           <button onclick="openInvoiceListModal()" style="padding: 10px 16px; background-color: #ffc107; color: black; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
               Rechnung erstellen
           </button>
-        </span>
-        <!-- NEU: Button für Benutzerverwaltung (nur Admins) -->
-        <span class="admin-only" style="display: none;">
+          <button onclick="openCustomerManagementModal()" style="padding: 10px 16px; background-color: #17a2b8; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+              Kunden verwalten (CRM)
+          </button>
           <button onclick="openUserManagementModal()" style="padding: 10px 16px; background-color: #6f42c1; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
               Benutzer verwalten
           </button>
@@ -826,6 +827,41 @@
         <div id="userListContainer" style="width: 100%; max-height: 40vh; overflow-y: auto;"></div>
       </div>
     </div>
+    
+    <!-- ======================================================= -->
+    <!-- NEU: MODAL FÜR KUNDENVERWALTUNG (CRM)                    -->
+    <!-- ======================================================= -->
+    <div class="modal" id="customerManagementModal">
+      <div class="modal-content" style="max-width: 900px; flex-direction: column;">
+        <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeCustomerManagementModal()">✖</span>
+        <h3>Kundenverwaltung (CRM)</h3>
+        
+        <!-- Formular zum Bearbeiten/Erstellen eines Kunden -->
+        <div class="modal-section" style="background-color: #e9fff5;">
+          <h4 id="customerFormTitle">Neuen Kunden anlegen</h4>
+          <input type="hidden" id="customerInputID"> <!-- Verstecktes Feld für die Kunden-ID beim Bearbeiten -->
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+            <div><label>Firma (Billing Company):</label><input type="text" id="customerInputCompany"></div>
+            <div><label>Kontaktperson (Rechnung):</label><input type="text" id="customerInputContactName"></div>
+            <div><label>Adresse (Billing Address):</label><input type="text" id="customerInputAddress"></div>
+            <div><label>E-Mail (Rechnung):</label><input type="email" id="customerInputEmail"></div>
+            <div><label>Steuernummer (Tax Number):</label><input type="text" id="customerInputTaxNumber"></div>
+            <div><label>Bemerkungen:</label><textarea id="customerInputNotes" rows="3"></textarea></div>
+          </div>
+          <div style="text-align: right; margin-top: 15px;">
+            <button onclick="clearCustomerForm()" style="background-color: #6c757d; color: white; padding: 8px 12px; border-radius: 5px;">Abbrechen / Leeren</button>
+            <button onclick="saveCustomer()" style="background-color: #28a745; color: white; padding: 8px 12px; border-radius: 5px;">Kunden speichern</button>
+          </div>
+        </div>
+
+        <!-- Liste existierender Kunden -->
+        <h4>Existierende Kunden</h4>
+        <div id="customerListContainer" style="width: 100%; max-height: 40vh; overflow-y: auto;">
+          <!-- Die Kundenliste wird hier per JavaScript eingefügt -->
+        </div>
+      </div>
+    </div>
+
 
   </div>
   <div class="calendar w-full xl:w-[500px] xl:flex-shrink-0">
