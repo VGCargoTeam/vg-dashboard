@@ -1,5 +1,5 @@
 // Charter Dashboard Script
-const API_URL = 'https://script.google.com/macros/s/AKfycbzo-FgxA6TMJYK4xwLbrsRnNTAU_AN-FEJJoZH6w7aJ3BlcsaB751LjdUJ9nieGtu1P/exec'; // <<< AKTUALISIERT: NEUER LINK VOM BENUTZER
+const API_URL = '[https://script.google.com/macros/s/AKfycbzo-FgxA6TMJYK4xwLbrsRnNTAU_AN-FEJJoZH6w7aJ3BlcsaB751LjdUJ9nieGtu1P/exec](https://script.google.com/macros/s/AKfycbzo-FgxA6TMJYK4xwLbrsRnNTAU_AN-FEJJoZH6w7aJ3BlcsaB751LjdUJ9nieGtu1P/exec)'; // <<< AKTUALISIERT: NEUER LINK VOM BENUTZER
 
 let currentUser = null; // Speichert den aktuell angemeldeten Benutzer
 let requestData = []; // Speichert alle abgerufenen Charterdaten
@@ -764,6 +764,7 @@ document.addEventListener('keydown', (e) => {
     closeInvoiceCreationModal(); // NEU
     closeUserManagementModal(); // NEU
     closeCustomerManagementModal(); // NEU (CRM)
+    closeFlightTrackerModal(); // NEU
   }
 });
 
@@ -2149,6 +2150,69 @@ async function deleteCustomer(kundenID) {
     }
 }
 
+// === NEUE FUNKTIONEN FÜR FLUG-TRACKER ===
+async function trackFlight() {
+    const flightNumberInput = document.getElementById('flightTrackerInput');
+    const flightNumber = flightNumberInput.value.trim();
+
+    if (!flightNumber) {
+        showSaveFeedback("Bitte geben Sie eine Flugnummer ein.", false);
+        return;
+    }
+
+    openFlightTrackerModal(flightNumber);
+    const flightTrackerBody = document.getElementById('flightTrackerBody');
+    flightTrackerBody.innerHTML = '<p>Lade Flugdaten...</p>';
+
+    // HIER KOMMT IHR API-AUFRUF
+    // Beispiel:
+    // const apiKey = 'IHR_API_SCHLÜSSEL';
+    // const trackingApiUrl = `https://api.flight-provider.com/v1/flights?flight_number=${flightNumber}&api_key=${apiKey}`;
+    //
+    // try {
+    //   const response = await fetch(trackingApiUrl);
+    //   const data = await response.json();
+    //
+    //   // Verarbeiten Sie die 'data' und zeigen Sie sie im 'flightTrackerBody' an
+    //   let flightInfoHTML = `
+    //     <p><strong>Status:</strong> ${data.status || 'Unbekannt'}</p>
+    //     <p><strong>Abflug:</strong> ${data.departure.airport || 'N/A'} um ${data.departure.time || 'N/A'}</p>
+    //     <p><strong>Ankunft:</strong> ${data.arrival.airport || 'N/A'} um ${data.arrival.time || 'N/A'}</p>
+    //   `;
+    //   flightTrackerBody.innerHTML = flightInfoHTML;
+    //
+    // } catch (error) {
+    //   flightTrackerBody.innerHTML = '<p style="color: red;">Fehler beim Abrufen der Flugdaten.</p>';
+    //   console.error("Fehler beim Flug-Tracking:", error);
+    // }
+
+    // Da wir keine echte API haben, zeigen wir Platzhalterdaten an.
+    // ERSETZEN SIE DIESEN TEIL DURCH IHREN ECHTEN API-AUFRUF
+    setTimeout(() => {
+        flightTrackerBody.innerHTML = `
+            <p><strong>Status:</strong> <span class="text-green-600 font-bold">Gelandet</span></p>
+            <p><strong>Abflughafen:</strong> Frankfurt (FRA)</p>
+            <p><strong>Geplante Abflugzeit:</strong> 10:00 UTC</p>
+            <p><strong>Tatsächliche Abflugzeit:</strong> 10:05 UTC</p>
+            <p><strong>Ankunftsflughafen:</strong> New York (JFK)</p>
+            <p><strong>Geplante Ankunftszeit:</strong> 12:30 UTC</p>
+            <p><strong>Geschätzte Ankunftszeit:</strong> 12:25 UTC</p>
+            <p><em>Hinweis: Dies sind Beispieldaten. Integrieren Sie eine echte Flug-Tracking-API für Live-Daten.</em></p>
+        `;
+    }, 1000); // Simuliert eine API-Verzögerung
+}
+
+
+function openFlightTrackerModal(flightNumber) {
+    const modal = document.getElementById('flightTrackerModal');
+    document.getElementById('flightTrackerNumber').textContent = flightNumber;
+    modal.style.display = 'flex';
+}
+
+function closeFlightTrackerModal() {
+    document.getElementById('flightTrackerModal').style.display = 'none';
+}
+
 
 // --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
 window.openProfileModal = openProfileModal;
@@ -2206,5 +2270,9 @@ window.deleteCustomer = deleteCustomer;
 window.editCustomer = editCustomer;
 window.clearCustomerForm = clearCustomerForm;
 window.populateCustomerFields = populateCustomerFields;
+// NEUE GLOBALE FUNKTIONEN FÜR FLUG-TRACKER
+window.trackFlight = trackFlight;
+window.openFlightTrackerModal = openFlightTrackerModal;
+window.closeFlightTrackerModal = closeFlightTrackerModal;
 // Initialisiere Auth-Status, sobald das DOM geladen ist.
 checkAuthStatus();
