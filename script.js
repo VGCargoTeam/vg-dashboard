@@ -6,6 +6,9 @@ let requestData = []; // Speichert alle abgerufenen Charterdaten
 let baseMonth = new Date().getMonth(); // Aktueller Monat (0-indexed)
 let baseYear = new Date().getFullYear(); // Aktuelles Jahr
 
+const today = new Date();
+today.setHours(0, 0, 0, 0); // Setzt die Zeit auf Mitternacht für den Vergleich
+
 // Globale Variablen für Chart-Instanzen, um sie bei Bedarf zu zerstören
 let tonnagePerMonthChartInstance = null;
 let tonnagePerCustomerChartInstance = null;
@@ -179,17 +182,9 @@ function fetchData() {
       return r.json();
     })
     .then(d => {
-      // Robustere Prüfung, ob die Daten im erwarteten Format sind
-      if (d && Array.isArray(d.data)) {
-        requestData = d.data;
-        console.log("Rohdaten von API:", JSON.parse(JSON.stringify(d.data)));
-        filterTable();
-      } else {
-        console.error("API-Antwort ist nicht im erwarteten Format:", d);
-        showSaveFeedback("Fehler: Unerwartetes Datenformat vom Server.", false);
-        requestData = []; // Daten leeren, um Fehler zu vermeiden
-        filterTable(); // Filter aufrufen, um den leeren Zustand anzuzeigen
-      }
+      requestData = d.data; // Speichert das Array der Daten
+      console.log("Rohdaten von API:", JSON.parse(JSON.stringify(d.data))); // Zum Debuggen
+      filterTable(); // Ruft filterTable auf, um sowohl Tabelle als auch Kalender zu aktualisieren
     })
     .catch((error) => {
       console.error("Fehler beim Laden der Daten:", error);
@@ -202,6 +197,7 @@ function renderRequestTables(dataToRender = requestData) {
     const unconfirmedTbody = document.querySelector("#unconfirmedTable tbody");
     const confirmedTbody = document.querySelector("#confirmedTable tbody");
 
+    // Sicherstellen, dass die Tabellen-Bodys existieren
     if (!unconfirmedTbody || !confirmedTbody) {
         console.error("Tabellen für bestätigte oder unbestätigte Anfragen nicht gefunden.");
         return;
@@ -210,33 +206,12 @@ function renderRequestTables(dataToRender = requestData) {
     unconfirmedTbody.innerHTML = "";
     confirmedTbody.innerHTML = "";
 
-    // NEU: Zeigt eine hilfreiche Nachricht an, wenn keine Daten vorhanden sind
-    if (dataToRender.length === 0) {
-        const isSearching = document.getElementById("refSearch").value || document.getElementById("airlineSearch").value || document.getElementById("flightNumberSearch").value || document.getElementById("invoiceNumberSearch").value || document.getElementById("fromDate").value || document.getElementById("toDate").value;
-        const showArchive = document.getElementById("archiveCheckbox") ? document.getElementById("archiveCheckbox").checked : false;
-
-        let message = "Keine zukünftigen Flüge gefunden.";
-        if (isSearching) {
-            message = "Keine Flüge für die aktuellen Filter gefunden.";
-        } else if (!showArchive) {
-            message += ' Aktivieren Sie "Archiv anzeigen", um vergangene Flüge zu sehen.';
-        }
-
-        const messageRow = `<tr><td colspan="7" style="text-align:center; padding: 20px;">${message}</td></tr>`;
-        unconfirmedTbody.innerHTML = messageRow;
-        confirmedTbody.innerHTML = messageRow;
-        
-        document.getElementById("unconfirmedSummaryInfo").textContent = "Total Flights: 0 | Total Tonnage: 0 kg";
-        document.getElementById("confirmedSummaryInfo").textContent = "Total Flights: 0 | Total Tonnage: 0 kg";
-        return;
-    }
-
     let unconfirmedFlights = 0;
     let unconfirmedWeight = 0;
     let confirmedFlights = 0;
     let confirmedWeight = 0;
 
-    // Hilfsfunktion zum Erstellen einer Zeile
+    // Hilfsfunktion zum Erstellen einer Zeile, um Code-Duplizierung zu vermeiden
     const createRowHTML = (r) => {
         const ton = parseFloat(String(r.Tonnage).replace(',', '.') || "0") || 0;
         const originalIndex = requestData.findIndex(item => item.Ref === r.Ref);
@@ -244,6 +219,7 @@ function renderRequestTables(dataToRender = requestData) {
         let displayFlightDate = r['Flight Date'] || "-";
         if (displayFlightDate !== "-" && displayFlightDate.includes('-')) {
             try {
+                // Erstellt ein Datumsobjekt in UTC, um Zeitzonenprobleme zu vermeiden
                 const dateParts = displayFlightDate.split('-');
                 const dateObj = new Date(Date.UTC(dateParts[0], dateParts[1] - 1, dateParts[2]));
                 displayFlightDate = dateObj.toLocaleDateString('de-DE', { timeZone: 'UTC' });
@@ -254,29 +230,17 @@ function renderRequestTables(dataToRender = requestData) {
 
         const deleteButtonHTML = (currentUser && currentUser.role === 'admin') ? `<button class="btn btn-delete admin-only" onclick="deleteRow(this)">Delete</button>` : '';
         const isConfirmed = String(r['Final Confirmation Sent'] || '').toLowerCase() === 'ja';
-        
+        const confirmationIcon = isConfirmed ? '<span class="text-green-500 ml-1">&#10004;</span>' : '';
+
+        // NEU: Rechnungsstatus
         const isInvoiced = String(r.RechnungErstellt || '').toLowerCase() === 'ja';
         const invoiceStatusHTML = isInvoiced 
-            ? `<a href="javascript:void(0);" onclick="openInvoiceModal('${r.Ref}', true)" class="text-green-600 font-bold underline">${r.Rechnungsnummer || 'Ansehen'}</a>` 
+            ? `<a href="javascript:void(0);" onclick="openInvoiceView('${r.Ref}')" class="text-green-600 font-bold underline">${r.Rechnungsnummer || 'Ansehen'}</a>` 
             : '<span class="text-red-600">Offen</span>';
-
-        // Status Indikator Logik
-        const status = r.Status || 'Angefragt';
-        let statusColorClass = '';
-        switch (status) {
-            case 'Angefragt': statusColorClass = 'bg-blue-500'; break;
-            case 'Bestätigt': statusColorClass = 'bg-green-500'; break;
-            case 'Abgerechnet': statusColorClass = 'bg-yellow-500'; break;
-            case 'Archiviert': statusColorClass = 'bg-gray-800'; break;
-            case 'Storniert': statusColorClass = 'bg-red-500'; break;
-            default: statusColorClass = 'bg-gray-400';
-        }
-        const statusIndicatorHTML = `<span class="status-indicator ${statusColorClass}">${status}</span>`;
 
         const row = document.createElement("tr");
         row.innerHTML = `
-          <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})">${r.Ref}</a></td>
-          <td>${statusIndicatorHTML}</td>
+          <td><a href="javascript:void(0);" onclick="openModal(${originalIndex})">${r.Ref}</a>${confirmationIcon}</td>
           <td>${displayFlightDate}</td>
           <td>${r.Airline || "-"}</td>
           <td>${ton.toLocaleString('de-DE')}</td>
@@ -315,20 +279,16 @@ function filterTable() {
   const refSearch = document.getElementById("refSearch").value.toLowerCase();
   const airlineSearch = document.getElementById("airlineSearch").value.toLowerCase();
   const flightNumberSearch = (document.getElementById("flightNumberSearch")?.value || '').toLowerCase();
-  const invoiceNumberSearch = (document.getElementById("invoiceNumberSearch")?.value || '').toLowerCase();
+  const invoiceNumberSearch = (document.getElementById("invoiceNumberSearch")?.value || '').toLowerCase(); // NEU
   const fromDateInput = document.getElementById("fromDate").value;
   const toDateInput = document.getElementById("toDate").value;
   const showArchive = document.getElementById("archiveCheckbox") ? document.getElementById("archiveCheckbox").checked : false;
-
-  // NEU: 'today' wird hier definiert, um immer aktuell zu sein
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
   const filtered = requestData.filter(r => {
     const matchesRef = (r.Ref || '').toLowerCase().includes(refSearch);
     const matchesAirline = (r.Airline || '').toLowerCase().includes(airlineSearch);
     const matchesFlightNumber = (r.Flugnummer || '').toLowerCase().includes(flightNumberSearch);
-    const matchesInvoiceNumber = (r.Rechnungsnummer || '').toLowerCase().includes(invoiceNumberSearch);
+    const matchesInvoiceNumber = (r.Rechnungsnummer || '').toLowerCase().includes(invoiceNumberSearch); // NEU
 
     let flightDateObj = null;
     if (r['Flight Date'] && typeof r['Flight Date'] === 'string' && r['Flight Date'].includes('-')) {
@@ -336,10 +296,11 @@ function filterTable() {
         flightDateObj = new Date(Date.UTC(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])));
     }
 
+    // KORREKTUR: Logik für Datumsfilterung
     let matchesDateRange = true;
-    if (fromDateInput || toDateInput) {
+    if (fromDateInput || toDateInput) { // Nur filtern, wenn ein Datum eingegeben wurde
         if (!flightDateObj) {
-            matchesDateRange = false;
+            matchesDateRange = false; // Einträge ohne Datum ausblenden, wenn nach Datum gefiltert wird
         } else {
             if (fromDateInput) {
                 const fromDateObj = new Date(Date.UTC.apply(null, fromDateInput.split('-').map((n, i) => i === 1 ? n - 1 : n)));
@@ -352,12 +313,11 @@ function filterTable() {
         }
     }
     
-    // GEÄNDERTE LOGIK: Standardmäßig nur aktuelle und zukünftige Flüge anzeigen.
-    // Vergangene Flüge gelten als "Archiv" und werden nur angezeigt, wenn die Checkbox aktiviert ist.
+    // KORREKTUR: Logik für Archiv-Filter
     let passesArchiveFilter = true;
-    if (!showArchive) { // Wenn "Archiv anzeigen" NICHT aktiviert ist
-        if (!flightDateObj || flightDateObj < today) {
-            passesArchiveFilter = false; // Verstecke Flüge, die in der Vergangenheit liegen oder kein Datum haben
+    if (!showArchive && flightDateObj) {
+        if (flightDateObj < today) {
+            passesArchiveFilter = false;
         }
     }
 
@@ -371,8 +331,9 @@ function filterTable() {
 function openModal(originalIndex) {
   if (!currentUser) {
       console.error("Versuch, Modal ohne angemeldeten Benutzer zu öffnen. Weiterleitung zum Login.");
+      // Using a custom alert/message box instead of window.alert
       showSaveFeedback("Bitte melden Sie sich an, um diese Funktion zu nutzen.", false);
-      setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+      setTimeout(() => { window.location.href = 'login.html'; }, 1500); // Redirect after message
       return;
   }
 
@@ -384,36 +345,38 @@ function openModal(originalIndex) {
     'Contact Name Invoicing': "", 'Contact E-Mail Invoicing': "",
     'Airline': "", 'Aircraft Type': "", 'Flugnummer': "",
     'Flight Date': "", 'Abflugzeit': "", 'Tonnage': "",
-    'Rate': "", 'Security charges': "", "Dangerous Goods": "Nein",
+    'Rate': "", 'Security charges': "", "Dangerous Goods": "Nein", // Standardwert "Nein"
     '10ft consumables': "", '20ft consumables': "",
     'Zusatzkosten': "", 'Email Request': "",
-    'AGB Accepted': "Ja",
-    'Service Description Accepted': "Ja",
+    'AGB Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
+    'Service Description Accepted': "Ja", // Standardwert "Ja" für neue Anfragen
     'Accepted By Name': "",
     'Acceptance Timestamp': "",
-    'Final Confirmation Sent': "Nein",
-    'Flight Type Import': "Nein",
-    'Flight Type Export': "Nein",
-    'Origin': '',
-    'Destination': '',
-    'Status': 'Angefragt' // Standardstatus für neue Anfragen
+    'Final Confirmation Sent': "Nein", // NEU: Standardwert für neue Anfragen
+    'Flight Type Import': "Nein", // NEU: Standardwert
+    'Flight Type Export': "Nein",  // NEU: Standardwert
+    'Origin': '', // NEU: Origin für Import
+    'Destination': '' // NEU: Destination für Export
   } : requestData[originalIndex];
 
+  // Speichere die aktuellen Daten im Modal, um sie später für die E-Mail zu verwenden
   currentModalData = r;
 
   const modal = document.getElementById("detailModal");
   const modalBody = document.getElementById("modalBody");
   modalBody.innerHTML = "";
 
+  // Modifizierte section Funktion, um eine Farbklasse zu akzeptieren
   const section = (title, contentHTML, colorClass = '') => {
     const wrap = document.createElement("div");
-    wrap.className = `modal-section ${colorClass}`;
+    wrap.className = `modal-section ${colorClass}`; // Farbklasse hier hinzufügen
     wrap.innerHTML = `<h3>${title}</h3>` + contentHTML;
     return wrap;
   };
 
   const renderFields = (fields) => {
-    return fields.map(({ label, key, type, content, options }) => {
+    return fields.map(({ label, key, type, content }) => { // NEU: 'content' für Dropdown
+      // NEU: Wenn 'content' (z.B. für das CRM-Dropdown) übergeben wird, direkt rendern
       if (content) {
           return content;
       }
@@ -433,27 +396,25 @@ function openModal(originalIndex) {
           styleAttr = 'background-color:#eee; cursor: not-allowed;';
       }
 
+      // Spezielle Handhabung für Price-related fields und 'Zusatzkosten'
+      // Diese Felder sollen für Viewer komplett unsichtbar sein.
       const isPriceRelatedOrZusatzkostenField = [
         'Rate', 'Security charges', 'Dangerous Goods',
         '10ft consumables', '20ft consumables', 'Zusatzkosten'
       ].includes(key);
 
+      // Wenn der Benutzer ein Viewer ist und es sich um ein preisspezifisches Feld handelt, überspringen.
       if (isPriceRelatedOrZusatzkostenField && currentUser.role === 'viewer') {
-          return '';
+          return ''; // Leerer String, um das Feld komplett zu überspringen
       }
       
+      // NEU: Logik für Rechnungsnummer im Detail-Modal
       if (key === "Rechnungsnummer") {
         if (r.RechnungErstellt === 'Ja' && r.Rechnungsnummer) {
-          return `<label>${label}:</label><p><a href="javascript:void(0);" onclick="openInvoiceModal('${r.Ref}', true)" class="text-blue-600 font-bold underline">${r.Rechnungsnummer}</a></p>`;
+          return `<label>${label}:</label><p><a href="javascript:void(0);" onclick="openInvoiceView('${r.Ref}')" class="text-blue-600 font-bold underline">${r.Rechnungsnummer}</a></p>`;
         } else {
           return `<label>${label}:</label><p>Noch nicht erstellt</p>`;
         }
-      }
-
-      if (key === "Status") {
-        const statusOptions = ['Angefragt', 'Bestätigt', 'Abgerechnet', 'Archiviert', 'Storniert'];
-        let optionsHTML = statusOptions.map(opt => `<option value="${opt}" ${value === opt ? 'selected' : ''}>${opt}</option>`).join('');
-        return `<label>${label}:</label><select name="${key}">${optionsHTML}</select>`;
       }
 
 
@@ -461,10 +422,11 @@ function openModal(originalIndex) {
         let dateValue = "";
         if (value) {
             try {
-                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                // Parsen des Datums, um es im Input korrekt darzustellen (YYYY-MM-DD Format)
+                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
                     dateValue = value;
                 } else if (value instanceof Date) {
-                    dateValue = value.toISOString().split('T')[0];
+                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu竭-MM-DD
                 }
             } catch (e) {
                 console.error("Fehler beim Parsen des Flugdatums für Modal-Input:", value, e);
@@ -474,7 +436,7 @@ function openModal(originalIndex) {
       } else if (key === "Abflugzeit") {
         let timeValue = "";
         if (value) {
-            if (typeof value === 'string' && value.match(/^\d{2}:\d{2}$/)) {
+            if (typeof value === 'string' && value.match(/^\d{2}:\d{2}$/)) { // Erwartet HH:MM vom Backend
                 timeValue = value;
             } else if (value instanceof Date) {
                 timeValue = value.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
@@ -482,26 +444,27 @@ function openModal(originalIndex) {
         }
         return `<label>${label}:</label><input type="time" name="${key}" value="${timeValue}" ${readOnlyAttr} style="${styleAttr}">`;
       } else if (key === "AGB Accepted" || key === "Service Description Accepted") {
-          const icon = '&#10004;';
+          // Immer einen grünen Haken anzeigen, da der Kunde die AGB akzeptieren MUSS, um eine Anfrage zu senden.
+          const icon = '&#10004;'; // Grüner Haken
           const color = 'green';
           return `<label>${label}: <span style="color: ${color}; font-size: 1.2em; font-weight: bold;">${icon}</span></label>`;
       } else if (key === "Vorfeldbegleitung" && type === "checkbox") {
         const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
         return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}"> ${label}</label>`;
-      } else if (['Tonnage'].includes(key)) {
+      } else if (['Tonnage'].includes(key)) { // Tonnage darf Viewer sehen und bearbeiten
           const numericValue = parseFloat(String(value).replace(',', '.') || "0") || 0;
           return `<label>${label}:</label><input type="text" name="${key}" value="${numericValue.toLocaleString('de-DE', {useGrouping: false})}" ${readOnlyAttr} style="${styleAttr}" />`;
-      } else if (key === "Email Request") {
+      } else if (key === "Email Request") { // E-Mail Request ist ein normales Textfeld
           return `<label>${label}:</label><textarea name="${key}" rows="5" ${readOnlyAttr} style="${styleAttr}">${value}</textarea>`;
-      } else if (key === "Flight Type Import") {
+      } else if (key === "Flight Type Import") { // NEU: Checkbox für Import
           const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
           const originInput = (String(r['Flight Type Import']).toLowerCase() === 'ja') ? `<label>Origin:</label><input type="text" name="Origin" value="${r.Origin || ''}" ${readOnlyAttr} style="${styleAttr}" />` : '';
           return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}" onchange="toggleOriginDestinationFields(this, 'Origin')"> ${label}</label>${originInput}`;
-      } else if (key === "Flight Type Export") {
+      } else if (key === "Flight Type Export") { // NEU: Checkbox für Export
           const checked = String(value).toLowerCase() === "ja" ? "checked" : "";
           const destinationInput = (String(r['Flight Type Export']).toLowerCase() === 'ja') ? `<label>Destination:</label><input type="text" name="Destination" value="${r.Destination || ''}" ${readOnlyAttr} style="${styleAttr}" />` : '';
           return `<label><input type="checkbox" name="${key}" ${checked} ${readOnlyAttr} style="${styleAttr}" onchange="toggleOriginDestinationFields(this, 'Destination')"> ${label}</label>${destinationInput}`;
-      } else if (key === "Final Confirmation Sent") {
+      } else if (key === "Final Confirmation Sent") { // Anzeige für "Final Confirmation Sent"
           const statusText = String(value).toLowerCase() === 'ja' ? 'Ja (Gesendet)' : 'Nein (Nicht gesendet)';
           const statusColor = String(value).toLowerCase() === 'ja' ? 'green' : 'red';
           return `<label>${label}: <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></label>`;
@@ -520,7 +483,6 @@ function openModal(originalIndex) {
 
       customerFields = [
           { label: "Ref", key: "Ref" },
-          { label: "Status", key: "Status" },
           { label: "Created At", key: "Created At" },
           {
               label: "Kunde aus CRM auswählen",
@@ -548,7 +510,6 @@ function openModal(originalIndex) {
       // Standard-Ansicht für bestehende Einträge oder wenn kein Admin/keine Kunden
       customerFields = [
           { label: "Ref", key: "Ref" },
-          { label: "Status", key: "Status" },
           { label: "Created At", key: "Created At" },
           { label: "Billing Company", key: "Billing Company" },
           { label: "Billing Address", key: "Billing Address" },
@@ -587,16 +548,20 @@ function openModal(originalIndex) {
     { label: "Zusatzkosten", key: "Zusatzkosten", type: "textarea" } // Zusatzkosten als Textarea
   ];
 
+  // Hinzufügen der Abschnitte mit spezifischen Hintergrundfarben
   modalBody.appendChild(section("Kundendetails", renderFields(customerFields), 'bg-blue-50'));
   modalBody.appendChild(section("Flugdetails", renderFields(flightFields), 'bg-green-50'));
 
+  // Preisdetails nur für Admins anzeigen
   if (currentUser && currentUser.role === 'admin') {
+    // Erstellen des HTML für Preisdetails
     let priceDetailsHTML = priceFields.map(({ label, key, type }) => {
         let value = r[key] || "";
         if (key === "Zusatzkosten") {
+            // Sicherstellen, dass die textarea für Zusatzkosten korrekt gerendert wird
             return `<label>${label}:</label><textarea name="${key}" placeholder="Labeln, Fotos" style="height:80px">${value}</textarea>`;
         } else if (key === "Dangerous Goods") {
-            const options = ["Ja", "Nein", "N/A"];
+            const options = ["Ja", "Nein", "N/A"]; // Beispieloptionen
             return `<label>${label}:</label>
                     <select name="${key}">
                         ${options.map(opt => `<option value="${opt}" ${String(value).toLowerCase() === opt.toLowerCase() ? 'selected' : ''}>${opt}</option>`).join('')}
@@ -607,7 +572,7 @@ function openModal(originalIndex) {
         }
     }).join("");
 
-    modalBody.appendChild(section("Preisdetails", priceDetailsHTML, 'bg-yellow-50'));
+    modalBody.appendChild(section("Preisdetails", priceDetailsHTML, 'bg-yellow-50')); // Farbklasse für Preisdetails
   }
 
   const buttonContainer = document.createElement("div");
@@ -617,6 +582,7 @@ function openModal(originalIndex) {
   buttonContainer.style.gap = "10px";
   buttonContainer.style.marginTop = "20px";
 
+  // Speichern-Button ist für alle eingeloggten Benutzer verfügbar
   if (currentUser) {
     const saveButton = document.createElement("button");
     saveButton.textContent = "Speichern";
@@ -643,17 +609,17 @@ function openModal(originalIndex) {
   historyButton.onclick = () => showHistory(r.Ref);
   buttonContainer.appendChild(historyButton);
 
-  if (currentUser && originalIndex !== -1) {
+  if (currentUser && originalIndex !== -1) { // Button für alle Rollen, wenn ein Eintrag geöffnet ist
       const sendConfirmationButton = document.createElement("button");
       sendConfirmationButton.textContent = "Final Charter Confirmation senden";
       sendConfirmationButton.style.padding = "10px 20px";
       sendConfirmationButton.style.fontWeight = "bold";
-      sendConfirmationButton.style.backgroundColor = "#007BFF";
+      sendConfirmationButton.style.backgroundColor = "#007BFF"; // Blau für Senden
       sendConfirmationButton.style.color = "white";
       sendConfirmationButton.style.border = "none";
       sendConfirmationButton.style.borderRadius = "6px";
       sendConfirmationButton.style.cursor = "pointer";
-      sendConfirmationButton.onclick = () => openEmailConfirmationModal(r);
+      sendConfirmationButton.onclick = () => openEmailConfirmationModal(r); // Übergabe der aktuellen Daten
       buttonContainer.appendChild(sendConfirmationButton);
   }
 
@@ -794,10 +760,10 @@ document.addEventListener('keydown', (e) => {
     closeStatisticsModal();
     closeEmailConfirmationModal();
     closeEmailPreviewModal();
-    closeInvoiceListModal();
-    closeInvoiceModal();
-    closeUserManagementModal();
-    closeCustomerManagementModal();
+    closeInvoiceListModal(); // NEU
+    closeInvoiceCreationModal(); // NEU
+    closeUserManagementModal(); // NEU
+    closeCustomerManagementModal(); // NEU (CRM)
   }
 });
 
@@ -807,26 +773,9 @@ async function saveDetails() {
     return;
   }
 
-  // Start with the essential data: Ref, mode, and user
-  const data = {
-    Ref: currentModalData.Ref, // Use the Ref from the data object that opened the modal
-    mode: "write",
-    user: currentUser.name
-  };
-
-  // If Ref is missing, something is wrong.
-  if (!data.Ref) {
-    showSaveFeedback("Fehler: Referenznummer nicht gefunden. Speichern abgebrochen.", false);
-    return;
-  }
-
   const inputs = document.querySelectorAll("#modalBody input[name]:not([disabled]), #modalBody textarea[name]:not([disabled]), #modalBody select[name]:not([disabled])");
-  
-  // Add all other form values to the data object
+  const data = {};
   inputs.forEach(i => {
-    // Skip Ref because we already have it.
-    if (i.name === 'Ref') return;
-
     if (i.name === "Flight Date") {
         data[i.name] = i.value;
     } else if (['Tonnage', 'Rate', 'Security charges', '10ft consumables', '20ft consumables'].includes(i.name)) {
@@ -839,6 +788,9 @@ async function saveDetails() {
         }
     }
   });
+
+  data.mode = "write";
+  data.user = currentUser.name;
 
   console.log('Payload for saving:', data);
   try {
@@ -1698,7 +1650,7 @@ function openInvoiceListModal() {
     body.innerHTML = 'Lade Flüge...';
 
     const uninvoicedFlights = requestData.filter(r => 
-        String(r.Status || '').toLowerCase() === 'bestätigt' &&
+        String(r['Final Confirmation Sent'] || '').toLowerCase() === 'ja' &&
         String(r.RechnungErstellt || '').toLowerCase() !== 'ja'
     );
 
@@ -1711,10 +1663,10 @@ function openInvoiceListModal() {
         uninvoicedFlights.forEach(r => {
             const flightDate = r['Flight Date'] ? new Date(r['Flight Date'] + 'T00:00:00Z').toLocaleDateString('de-DE', { timeZone: 'UTC' }) : '-';
             tableHTML += `<tr>
-                <td><a href="javascript:void(0);" onclick="openInvoiceModal('${r.Ref}')">${r.Ref}</a></td>
+                <td><a href="javascript:void(0);" onclick="openInvoiceCreationModal('${r.Ref}')">${r.Ref}</a></td>
                 <td>${flightDate}</td>
                 <td>${r.Airline || '-'}</td>
-                <td><button class="btn btn-view" onclick="openInvoiceModal('${r.Ref}')">Rechnung erstellen</button></td>
+                <td><button class="btn btn-view" onclick="openInvoiceCreationModal('${r.Ref}')">Rechnung erstellen</button></td>
             </tr>`;
         });
         tableHTML += `</tbody></table>`;
@@ -1727,7 +1679,7 @@ function closeInvoiceListModal() {
     document.getElementById('invoiceListModal').style.display = 'none';
 }
 
-function openInvoiceModal(ref, isViewOnly = false) {
+function openInvoiceCreationModal(ref, isViewOnly = false) {
     currentInvoiceRef = ref;
     const flightData = requestData.find(r => r.Ref === ref);
     if (!flightData) {
@@ -1735,7 +1687,7 @@ function openInvoiceModal(ref, isViewOnly = false) {
         return;
     }
 
-    const modal = document.getElementById('invoiceModal');
+    const modal = document.getElementById('invoiceCreationModal');
     
     document.getElementById('invoiceRecipient').innerHTML = `<h4>Rechnungsempfänger</h4><p><strong>Firma:</strong> ${flightData['Billing Company'] || '-'}</p><p><strong>Adresse:</strong> ${flightData['Billing Address'] || '-'}</p><p><strong>Steuernr.:</strong> ${flightData['Tax Number'] || '-'}</p>`;
     document.getElementById('invoiceSender').innerHTML = `<h4>Rechnungsersteller</h4><p>VG Cargo GmbH</p><p>Gebäude 860</p><p>55483 Hahn-Flughafen</p><p><strong>Bearbeiter:</strong> ${currentUser.name}</p>`;
@@ -1760,12 +1712,12 @@ function openInvoiceModal(ref, isViewOnly = false) {
 
     if (isViewOnly) {
         invoiceNumberInput.value = flightData.Rechnungsnummer || 'N/A';
-        invoiceNumberInput.readOnly = true;
-        invoiceButtonContainer.querySelector('button[onclick="saveInvoice()"]').textContent = 'Rechnung aktualisieren';
+        invoiceNumberInput.readOnly = true; // Rechnungsnummer bleibt gesperrt
+        invoiceButtonContainer.innerHTML = `<button onclick="updateInvoice()" style="padding: 10px 20px; background-color: #ffc107; color: black; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Rechnung aktualisieren</button>`;
     } else {
         invoiceNumberInput.value = '';
         invoiceNumberInput.readOnly = false;
-        invoiceButtonContainer.querySelector('button[onclick="saveInvoice()"]').textContent = 'Rechnung erstellen und speichern';
+        invoiceButtonContainer.innerHTML = `<button onclick="saveInvoice()" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Rechnung erstellen und speichern</button>`;
     }
     
     if (document.getElementById('invoiceListModal').style.display === 'flex') {
@@ -1777,9 +1729,12 @@ function openInvoiceModal(ref, isViewOnly = false) {
     modal.style.display = 'flex';
 }
 
+function openInvoiceView(ref) {
+    openInvoiceCreationModal(ref, true);
+}
 
-function closeInvoiceModal() {
-    document.getElementById('invoiceModal').style.display = 'none';
+function closeInvoiceCreationModal() {
+    document.getElementById('invoiceCreationModal').style.display = 'none';
 }
 
 async function saveInvoice() {
@@ -1796,10 +1751,54 @@ async function saveInvoice() {
         mode: 'createInvoice',
         Ref: currentInvoiceRef,
         Rechnungsnummer: invoiceNumber,
-        user: currentUser.name,
-        Status: 'Abgerechnet' // Update status to Abgerechnet
+        user: currentUser.name
     };
 
+    // Kostenpositionen aus dem Formular sammeln
+    document.querySelectorAll('#invoiceCostsTable .invoice-desc').forEach(input => {
+        const key = input.dataset.costKey;
+        const descValue = input.value;
+        const priceValue = document.querySelector(`.invoice-price[data-cost-value="${key}"]`).value;
+        
+        // Sende die Kosten nur, wenn sie sich von den Standard-Keys unterscheiden oder es Zusatzkosten sind
+        if (key === 'Zusatzkosten') {
+            payload[key] = descValue; // Hier wird die Beschreibung der Zusatzkosten gespeichert
+        }
+        payload[key + '_price'] = priceValue; // Sende immer den Preis
+    });
+    
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(payload)
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            showSaveFeedback('Rechnung erfolgreich gespeichert!', true);
+            closeInvoiceCreationModal();
+            fetchData();
+        } else {
+            showSaveFeedback(result.message || 'Fehler beim Speichern der Rechnung.', false);
+        }
+    } catch (error) {
+        showSaveFeedback('Ein Netzwerkfehler ist aufgetreten.', false);
+        console.error('Fehler beim Speichern der Rechnung:', error);
+    }
+}
+
+async function updateInvoice() {
+    if (!confirm(`Sollen die Änderungen an dieser Rechnung wirklich gespeichert werden?`)) {
+        return;
+    }
+
+    const payload = {
+        mode: 'updateInvoice',
+        Ref: currentInvoiceRef,
+        user: currentUser.name
+    };
+
+    // Sammle die aktualisierten Kosten und Beschreibungen
     document.querySelectorAll('#invoiceCostsTable .invoice-desc').forEach(input => {
         const key = input.dataset.costKey;
         const descValue = input.value;
@@ -1819,108 +1818,16 @@ async function saveInvoice() {
         });
         const result = await response.json();
         if (result.status === 'success') {
-            showSaveFeedback('Rechnung erfolgreich gespeichert!', true);
-            closeInvoiceModal();
+            showSaveFeedback('Rechnung erfolgreich aktualisiert!', true);
+            closeInvoiceCreationModal();
             fetchData();
         } else {
-            showSaveFeedback(result.message || 'Fehler beim Speichern der Rechnung.', false);
+            showSaveFeedback(result.message || 'Fehler beim Aktualisieren der Rechnung.', false);
         }
     } catch (error) {
         showSaveFeedback('Ein Netzwerkfehler ist aufgetreten.', false);
-        console.error('Fehler beim Speichern der Rechnung:', error);
+        console.error('Fehler beim Aktualisieren der Rechnung:', error);
     }
-}
-
-function generateInvoicePDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    const flightData = requestData.find(r => r.Ref === currentInvoiceRef);
-    if (!flightData) {
-        showSaveFeedback('Flugdaten für PDF nicht gefunden!', false);
-        return;
-    }
-
-    const invoiceNumber = document.getElementById('invoiceNumberInput').value || 'N/A';
-    const vatOption = document.getElementById('vatSelection').value;
-
-    // Header
-    doc.setFontSize(20);
-    doc.text("Rechnung", 105, 20, null, null, "center");
-    doc.setFontSize(10);
-    doc.text(`Rechnungsnummer: ${invoiceNumber}`, 105, 28, null, null, "center");
-    doc.text(`Datum: ${new Date().toLocaleDateString('de-DE')}`, 105, 34, null, null, "center");
-
-
-    // Adressen
-    doc.setFontSize(12);
-    doc.text("Rechnungsersteller:", 20, 50);
-    doc.setFontSize(10);
-    doc.text("VG Cargo GmbH", 20, 58);
-    doc.text("Gebäude 860", 20, 63);
-    doc.text("55483 Hahn-Flughafen", 20, 68);
-
-    doc.setFontSize(12);
-    doc.text("Rechnungsempfänger:", 110, 50);
-    doc.setFontSize(10);
-    doc.text(flightData['Billing Company'] || '', 110, 58);
-    doc.text(flightData['Billing Address'] || '', 110, 63);
-    doc.text(`Steuernr.: ${flightData['Tax Number'] || ''}`, 110, 68);
-
-    // Tabelle mit Kosten
-    const tableColumn = ["Leistungsbeschreibung", "Preis (€)"];
-    const tableRows = [];
-    let netTotal = 0;
-
-    document.querySelectorAll('#invoiceCostsTable tbody tr').forEach(row => {
-        const desc = row.querySelector('.invoice-desc').value;
-        const price = parseFloat(row.querySelector('.invoice-price').value) || 0;
-        tableRows.push([desc, price.toFixed(2)]);
-        netTotal += price;
-    });
-
-    doc.autoTable({
-        head: [tableColumn],
-        body: tableRows,
-        startY: 80,
-        theme: 'striped',
-        headStyles: { fillColor: [0, 123, 255] },
-    });
-
-    let finalY = doc.autoTable.previous.finalY;
-
-    // Berechnung und Anzeige der Summen
-    let vatAmount = 0;
-    let totalAmount = netTotal;
-
-    doc.setFontSize(10);
-    doc.text(`Nettobetrag:`, 150, finalY + 10, { align: 'right' });
-    doc.text(`${netTotal.toFixed(2)} €`, 190, finalY + 10, { align: 'right' });
-
-    if (vatOption === "19") {
-        vatAmount = netTotal * 0.19;
-        totalAmount = netTotal + vatAmount;
-        doc.text(`MwSt. (19%):`, 150, finalY + 17, { align: 'right' });
-        doc.text(`${vatAmount.toFixed(2)} €`, 190, finalY + 17, { align: 'right' });
-    }
-
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text(`Zahlbetrag:`, 150, finalY + 24, { align: 'right' });
-    doc.text(`${totalAmount.toFixed(2)} €`, 190, finalY + 24, { align: 'right' });
-    doc.setFont(undefined, 'normal');
-
-    // Zusatztext für 0% MwSt.
-    if (vatOption === "0") {
-        doc.setFontSize(9);
-        doc.text("Services are free from tax in accordance with §4 No. 3 UStG", 20, finalY + 40);
-    }
-
-    // Footer
-    doc.setFontSize(8);
-    doc.text("Vielen Dank für Ihren Auftrag.", 105, 280, null, null, "center");
-    
-    doc.save(`Rechnung-${invoiceNumber}.pdf`);
 }
 
 
@@ -2279,10 +2186,11 @@ window.markAsSentManually = markAsSentManually;
 // NEUE GLOBALE FUNKTIONEN FÜR RECHNUNGEN
 window.openInvoiceListModal = openInvoiceListModal;
 window.closeInvoiceListModal = closeInvoiceListModal;
-window.openInvoiceModal = openInvoiceModal;
-window.closeInvoiceModal = closeInvoiceModal;
+window.openInvoiceCreationModal = openInvoiceCreationModal;
+window.closeInvoiceCreationModal = closeInvoiceCreationModal;
 window.saveInvoice = saveInvoice;
-window.generateInvoicePDF = generateInvoicePDF;
+window.openInvoiceView = openInvoiceView;
+window.updateInvoice = updateInvoice;
 // NEUE GLOBALE FUNKTIONEN FÜR BENUTZERVERWALTUNG
 window.openUserManagementModal = openUserManagementModal;
 window.closeUserManagementModal = closeUserManagementModal;
@@ -2300,5 +2208,3 @@ window.clearCustomerForm = clearCustomerForm;
 window.populateCustomerFields = populateCustomerFields;
 // Initialisiere Auth-Status, sobald das DOM geladen ist.
 checkAuthStatus();
-" in the document.
-I want you to fix the bug in the given
