@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <title>Charter Dashboard</title>
   <!-- Google Fonts - Inter -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="[https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap)" rel="stylesheet">
   <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -23,7 +23,7 @@
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif; /* Behält deine aktuelle Schriftart */
-      background: url('https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg') no-repeat center center fixed;
+      background: url('[https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg](https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg)') no-repeat center center fixed;
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
@@ -598,6 +598,19 @@
       </div>
     </div>
     
+    <!-- NEU: Live Flug-Tracker -->
+    <div class="mt-4 p-4 border border-gray-300 rounded-lg bg-gray-50">
+        <h3 class="text-lg font-semibold mb-2 text-gray-800">Live Flug-Tracker</h3>
+        <div class="flex items-center gap-4">
+            <label for="flightTrackerInput" class="font-medium">Flugnummer:</label>
+            <input type="text" id="flightTrackerInput" placeholder="z.B. LH202" class="border-gray-300 focus:ring-blue-500 focus:border-blue-500 rounded-md shadow-sm">
+            <button onclick="trackFlight()" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                Flug tracken
+            </button>
+        </div>
+    </div>
+
+
     <!-- Unbestätigte Anfragen -->
     <div class="mt-8">
         <h2 class="text-2xl font-bold mb-2 text-gray-700">Unbestätigte Charteranfragen</h2>
@@ -867,6 +880,17 @@
       </div>
     </div>
 
+    <!-- NEU: Modal für Flug-Tracker -->
+    <div class="modal" id="flightTrackerModal">
+        <div class="modal-content" style="max-width: 600px; flex-direction: column;">
+            <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeFlightTrackerModal()">✖</span>
+            <h3>Flugstatus für: <span id="flightTrackerNumber"></span></h3>
+            <div id="flightTrackerBody" style="width:100%; max-height: 70vh; overflow-y: auto;">
+                <!-- Flug-Tracker-Ergebnisse werden hier eingefügt -->
+            </div>
+        </div>
+    </div>
+
 
   </div>
   <div class="calendar w-full xl:w-[500px] xl:flex-shrink-0">
@@ -877,7 +901,7 @@
     <div id="calendarArea" class="calendar-wrapper"></div>
   </div>
   <!-- WICHTIGE KORREKTUR: script.js hierher verschoben und 'defer' entfernt -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js CDN hinzufügen -->
+  <script src="[https://cdn.jsdelivr.net/npm/chart.js](https://cdn.jsdelivr.net/npm/chart.js)"></script> <!-- Chart.js CDN hinzufügen -->
   <script src="script.js" type="module"></script>
 </body>
 </html>
