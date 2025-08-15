@@ -2217,7 +2217,7 @@ function downloadInvoicePDF() {
       <div class="invoice-container">
         <div class="header">
           <div>
-            <img src="vgc-logo-center1.jpg" alt="VG Cargo Logo" class="logo" onerror="this.onerror=null;this.src='https://placehold.co/150x50/003366/FFFFFF?text=VG+Cargo';">
+            <img src="VG_Cargo_Logo_small.png" alt="VG Cargo Logo" class="logo" onerror="this.onerror=null;this.src='https://placehold.co/150x50/003366/FFFFFF?text=VG+Cargo';">
           </div>
           <div class="invoice-title">
             <h1>Rechnung</h1>
