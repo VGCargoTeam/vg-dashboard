@@ -33,8 +33,8 @@ function checkAuthStatus() {
     currentUser = JSON.parse(storedUser);
     updateUIBasedOnUserRole();
     fetchData(); // Daten laden, wenn angemeldet
-    if (currentUser.role === 'admin') {
-        fetchCustomers(); // CRM-Daten nur für Admins laden
+    if (currentUser.role === 'admin' || currentUser.role === 'editor') {
+        fetchCustomers(); // CRM-Daten nur für Admins und Editoren laden
     }
   } else {
     // Wenn nicht angemeldet, zur Login-Seite umleiten
@@ -44,6 +44,7 @@ function checkAuthStatus() {
 
 function updateUIBasedOnUserRole() {
   const adminElements = document.querySelectorAll(".admin-only");
+  const editorElements = document.querySelectorAll(".editor-only"); // NEU: Klasse für Editoren
   const loggedInUsernameSpan = document.getElementById('loggedInUsername');
   const loggedInUserRoleSpan = document.getElementById('loggedInUserRole');
 
@@ -53,11 +54,18 @@ function updateUIBasedOnUserRole() {
 
     if (currentUser.role === 'admin') {
       adminElements.forEach(el => el.style.display = "inline-block"); // Oder 'block', je nach Element
-    } else {
+      editorElements.forEach(el => el.style.display = "inline-block");
+    } else if (currentUser.role === 'editor') { // NEU: Logik für Editor
       adminElements.forEach(el => el.style.display = "none");
+      editorElements.forEach(el => el.style.display = "inline-block");
+    }
+     else {
+      adminElements.forEach(el => el.style.display = "none");
+      editorElements.forEach(el => el.style.display = "none");
     }
   } else {
     adminElements.forEach(el => el.style.display = "none");
+    editorElements.forEach(el => el.style.display = "none");
     if (loggedInUsernameSpan) loggedInUsernameSpan.textContent = 'N/A';
     if (loggedInUserRoleSpan) loggedInUserRoleSpan.textContent = 'N/A';
   }
@@ -228,7 +236,8 @@ function renderRequestTables(dataToRender = requestData) {
             }
         }
 
-        const deleteButtonHTML = (currentUser && currentUser.role === 'admin') ? `<button class="btn btn-delete admin-only" onclick="deleteRow(this)">Delete</button>` : '';
+        // NEU: Lösch-Button ist jetzt für Admin und Editor sichtbar
+        const deleteButtonHTML = (currentUser && (currentUser.role === 'admin' || currentUser.role === 'editor')) ? `<button class="btn btn-delete admin-only" onclick="deleteRow(this)">Delete</button>` : '';
         const isConfirmed = String(r['Final Confirmation Sent'] || '').toLowerCase() === 'ja';
         const confirmationIcon = isConfirmed ? '<span class="text-green-500 ml-1">&#10004;</span>' : '';
 
@@ -623,7 +632,8 @@ function openModal(originalIndex) {
       buttonContainer.appendChild(sendConfirmationButton);
   }
 
-  if (currentUser && currentUser.role === 'admin' && originalIndex !== -1) {
+  // NEU: Lösch-Button ist jetzt für Admin und Editor sichtbar
+  if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'editor') && originalIndex !== -1) {
     const deleteButtonModal = document.createElement("button");
     deleteButtonModal.textContent = "Eintrag löschen";
     deleteButtonModal.className = "btn btn-delete";
@@ -711,6 +721,11 @@ function toggleOriginDestinationFields(checkbox, fieldType) {
 
 // Neue Funktion, die vom Modal aus den Löschvorgang startet und dann das Modal schließt
 async function deleteRowFromModal(ref) {
+  // NEU: Berechtigungsprüfung für Admin und Editor
+  if (currentUser.role !== 'admin' && currentUser.role !== 'editor') {
+    showSaveFeedback('Sie haben keine Berechtigung, diesen Eintrag zu löschen.', false);
+    return;
+  }
   const isConfirmed = confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`);
   if (!isConfirmed) {
     return;
@@ -820,6 +835,11 @@ async function saveDetails() {
 }
 
 async function deleteRow(btn) {
+  // NEU: Berechtigungsprüfung für Admin und Editor
+  if (currentUser.role !== 'admin' && currentUser.role !== 'editor') {
+    showSaveFeedback('Sie haben keine Berechtigung, diesen Eintrag zu löschen.', false);
+    return;
+  }
   const ref = btn.closest("tr").querySelector("a").textContent;
 
   const isConfirmed = confirm(`Möchten Sie den Eintrag mit der Referenz "${ref}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`);
@@ -1120,6 +1140,11 @@ function closeHistoryModal() {
 
 // === NEUE STATISTIK-FUNKTIONEN ===
 function openStatisticsModal() {
+    // NEU: Berechtigungsprüfung für Admin und Editor
+    if (currentUser.role !== 'admin' && currentUser.role !== 'editor') {
+      showSaveFeedback('Sie haben keine Berechtigung, Statistiken zu sehen.', false);
+      return;
+    }
     const statisticsModal = document.getElementById('statisticsModal');
     if (statisticsModal) {
         statisticsModal.style.display = 'flex';
@@ -1656,6 +1681,11 @@ document.getElementById('markAsSentBtn').addEventListener('click', markAsSentMan
 
 // === NEUE RECHNUNGSFUNKTIONEN ===
 function openInvoiceListModal() {
+    // NEU: Berechtigungsprüfung für Admin
+    if (currentUser.role !== 'admin') {
+      showSaveFeedback('Sie haben keine Berechtigung, Rechnungen zu erstellen.', false);
+      return;
+    }
     const modal = document.getElementById('invoiceListModal');
     const body = document.getElementById('invoiceListBody');
     body.innerHTML = 'Lade Flüge...';
@@ -1691,6 +1721,11 @@ function closeInvoiceListModal() {
 }
 
 function openInvoiceCreationModal(ref, isViewOnly = false) {
+    // NEU: Berechtigungsprüfung für Admin
+    if (currentUser.role !== 'admin') {
+      showSaveFeedback('Sie haben keine Berechtigung, Rechnungen zu erstellen oder anzusehen.', false);
+      return;
+    }
     currentInvoiceRef = ref;
     const flightData = requestData.find(r => r.Ref === ref);
     if (!flightData) {
@@ -2002,6 +2037,11 @@ async function updateInvoice() {
 // === NEUE FUNKTIONEN FÜR BENUTZERVERWALTUNG ===
 
 async function openUserManagementModal() {
+    // NEU: Berechtigungsprüfung für Admin
+    if (currentUser.role !== 'admin') {
+      showSaveFeedback('Sie haben keine Berechtigung, die Benutzerverwaltung zu öffnen.', false);
+      return;
+    }
     const modal = document.getElementById('userManagementModal');
     if (!modal) return;
 
@@ -2335,6 +2375,11 @@ async function fetchCustomers() {
 }
 
 async function openCustomerManagementModal() {
+    // NEU: Berechtigungsprüfung für Admin und Editor
+    if (currentUser.role !== 'admin' && currentUser.role !== 'editor') {
+      showSaveFeedback('Sie haben keine Berechtigung, die Kundenverwaltung zu öffnen.', false);
+      return;
+    }
     const modal = document.getElementById('customerManagementModal');
     if (!modal) return;
 
