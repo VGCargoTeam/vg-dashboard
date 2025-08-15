@@ -985,9 +985,11 @@ function generateCalendarHTML(year, month) {
 }
 
 // === UHRZEIT UND DATUM ===
+// Die DOMContentLoaded-Funktion wird ausgelöst, sobald das HTML vollständig geladen und geparst wurde
 document.addEventListener("DOMContentLoaded", () => {
   checkAuthStatus();
   updateClock();
+  // Setze ein Intervall, um die Uhr jede Sekunde zu aktualisieren
   setInterval(updateClock, 1000);
 
   const archiveCheckbox = document.getElementById("archiveCheckbox");
@@ -998,9 +1000,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function updateClock() {
   const now = new Date();
-  document.getElementById('currentDate').textContent = "Date: " + now.toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' });
-  document.getElementById('clock').textContent = "Time: " + now.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+  // Sicherstellen, dass die Elemente existieren, bevor versucht wird, sie zu aktualisieren
+  const dateElement = document.getElementById('currentDate');
+  const clockElement = document.getElementById('clock');
+  
+  if (dateElement) {
+    dateElement.textContent = "Date: " + now.toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  }
+  if (clockElement) {
+    clockElement.textContent = "Time: " + now.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+  }
 }
+
 
 // === NEUE ANFRAGE ERSTELLEN ===
 function generateReference() {
@@ -2302,6 +2313,165 @@ function downloadInvoicePDF() {
       closeInvoiceCreationModal();
     }, 1000);
   };
+}
+
+// === NEUE FUNKTIONEN FÜR KUNDENVERWALTUNG (CRM) ===
+async function fetchCustomers() {
+    try {
+        const response = await fetch(API_URL + "?mode=getCustomers");
+        if (!response.ok) {
+            throw new Error('Netzwerk-Antwort war nicht ok.');
+        }
+        const result = await response.json();
+        if (result.status === 'success') {
+            allCustomers = result.data;
+            // console.log("Kundenliste geladen:", allCustomers);
+        } else {
+            throw new Error(result.message || 'Fehler beim Laden der Kunden.');
+        }
+    } catch (error) {
+        console.error("Fehler beim Abrufen der CRM-Daten:", error);
+    }
+}
+
+async function openCustomerManagementModal() {
+    const modal = document.getElementById('customerManagementModal');
+    if (!modal) return;
+
+    clearCustomerForm();
+    document.getElementById('customerListContainer').innerHTML = '<p>Lade Kundenliste...</p>';
+    modal.style.display = 'flex';
+
+    await fetchCustomers();
+    renderCustomerList();
+}
+
+function renderCustomerList() {
+    const container = document.getElementById('customerListContainer');
+    if (allCustomers.length === 0) {
+        container.innerHTML = '<p>Keine Kunden gefunden.</p>';
+        return;
+    }
+
+    let tableHTML = `<table class="w-full data-table"><thead><tr><th>KundenID</th><th>Firma</th><th>Kontaktperson</th><th>E-Mail</th><th>Aktionen</th></tr></thead><tbody>`;
+    allCustomers.forEach(customer => {
+        tableHTML += `<tr>
+            <td>${customer.KundenID}</td>
+            <td>${customer['Billing Company']}</td>
+            <td>${customer['Contact Name Invoicing']}</td>
+            <td>${customer['Contact E-Mail Invoicing']}</td>
+            <td>
+                <button class="btn btn-view" onclick="editCustomer('${customer.KundenID}')">Edit</button>
+                <button class="btn btn-delete" onclick="deleteCustomer('${customer.KundenID}')">Delete</button>
+            </td>
+        </tr>`;
+    });
+    tableHTML += `</tbody></table>`;
+    container.innerHTML = tableHTML;
+}
+
+function editCustomer(customerID) {
+    const customer = allCustomers.find(c => c.KundenID === customerID);
+    if (!customer) return;
+
+    document.getElementById('customerFormTitle').textContent = `Kunden bearbeiten: ${customer['Billing Company']}`;
+    document.getElementById('customerInputID').value = customer.KundenID;
+    document.getElementById('customerInputCompany').value = customer['Billing Company'];
+    document.getElementById('customerInputContactName').value = customer['Contact Name Invoicing'];
+    document.getElementById('customerInputAddress').value = customer['Billing Address'];
+    document.getElementById('customerInputEmail').value = customer['Contact E-Mail Invoicing'];
+    document.getElementById('customerInputTaxNumber').value = customer['Tax Number'];
+    document.getElementById('customerInputNotes').value = customer.Bemerkungen;
+
+    editingCustomerID = customerID;
+}
+
+function clearCustomerForm() {
+    document.getElementById('customerFormTitle').textContent = 'Neuen Kunden anlegen';
+    document.getElementById('customerInputID').value = '';
+    document.getElementById('customerInputCompany').value = '';
+    document.getElementById('customerInputContactName').value = '';
+    document.getElementById('customerInputAddress').value = '';
+    document.getElementById('customerInputEmail').value = '';
+    document.getElementById('customerInputTaxNumber').value = '';
+    document.getElementById('customerInputNotes').value = '';
+    editingCustomerID = null;
+}
+
+function closeCustomerManagementModal() {
+    document.getElementById('customerManagementModal').style.display = 'none';
+}
+
+async function saveCustomer() {
+    const payload = {
+        mode: 'saveCustomer',
+        KundenID: editingCustomerID, // ist `null` bei neuen Kunden
+        'Billing Company': document.getElementById('customerInputCompany').value.trim(),
+        'Contact Name Invoicing': document.getElementById('customerInputContactName').value.trim(),
+        'Billing Address': document.getElementById('customerInputAddress').value.trim(),
+        'Contact E-Mail Invoicing': document.getElementById('customerInputEmail').value.trim(),
+        'Tax Number': document.getElementById('customerInputTaxNumber').value.trim(),
+        'Bemerkungen': document.getElementById('customerInputNotes').value.trim(),
+        user: currentUser.name // Admin, der die Aktion ausführt
+    };
+
+    if (!payload['Billing Company']) {
+        return showSaveFeedback('Der Firmenname darf nicht leer sein.', false);
+    }
+    
+    // Generiere eine neue KundenID, wenn noch keine vorhanden ist
+    if (!payload.KundenID) {
+        payload.KundenID = 'CID-' + Date.now().toString(36);
+    }
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(payload)
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            showSaveFeedback(result.message, true);
+            openCustomerManagementModal();
+        } else {
+            throw new Error(result.message || 'Unbekannter Fehler beim Speichern.');
+        }
+    } catch (error) {
+        showSaveFeedback(error.message, false);
+    }
+}
+
+async function deleteCustomer(customerID) {
+    const customer = allCustomers.find(c => c.KundenID === customerID);
+    if (!customer) return;
+    
+    if (!confirm(`Möchten Sie den Kunden "${customer['Billing Company']}" wirklich unwiderruflich löschen?`)) {
+        return;
+    }
+
+    const payload = {
+        mode: 'deleteCustomer',
+        KundenID: customerID,
+        user: currentUser.name
+    };
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(payload)
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            showSaveFeedback(result.message, true);
+            openCustomerManagementModal(); // Liste neu laden
+        } else {
+            throw new Error(result.message || 'Unbekannter Fehler beim Löschen.');
+        }
+    } catch (error) {
+        showSaveFeedback(error.message, false);
+    }
 }
 
 // --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
