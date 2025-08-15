@@ -1339,7 +1339,7 @@ function downloadStatisticsToCSV() {
     csvContent += `Ja,${VorfeldbegleitungCount["Ja"]},${(VorfeldbegleitungCount["Ja"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
     csvContent += `Nein,${VorfeldbegleitungCount["Nein"]},${(VorfeldbegleitungCount["Nein"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
     if (VorfeldbegleitungCount["N/A"] > 0) {
-        csvContent += `Nicht angegeben,${VorfeldbegleitungCount["N/A"]},${(VorfeldbegleitungCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
+        csvContent += `Nicht angegeben,${dangerousGoodsCount["N/A"]},${(dangerousGoodsCount["N/A"] / totalFlights * 100 || 0).toFixed(1)}%\n`;
     }
     csvContent += "\n";
 
@@ -2160,6 +2160,8 @@ function downloadInvoicePDF() {
   });
 
   invoiceData.Mehrwertsteuersatz = document.getElementById('invoiceVatRate').value;
+  invoiceData.Rechnungsdatum = document.getElementById('invoiceDateInput').value;
+  invoiceData.Leistungsdatum = document.getElementById('invoiceServiceDateInput').value;
 
   // Berechne die Summen für die Druckansicht
   let subtotal = 0;
