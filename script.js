@@ -423,10 +423,10 @@ function openModal(originalIndex) {
         if (value) {
             try {
                 // Parsen des Datums, um es im Input korrekt darzustellen (YYYY-MM-DD Format)
-                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet竭-MM-DD vom Backend
+                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) { // Erwartet YYYY-MM-DD vom Backend
                     dateValue = value;
                 } else if (value instanceof Date) {
-                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu竭-MM-DD
+                    dateValue = value.toISOString().split('T')[0]; // Konvertiere Date-Objekt zu YYYY-MM-DD
                 }
             } catch (e) {
                 console.error("Fehler beim Parsen des Flugdatums für Modal-Input:", value, e);
@@ -1686,11 +1686,30 @@ function openInvoiceCreationModal(ref, isViewOnly = false) {
         showSaveFeedback('Flugdaten nicht gefunden!', false);
         return;
     }
+    
+    // Setze das aktuelle Datum als Rechnungsdatum
+    const today = new Date().toISOString().split('T')[0];
+    const invoiceDateInput = document.getElementById('invoiceDateInput');
+    if (invoiceDateInput) {
+        invoiceDateInput.value = today;
+    }
+
+    // Setze das Leistungsdatum auf das Flugdatum
+    const serviceDateInput = document.getElementById('invoiceServiceDateInput');
+    if (serviceDateInput) {
+        serviceDateInput.value = flightData['Flight Date'] || today;
+    }
 
     const modal = document.getElementById('invoiceCreationModal');
     
     document.getElementById('invoiceRecipient').innerHTML = `<h4>Rechnungsempfänger</h4><p><strong>Firma:</strong> ${flightData['Billing Company'] || '-'}</p><p><strong>Adresse:</strong> ${flightData['Billing Address'] || '-'}</p><p><strong>Steuernr.:</strong> ${flightData['Tax Number'] || '-'}</p>`;
     document.getElementById('invoiceSender').innerHTML = `<h4>Rechnungsersteller</h4><p>VG Cargo GmbH</p><p>Gebäude 860</p><p>55483 Hahn-Flughafen</p><p><strong>Bearbeiter:</strong> ${currentUser.name}</p>`;
+    
+    // Setze den Namen des Bearbeiters
+    const editorNameSpan = document.getElementById('invoiceEditorName');
+    if(editorNameSpan) {
+      editorNameSpan.textContent = currentUser.name;
+    }
 
     const costsBody = document.querySelector('#invoiceCostsTable tbody');
     costsBody.innerHTML = '';
@@ -1699,11 +1718,23 @@ function openInvoiceCreationModal(ref, isViewOnly = false) {
     for (const key in costFields) {
         const value = parseFloat(String(flightData[key] || '0').replace(',', '.')) || 0;
         const description = key === 'Zusatzkosten' && flightData[key] ? flightData[key] : costFields[key];
-        const readonlyAttr = ''; // Immer bearbeitbar
-        const row = `<tr>
-            <td><input type="text" data-cost-key="${key}" class="invoice-desc" value="${description}" ${readonlyAttr}></td>
-            <td><input type="number" step="0.01" data-cost-value="${key}" class="invoice-price" value="${value.toFixed(2)}" ${readonlyAttr}></td>
-        </tr>`;
+        
+        let row;
+        if (isViewOnly) {
+             const savedDescription = flightData[`${key}_desc`] || description;
+             const savedValue = parseFloat(String(flightData[`${key}_price`] || value).replace(',', '.')) || 0;
+
+             row = `<tr>
+                <td><input type="text" data-cost-key="${key}" class="invoice-desc" value="${savedDescription}" readonly></td>
+                <td><input type="number" step="0.01" data-cost-value="${key}" class="invoice-price" value="${savedValue.toFixed(2)}" readonly></td>
+            </tr>`;
+        } else {
+            row = `<tr>
+                <td><input type="text" data-cost-key="${key}" class="invoice-desc" value="${description}"></td>
+                <td><input type="number" step="0.01" data-cost-value="${key}" class="invoice-price" value="${value.toFixed(2)}"></td>
+            </tr>`;
+        }
+        
         costsBody.innerHTML += row;
     }
     
@@ -1712,13 +1743,38 @@ function openInvoiceCreationModal(ref, isViewOnly = false) {
 
     if (isViewOnly) {
         invoiceNumberInput.value = flightData.Rechnungsnummer || 'N/A';
-        invoiceNumberInput.readOnly = true; // Rechnungsnummer bleibt gesperrt
-        invoiceButtonContainer.innerHTML = `<button onclick="updateInvoice()" style="padding: 10px 20px; background-color: #ffc107; color: black; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Rechnung aktualisieren</button>`;
+        invoiceNumberInput.readOnly = true;
+        // Buttons für Bearbeiten und PDF-Download
+        invoiceButtonContainer.innerHTML = `
+            <button onclick="editInvoiceDetails()" style="padding: 10px 20px; background-color: #ffc107; color: black; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Rechnung bearbeiten</button>
+            <button onclick="downloadInvoicePDF()" style="padding: 10px 20px; background-color: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">PDF herunterladen</button>
+        `;
+        // MWSt-Auswahl ist gesperrt
+        document.getElementById('invoiceVatRate').disabled = true;
     } else {
         invoiceNumberInput.value = '';
         invoiceNumberInput.readOnly = false;
         invoiceButtonContainer.innerHTML = `<button onclick="saveInvoice()" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Rechnung erstellen und speichern</button>`;
+        // MWSt-Auswahl ist aktiv
+        document.getElementById('invoiceVatRate').disabled = false;
     }
+    
+    // Setze die MWSt aus den Daten, falls vorhanden
+    const vatRateSelect = document.getElementById('invoiceVatRate');
+    if (flightData.Mehrwertsteuersatz !== undefined) {
+        vatRateSelect.value = flightData.Mehrwertsteuersatz;
+    } else {
+        vatRateSelect.value = '19'; // Standardwert
+    }
+
+    // Füge Event Listener für Preisänderungen hinzu
+    const priceInputs = document.querySelectorAll('#invoiceCostsTable .invoice-price');
+    priceInputs.forEach(input => {
+        input.addEventListener('input', updateInvoiceTotals);
+    });
+
+    // Initialisiere die Totalen
+    updateInvoiceTotals();
     
     if (document.getElementById('invoiceListModal').style.display === 'flex') {
         closeInvoiceListModal();
@@ -1729,12 +1785,55 @@ function openInvoiceCreationModal(ref, isViewOnly = false) {
     modal.style.display = 'flex';
 }
 
+function closeInvoiceCreationModal() {
+    document.getElementById('invoiceCreationModal').style.display = 'none';
+    const priceInputs = document.querySelectorAll('#invoiceCostsTable .invoice-price');
+    priceInputs.forEach(input => {
+        input.removeEventListener('input', updateInvoiceTotals);
+    });
+}
+
 function openInvoiceView(ref) {
     openInvoiceCreationModal(ref, true);
 }
 
-function closeInvoiceCreationModal() {
-    document.getElementById('invoiceCreationModal').style.display = 'none';
+function updateInvoiceTotals() {
+    const priceInputs = document.querySelectorAll('#invoiceCostsTable .invoice-price');
+    let subtotal = 0;
+    priceInputs.forEach(input => {
+        subtotal += parseFloat(input.value) || 0;
+    });
+
+    const vatRate = parseFloat(document.getElementById('invoiceVatRate').value) || 0;
+    const vatAmount = subtotal * (vatRate / 100);
+    const total = subtotal + vatAmount;
+
+    document.getElementById('invoiceSubtotal').textContent = `${subtotal.toFixed(2)} €`;
+    document.getElementById('invoiceVatAmount').textContent = `${vatAmount.toFixed(2)} €`;
+    document.getElementById('invoiceTotal').textContent = `${total.toFixed(2)} €`;
+    
+    // Text für Steuerbefreiung anzeigen/verbergen
+    const footerTextDiv = document.getElementById('invoiceFooterText');
+    if (vatRate === 0) {
+        footerTextDiv.style.display = 'block';
+        footerTextDiv.innerHTML = 'Services are free from tax in accordance with §4 No. 3 UStG';
+    } else {
+        footerTextDiv.style.display = 'none';
+        footerTextDiv.innerHTML = '';
+    }
+}
+
+function editInvoiceDetails() {
+    const invoiceNumberInput = document.getElementById('invoiceNumberInput');
+    const priceInputs = document.querySelectorAll('#invoiceCostsTable input');
+    const vatRateSelect = document.getElementById('invoiceVatRate');
+    const invoiceButtonContainer = document.getElementById('invoiceButtonContainer');
+    
+    invoiceNumberInput.readOnly = false;
+    priceInputs.forEach(input => input.readOnly = false);
+    vatRateSelect.disabled = false;
+    
+    invoiceButtonContainer.innerHTML = `<button onclick="updateInvoice()" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Änderungen speichern</button>`;
 }
 
 async function saveInvoice() {
@@ -1751,20 +1850,20 @@ async function saveInvoice() {
         mode: 'createInvoice',
         Ref: currentInvoiceRef,
         Rechnungsnummer: invoiceNumber,
+        Mehrwertsteuersatz: document.getElementById('invoiceVatRate').value,
+        Rechnungsdatum: document.getElementById('invoiceDateInput').value,
+        Leistungsdatum: document.getElementById('invoiceServiceDateInput').value,
         user: currentUser.name
     };
 
     // Kostenpositionen aus dem Formular sammeln
-    document.querySelectorAll('#invoiceCostsTable .invoice-desc').forEach(input => {
-        const key = input.dataset.costKey;
-        const descValue = input.value;
-        const priceValue = document.querySelector(`.invoice-price[data-cost-value="${key}"]`).value;
+    document.querySelectorAll('#invoiceCostsTable tbody tr').forEach(row => {
+        const key = row.querySelector('.invoice-desc').dataset.costKey;
+        const descValue = row.querySelector('.invoice-desc').value;
+        const priceValue = row.querySelector('.invoice-price').value;
         
-        // Sende die Kosten nur, wenn sie sich von den Standard-Keys unterscheiden oder es Zusatzkosten sind
-        if (key === 'Zusatzkosten') {
-            payload[key] = descValue; // Hier wird die Beschreibung der Zusatzkosten gespeichert
-        }
-        payload[key + '_price'] = priceValue; // Sende immer den Preis
+        payload[`${key}_desc`] = descValue;
+        payload[`${key}_price`] = priceValue;
     });
     
     try {
@@ -1788,6 +1887,11 @@ async function saveInvoice() {
 }
 
 async function updateInvoice() {
+    const invoiceNumber = document.getElementById('invoiceNumberInput').value;
+    if (!invoiceNumber) {
+        showSaveFeedback('Bitte eine Rechnungsnummer eintragen!', false);
+        return;
+    }
     if (!confirm(`Sollen die Änderungen an dieser Rechnung wirklich gespeichert werden?`)) {
         return;
     }
@@ -1795,19 +1899,21 @@ async function updateInvoice() {
     const payload = {
         mode: 'updateInvoice',
         Ref: currentInvoiceRef,
+        Rechnungsnummer: invoiceNumber, // Auch die Rechnungsnummer kann geändert werden
+        Mehrwertsteuersatz: document.getElementById('invoiceVatRate').value,
+        Rechnungsdatum: document.getElementById('invoiceDateInput').value,
+        Leistungsdatum: document.getElementById('invoiceServiceDateInput').value,
         user: currentUser.name
     };
 
     // Sammle die aktualisierten Kosten und Beschreibungen
-    document.querySelectorAll('#invoiceCostsTable .invoice-desc').forEach(input => {
-        const key = input.dataset.costKey;
-        const descValue = input.value;
-        const priceValue = document.querySelector(`.invoice-price[data-cost-value="${key}"]`).value;
+    document.querySelectorAll('#invoiceCostsTable tbody tr').forEach(row => {
+        const key = row.querySelector('.invoice-desc').dataset.costKey;
+        const descValue = row.querySelector('.invoice-desc').value;
+        const priceValue = row.querySelector('.invoice-price').value;
         
-        if (key === 'Zusatzkosten') {
-            payload[key] = descValue;
-        }
-        payload[key + '_price'] = priceValue;
+        payload[`${key}_desc`] = descValue;
+        payload[`${key}_price`] = priceValue;
     });
     
     try {
@@ -1829,7 +1935,6 @@ async function updateInvoice() {
         console.error('Fehler beim Aktualisieren der Rechnung:', error);
     }
 }
-
 
 // === NEUE FUNKTIONEN FÜR BENUTZERVERWALTUNG ===
 
@@ -2149,6 +2254,67 @@ async function deleteCustomer(kundenID) {
     }
 }
 
+function downloadInvoicePDF() {
+  const invoiceModal = document.getElementById('invoiceCreationModal');
+  const originalDisplay = invoiceModal.style.display;
+  
+  // Modale ausblenden, um den Druck zu fokussieren
+  const mainModal = document.getElementById('detailModal');
+  const mainModalDisplay = mainModal.style.display;
+  mainModal.style.display = 'none';
+  invoiceModal.style.display = 'block'; // Muss sichtbar sein, um gedruckt zu werden
+
+  // Temporäre Styles für den Druck
+  const style = document.createElement('style');
+  style.innerHTML = `
+    @media print {
+      body > *:not(#invoiceCreationModal) {
+        display: none !important;
+      }
+      #invoiceCreationModal {
+        position: static;
+        display: block !important;
+        width: 100%;
+        height: auto;
+      }
+      .modal-content {
+        max-width: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        overflow: visible !important;
+      }
+      .invoice-header, .invoice-grid, .invoice-section, #invoiceCostsTable, #invoiceFooter {
+        page-break-inside: avoid;
+      }
+      .invoice-header, .invoice-grid, .invoice-section {
+        margin-bottom: 10mm;
+      }
+      h3 {
+        font-size: 24pt !important;
+      }
+      h4 {
+        font-size: 16pt !important;
+      }
+      p, td, label {
+        font-size: 10pt !important;
+      }
+      input, select, button {
+        display: none !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Druckdialog öffnen
+  window.print();
+
+  // Aufräumen: Styles entfernen und Modale zurücksetzen
+  document.head.removeChild(style);
+  invoiceModal.style.display = originalDisplay;
+  mainModal.style.display = mainModalDisplay;
+}
 
 // --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
 window.openProfileModal = openProfileModal;
@@ -2191,6 +2357,9 @@ window.closeInvoiceCreationModal = closeInvoiceCreationModal;
 window.saveInvoice = saveInvoice;
 window.openInvoiceView = openInvoiceView;
 window.updateInvoice = updateInvoice;
+window.updateInvoiceTotals = updateInvoiceTotals;
+window.editInvoiceDetails = editInvoiceDetails;
+window.downloadInvoicePDF = downloadInvoicePDF;
 // NEUE GLOBALE FUNKTIONEN FÜR BENUTZERVERWALTUNG
 window.openUserManagementModal = openUserManagementModal;
 window.closeUserManagementModal = closeUserManagementModal;
