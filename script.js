@@ -1853,7 +1853,7 @@ function updateInvoiceTotals() {
     const priceInputs = document.querySelectorAll('#invoiceCostsTable .invoice-price');
     let subtotal = 0;
     priceInputs.forEach(input => {
-        subtotal += parseFloat(input.value) || 0;
+        subtotal += parseFloat(input.value.replace(',', '.')) || 0;
     });
 
     const vatRate = parseFloat(document.getElementById('invoiceVatRate').value) || 0;
@@ -2241,7 +2241,7 @@ function closeCustomerManagementModal() {
 async function saveCustomer() {
     const payload = {
         mode: 'saveCustomer',
-        KundenID: editingCustomerID, // ist `null` bei neuen Kunden
+        originalUsername: editingCustomerID, // ist `null` bei neuen Kunden
         'Billing Company': document.getElementById('customerInputCompany').value.trim(),
         'Billing Address': document.getElementById('customerInputAddress').value.trim(),
         'Tax Number': document.getElementById('customerInputTaxNumber').value.trim(),
@@ -2307,65 +2307,167 @@ async function deleteCustomer(kundenID) {
 }
 
 function downloadInvoicePDF() {
-  const invoiceModal = document.getElementById('invoiceCreationModal');
-  const originalDisplay = invoiceModal.style.display;
+  const flightData = requestData.find(r => r.Ref === currentInvoiceRef);
+  if (!flightData) {
+      showSaveFeedback('Fehler: Rechnungsdaten nicht verfügbar.', false);
+      return;
+  }
+
+  // Kopiere die Daten, um sie für die Druckansicht vorzubereiten
+  let invoiceData = {};
+  for (const key in flightData) {
+    invoiceData[key] = flightData[key];
+  }
   
-  // Modale ausblenden, um den Druck zu fokussieren
-  const mainModal = document.getElementById('detailModal');
-  const mainModalDisplay = mainModal.style.display;
-  mainModal.style.display = 'none';
-  invoiceModal.style.display = 'block'; // Muss sichtbar sein, um gedruckt zu werden
+  // Stelle sicher, dass die Werte aus den Input-Feldern genommen werden, falls sie gerade bearbeitet wurden
+  const priceInputs = document.querySelectorAll('#invoiceCostsTable .invoice-price');
+  priceInputs.forEach(input => {
+      const key = input.dataset.costValue;
+      invoiceData[`${key}_price`] = parseFloat(input.value.replace(',', '.')) || 0;
+  });
+  const descInputs = document.querySelectorAll('#invoiceCostsTable .invoice-desc');
+  descInputs.forEach(input => {
+      const key = input.dataset.costKey;
+      invoiceData[`${key}_desc`] = input.value;
+  });
 
-  // Temporäre Styles für den Druck
-  const style = document.createElement('style');
-  style.innerHTML = `
-    @media print {
-      body > *:not(#invoiceCreationModal) {
-        display: none !important;
-      }
-      #invoiceCreationModal {
-        position: static;
-        display: block !important;
-        width: 100%;
-        height: auto;
-      }
-      .modal-content {
-        max-width: none !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        box-shadow: none !important;
-        border-radius: 0 !important;
-        overflow: visible !important;
-      }
-      .invoice-header, .invoice-grid, .invoice-section, #invoiceCostsTable, #invoiceFooter {
-        page-break-inside: avoid;
-      }
-      .invoice-header, .invoice-grid, .invoice-section {
-        margin-bottom: 10mm;
-      }
-      h3 {
-        font-size: 24pt !important;
-      }
-      h4 {
-        font-size: 16pt !important;
-      }
-      p, td, label {
-        font-size: 10pt !important;
-      }
-      input, select, button {
-        display: none !important;
-      }
+  invoiceData.Mehrwertsteuersatz = document.getElementById('invoiceVatRate').value;
+
+  // Berechne die Summen für die Druckansicht
+  let subtotal = 0;
+  for (const key in invoiceData) {
+    if (key.endsWith('_price')) {
+      subtotal += parseFloat(invoiceData[key]) || 0;
     }
+  }
+  const vatRate = parseFloat(invoiceData.Mehrwertsteuersatz) || 0;
+  const vatAmount = subtotal * (vatRate / 100);
+  const total = subtotal + vatAmount;
+
+  // Erstelle das Druck-HTML
+  let invoicePrintHTML = `
+    <!DOCTYPE html>
+    <html lang="de">
+    <head>
+      <meta charset="UTF-8">
+      <title>Rechnung ${invoiceData.Rechnungsnummer || ''}</title>
+      <style>
+        body { font-family: 'Inter', sans-serif; margin: 0; padding: 20mm; font-size: 10pt; }
+        .invoice-container { width: 100%; max-width: 210mm; margin: 0 auto; padding: 20mm; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
+        .logo { height: 60px; }
+        .sender-info, .recipient-info { flex-basis: 45%; }
+        .invoice-title { text-align: right; }
+        h1 { font-size: 24pt; margin: 0; color: #333; }
+        h2 { font-size: 16pt; margin: 0; color: #333; }
+        p { margin: 0; line-height: 1.5; }
+        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .line-items table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .line-items th, .line-items td { text-align: left; padding: 8px 0; border-bottom: 1px solid #ccc; }
+        .line-items th { font-weight: bold; }
+        .line-items tr:last-child td { border-bottom: none; }
+        .total-section { width: 40%; margin-top: 20px; float: right; }
+        .total-section table { width: 100%; border: none; }
+        .total-section td { border: none; text-align: right; }
+        .total-section td:first-child { text-align: left; }
+        .total-row { font-weight: bold; background-color: #f0f0f0; }
+        .footer { clear: both; margin-top: 50px; text-align: center; border-top: 1px solid #ccc; padding-top: 10px; font-size: 8pt; }
+        .vat-exempt { margin-top: 10px; font-style: italic; }
+      </style>
+    </head>
+    <body>
+      <div class="invoice-container">
+        <div class="header">
+          <div>
+            <img src="vgc-logo-center1.jpg" alt="VG Cargo Logo" class="logo">
+          </div>
+          <div class="invoice-title">
+            <h1>Rechnung</h1>
+            <p>Rechnungsnummer: ${invoiceData.Rechnungsnummer || '-'}</p>
+            <p>Rechnungsdatum: ${invoiceData.Rechnungsdatum || '-'}</p>
+            <p>Leistungsdatum: ${invoiceData.Leistungsdatum || '-'}</p>
+          </div>
+        </div>
+        
+        <div class="details-grid">
+          <div class="sender-info">
+            <h2>VG Cargo GmbH</h2>
+            <p>Gebäude 860</p>
+            <p>55483 Hahn-Flughafen</p>
+            <p>UStIdNr.: DE220885043</p>
+            <p>Bearbeiter: ${currentUser.name}</p>
+          </div>
+          <div class="recipient-info">
+            <h2>${invoiceData['Billing Company'] || '-'}</h2>
+            <p>${invoiceData['Billing Address'] || '-'}</p>
+            <p>Steuernummer: ${invoiceData['Tax Number'] || '-'}</p>
+            <p>Flugreferenz: ${invoiceData.Ref || '-'}</p>
+          </div>
+        </div>
+
+        <div class="line-items">
+          <table>
+            <thead>
+              <tr>
+                <th>Leistungsbeschreibung</th>
+                <th style="text-align: right;">Preis (€)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.keys(invoiceData).filter(key => key.endsWith('_desc')).map(key => {
+                  const baseKey = key.replace('_desc', '');
+                  const desc = invoiceData[key];
+                  const price = parseFloat(invoiceData[`${baseKey}_price`] || 0);
+                  if (price > 0 || (desc && desc.trim() !== '' && baseKey === 'Zusatzkosten')) {
+                    return `<tr>
+                      <td>${desc}</td>
+                      <td style="text-align: right;">${price.toFixed(2).replace('.', ',')} €</td>
+                    </tr>`;
+                  }
+                  return '';
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="total-section">
+            <table>
+                <tbody>
+                    <tr><td>Netto</td><td>${subtotal.toFixed(2).replace('.', ',')} €</td></tr>
+                    <tr><td>MwSt. ${vatRate}%</td><td>${vatAmount.toFixed(2).replace('.', ',')} €</td></tr>
+                    <tr class="total-row"><td>Gesamtbetrag</td><td>${total.toFixed(2).replace('.', ',')} €</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p>VG Cargo GmbH | Gebäude 860, 55483 Hahn-Flughafen</p>
+            <p><strong>Bank:</strong> Kreissparkasse Rhein-Hunsrück Simmern | <strong>IBAN:</strong> DE75560517900013028071 | <strong>SWIFT:</strong> MALADE51SIM</p>
+            <p class="vat-exempt" style="display: ${vatRate === 0 ? 'block' : 'none'};">Services are free from tax in accordance with §4 No. 3 UStG</p>
+        </div>
+      </div>
+    </body>
+    </html>
   `;
-  document.head.appendChild(style);
+  
+  // Erstelle ein temporäres iframe, um das HTML zu rendern und zu drucken
+  const printFrame = document.createElement('iframe');
+  printFrame.style.display = 'none';
+  document.body.appendChild(printFrame);
+  
+  printFrame.contentDocument.open();
+  printFrame.contentDocument.write(invoicePrintHTML);
+  printFrame.contentDocument.close();
 
-  // Druckdialog öffnen
-  window.print();
-
-  // Aufräumen: Styles entfernen und Modale zurücksetzen
-  document.head.removeChild(style);
-  invoiceModal.style.display = originalDisplay;
-  mainModal.style.display = mainModalDisplay;
+  // Warte, bis der iframe geladen ist, und starte dann den Druckvorgang
+  printFrame.onload = () => {
+    printFrame.contentWindow.focus();
+    printFrame.contentWindow.print();
+    setTimeout(() => {
+      document.body.removeChild(printFrame);
+      closeInvoiceCreationModal();
+    }, 1000);
+  };
 }
 
 // --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
