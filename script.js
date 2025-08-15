@@ -779,6 +779,7 @@ document.addEventListener('keydown', (e) => {
     closeInvoiceCreationModal(); // NEU
     closeUserManagementModal(); // NEU
     closeCustomerManagementModal(); // NEU (CRM)
+    closeFlightplanModal(); // NEU
   }
 });
 
@@ -2519,6 +2520,20 @@ async function deleteCustomer(customerID) {
     }
 }
 
+// NEUE FLUGPLAN-FUNKTIONEN
+function openFlightplanModal() {
+    // Berechtigungsprüfung für Admin und Editor
+    if (currentUser.role !== 'admin' && currentUser.role !== 'editor') {
+        showSaveFeedback('Sie haben keine Berechtigung, den Flugplan zu sehen.', false);
+        return;
+    }
+    document.getElementById('flightplanModal').style.display = 'flex';
+}
+
+function closeFlightplanModal() {
+    document.getElementById('flightplanModal').style.display = 'none';
+}
+
 // --- WICHTIGE KORREKTUR: Funktionen global zugänglich machen ---
 window.openProfileModal = openProfileModal;
 window.closeProfileModal = closeProfileModal;
@@ -2578,5 +2593,8 @@ window.deleteCustomer = deleteCustomer;
 window.editCustomer = editCustomer;
 window.clearCustomerForm = clearCustomerForm;
 window.populateCustomerFields = populateCustomerFields;
+// NEUE GLOBALE FLUGPLAN-FUNKTIONEN
+window.openFlightplanModal = openFlightplanModal;
+window.closeFlightplanModal = closeFlightplanModal;
 // Initialisiere Auth-Status, sobald das DOM geladen ist.
 checkAuthStatus();
