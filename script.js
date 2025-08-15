@@ -1703,7 +1703,13 @@ function openInvoiceCreationModal(ref, isViewOnly = false) {
     const modal = document.getElementById('invoiceCreationModal');
     
     document.getElementById('invoiceRecipient').innerHTML = `<h4>Rechnungsempfänger</h4><p><strong>Firma:</strong> ${flightData['Billing Company'] || '-'}</p><p><strong>Adresse:</strong> ${flightData['Billing Address'] || '-'}</p><p><strong>Steuernr.:</strong> ${flightData['Tax Number'] || '-'}</p>`;
-    document.getElementById('invoiceSender').innerHTML = `<h4>Rechnungsersteller</h4><p>VG Cargo GmbH</p><p>Gebäude 860</p><p>55483 Hahn-Flughafen</p><p><strong>Bearbeiter:</strong> ${currentUser.name}</p>`;
+    // HIER WIRD DER ABSENDERBEREICH AKTUALISIERT
+    document.getElementById('invoiceSender').innerHTML = `
+        <h4>Rechnungsersteller</h4>
+        <p>VG Cargo GmbH<br>Gebäude 860<br>55483 Hahn-Flughafen</p>
+        <p><strong>UStIdNr.:</strong> DE220885043</p>
+        <p><strong>Bearbeiter:</strong> ${currentUser.name}</p>
+    `;
     
     // Setze den Namen des Bearbeiters
     const editorNameSpan = document.getElementById('invoiceEditorName');
