@@ -1691,13 +1691,13 @@ function openInvoiceCreationModal(ref, isViewOnly = false) {
     const today = new Date().toISOString().split('T')[0];
     const invoiceDateInput = document.getElementById('invoiceDateInput');
     if (invoiceDateInput) {
-        invoiceDateInput.value = today;
+        invoiceDateInput.value = flightData.Rechnungsdatum || today;
     }
 
     // Setze das Leistungsdatum auf das Flugdatum
     const serviceDateInput = document.getElementById('invoiceServiceDateInput');
     if (serviceDateInput) {
-        serviceDateInput.value = flightData['Flight Date'] || today;
+        serviceDateInput.value = flightData.Leistungsdatum || flightData['Flight Date'] || today;
     }
 
     const modal = document.getElementById('invoiceCreationModal');
@@ -1719,54 +1719,100 @@ function openInvoiceCreationModal(ref, isViewOnly = false) {
 
     const costsBody = document.querySelector('#invoiceCostsTable tbody');
     costsBody.innerHTML = '';
-    const costFields = { 'Rate': 'Rate', 'Security charges': 'Security charges', '10ft consumables': '10ft consumables', '20ft consumables': '20ft consumables', 'Zusatzkosten': 'Zusatzkosten' };
     
-    for (const key in costFields) {
-        const value = parseFloat(String(flightData[key] || '0').replace(',', '.')) || 0;
-        const description = key === 'Zusatzkosten' && flightData[key] ? flightData[key] : costFields[key];
-        
-        let row;
-        if (isViewOnly) {
-             const savedDescription = flightData[`${key}_desc`] || description;
-             const savedValue = parseFloat(String(flightData[`${key}_price`] || value).replace(',', '.')) || 0;
+    // Erstelle ein Objekt, um die Kostenfelder zusammenzufassen und nach isViewOnly zu unterscheiden
+    let dynamicCostFields = {};
+    if (isViewOnly) {
+        // Für View-Modus, lade die gespeicherten Beschreibungen und Preise
+        dynamicCostFields.rate = { desc: flightData.Rate_desc || 'Rate', price: flightData.Rate_price || flightData.Rate };
+        dynamicCostFields.security = { desc: flightData['Security charges_desc'] || 'Security charges', price: flightData['Security charges_price'] || flightData['Security charges'] };
+        dynamicCostFields.c10ft = { desc: flightData['10ft consumables_desc'] || '10ft consumables', price: flightData['10ft consumables_price'] || flightData['10ft consumables'] };
+        dynamicCostFields.c20ft = { desc: flightData['20ft consumables_desc'] || '20ft consumables', price: flightData['20ft consumables_price'] || flightData['20ft consumables'] };
+        dynamicCostFields.zusatzkosten = { desc: flightData.Zusatzkosten_desc || 'Zusatzkosten', price: flightData.Zusatzkosten_price || flightData.Zusatzkosten };
+    } else {
+        // Für den Erstellungsmodus, lade die ursprünglichen Daten
+        dynamicCostFields.rate = { desc: 'Rate', price: flightData.Rate };
+        dynamicCostFields.security = { desc: 'Security charges', price: flightData['Security charges'] };
+        dynamicCostFields.c10ft = { desc: '10ft consumables', price: flightData['10ft consumables'] };
+        dynamicCostFields.c20ft = { desc: '20ft consumables', price: flightData['20ft consumables'] };
+        dynamicCostFields.zusatzkosten = { desc: 'Zusatzkosten', price: flightData.Zusatzkosten };
+    }
 
-             row = `<tr>
-                <td><input type="text" data-cost-key="${key}" class="invoice-desc" value="${savedDescription}" readonly></td>
-                <td><input type="number" step="0.01" data-cost-value="${key}" class="invoice-price" value="${savedValue.toFixed(2)}" readonly></td>
-            </tr>`;
-        } else {
-            row = `<tr>
-                <td><input type="text" data-cost-key="${key}" class="invoice-desc" value="${description}"></td>
-                <td><input type="number" step="0.01" data-cost-value="${key}" class="invoice-price" value="${value.toFixed(2)}"></td>
-            </tr>`;
+    // Zusätzliche Logik, um sicherzustellen, dass die Rechnungsdaten korrekt angezeigt werden, auch wenn die ursprünglichen Daten nicht vorhanden sind.
+    if (isViewOnly && flightData.RechnungErstellt === 'Ja') {
+      for (const key in flightData) {
+        if (key.endsWith('_desc')) {
+          const baseKey = key.replace('_desc', '');
+          dynamicCostFields[baseKey] = {
+            desc: flightData[key],
+            price: flightData[`${baseKey}_price`]
+          };
         }
+      }
+    } else if (!isViewOnly && flightData.RechnungErstellt === 'Ja') {
+      // Wenn der Benutzer eine gespeicherte Rechnung bearbeiten will
+       for (const key in flightData) {
+        if (key.endsWith('_desc')) {
+          const baseKey = key.replace('_desc', '');
+          dynamicCostFields[baseKey] = {
+            desc: flightData[key],
+            price: flightData[`${baseKey}_price`]
+          };
+        }
+      }
+    }
+
+
+    const costFieldsMapping = {
+        'rate': { desc: 'Rate', key: 'Rate' },
+        'security': { desc: 'Security charges (X-Ray, ETD, EDD)', key: 'Security charges' },
+        'c10ft': { desc: '10ft consumables', key: '10ft consumables' },
+        'c20ft': { desc: '20ft consumables', key: '20ft consumables' },
+        'zusatzkosten': { desc: 'Zusatzkosten', key: 'Zusatzkosten' }
+    };
+    
+    // Generiere die Tabellenzeilen basierend auf den dynamischen Daten
+    for (const dKey in dynamicCostFields) {
+        const item = dynamicCostFields[dKey];
+        const originalKey = costFieldsMapping[dKey]?.key || dKey;
+
+        // Überspringe leere Zeilen, es sei denn es ist im Edit-Modus
+        if ((!item.desc && !item.price) && isViewOnly) continue;
+
+        const description = item.desc || costFieldsMapping[dKey]?.desc || '-';
+        const value = parseFloat(String(item.price || '0').replace(',', '.')) || 0;
+        const readonlyAttr = isViewOnly ? 'readonly' : '';
         
-        costsBody.innerHTML += row;
+        costsBody.innerHTML += `<tr>
+            <td><input type="text" data-cost-key="${originalKey}" class="invoice-desc" value="${description}" ${readonlyAttr}></td>
+            <td><input type="number" step="0.01" data-cost-value="${originalKey}" class="invoice-price" value="${value.toFixed(2)}" ${readonlyAttr}></td>
+        </tr>`;
     }
     
     const invoiceNumberInput = document.getElementById('invoiceNumberInput');
     const invoiceButtonContainer = document.getElementById('invoiceButtonContainer');
+    const vatRateSelect = document.getElementById('invoiceVatRate');
 
+    // Button-Container leeren, um Duplikate zu vermeiden
+    invoiceButtonContainer.innerHTML = '';
+    
     if (isViewOnly) {
         invoiceNumberInput.value = flightData.Rechnungsnummer || 'N/A';
         invoiceNumberInput.readOnly = true;
-        // Buttons für Bearbeiten und PDF-Download
+        
         invoiceButtonContainer.innerHTML = `
-            <button onclick="editInvoiceDetails()" style="padding: 10px 20px; background-color: #ffc107; color: black; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Rechnung bearbeiten</button>
-            <button onclick="downloadInvoicePDF()" style="padding: 10px 20px; background-color: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">PDF herunterladen</button>
+            <button onclick="editInvoiceDetails()" class="btn-email-action" style="background-color: #ffc107; color: black; font-weight: bold;">Rechnung bearbeiten</button>
+            <button onclick="downloadInvoicePDF()" class="btn-email-action" style="background-color: #dc3545; color: white; font-weight: bold;">PDF herunterladen</button>
         `;
-        // MWSt-Auswahl ist gesperrt
-        document.getElementById('invoiceVatRate').disabled = true;
+        vatRateSelect.disabled = true;
     } else {
         invoiceNumberInput.value = '';
         invoiceNumberInput.readOnly = false;
-        invoiceButtonContainer.innerHTML = `<button onclick="saveInvoice()" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Rechnung erstellen und speichern</button>`;
-        // MWSt-Auswahl ist aktiv
-        document.getElementById('invoiceVatRate').disabled = false;
+        invoiceButtonContainer.innerHTML = `<button onclick="saveInvoice()" class="btn-email-action" style="background-color: #28a745; color: white; font-weight: bold;">Rechnung erstellen und speichern</button>`;
+        vatRateSelect.disabled = false;
     }
     
     // Setze die MWSt aus den Daten, falls vorhanden
-    const vatRateSelect = document.getElementById('invoiceVatRate');
     if (flightData.Mehrwertsteuersatz !== undefined) {
         vatRateSelect.value = flightData.Mehrwertsteuersatz;
     } else {
@@ -1814,9 +1860,9 @@ function updateInvoiceTotals() {
     const vatAmount = subtotal * (vatRate / 100);
     const total = subtotal + vatAmount;
 
-    document.getElementById('invoiceSubtotal').textContent = `${subtotal.toFixed(2)} €`;
-    document.getElementById('invoiceVatAmount').textContent = `${vatAmount.toFixed(2)} €`;
-    document.getElementById('invoiceTotal').textContent = `${total.toFixed(2)} €`;
+    document.getElementById('invoiceSubtotal').textContent = `${subtotal.toFixed(2).replace('.', ',')} €`;
+    document.getElementById('invoiceVatAmount').textContent = `${vatAmount.toFixed(2).replace('.', ',')} €`;
+    document.getElementById('invoiceTotal').textContent = `${total.toFixed(2).replace('.', ',')} €`;
     
     // Text für Steuerbefreiung anzeigen/verbergen
     const footerTextDiv = document.getElementById('invoiceFooterText');
@@ -1839,7 +1885,7 @@ function editInvoiceDetails() {
     priceInputs.forEach(input => input.readOnly = false);
     vatRateSelect.disabled = false;
     
-    invoiceButtonContainer.innerHTML = `<button onclick="updateInvoice()" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Änderungen speichern</button>`;
+    invoiceButtonContainer.innerHTML = `<button onclick="updateInvoice()" class="btn-email-action" style="background-color: #28a745; color: white; font-weight: bold;">Änderungen speichern</button>`;
 }
 
 async function saveInvoice() {
