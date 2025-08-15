@@ -2113,7 +2113,7 @@ async function deleteUser(username) {
     const payload = {
         mode: 'deleteUser',
         username: username,
-        user: currentUser.name // Admin, der die Aktion ausführt
+        user: currentUser.name
     };
 
     try {
@@ -2126,178 +2126,6 @@ async function deleteUser(username) {
         if (result.status === 'success') {
             showSaveFeedback(result.message, true);
             openUserManagementModal(); // Liste neu laden
-        } else {
-            throw new Error(result.message || 'Unbekannter Fehler beim Löschen.');
-        }
-    } catch (error) {
-        showSaveFeedback(error.message, false);
-    }
-}
-
-// =======================================================
-// === NEUE FUNKTIONEN FÜR KUNDENVERWALTUNG (CRM)       ===
-// =======================================================
-
-async function fetchCustomers() {
-    try {
-        const response = await fetch(API_URL + "?mode=getCustomers");
-        if (!response.ok) throw new Error('Failed to fetch customers.');
-        const result = await response.json();
-        if (result.status === 'success') {
-            allCustomers = result.data;
-            console.log("Customers loaded:", allCustomers.length);
-        } else {
-            throw new Error(result.message || 'Error fetching customers.');
-        }
-    } catch (error) {
-        showSaveFeedback(error.message, false);
-    }
-}
-
-async function openCustomerManagementModal() {
-    const modal = document.getElementById('customerManagementModal');
-    if (!modal) return;
-
-    clearCustomerForm();
-    document.getElementById('customerListContainer').innerHTML = '<p>Lade Kundenliste...</p>';
-    modal.style.display = 'flex';
-    
-    // Daten werden bereits beim Login geladen, hier nur Liste rendern
-    if (allCustomers.length > 0) {
-        renderCustomerList();
-    } else {
-        // Falls die Liste leer ist, neu laden
-        await fetchCustomers();
-        renderCustomerList();
-    }
-}
-
-function renderCustomerList() {
-    const container = document.getElementById('customerListContainer');
-    if (!container) return;
-    if (allCustomers.length === 0) {
-        container.innerHTML = '<p>Keine Kunden in der Datenbank gefunden.</p>';
-        return;
-    }
-
-    let tableHTML = `<table class="w-full data-table">
-        <thead>
-            <tr>
-                <th>Firma</th>
-                <th>Kontaktperson</th>
-                <th>E-Mail</th>
-                <th>Aktionen</th>
-            </tr>
-        </thead>
-        <tbody>`;
-    
-    allCustomers.sort((a,b) => a['Billing Company'].localeCompare(b['Billing Company'])).forEach(customer => {
-        tableHTML += `<tr>
-            <td>${customer['Billing Company'] || '-'}</td>
-            <td>${customer['Contact Name Invoicing'] || '-'}</td>
-            <td>${customer['Contact E-Mail Invoicing'] || '-'}</td>
-            <td>
-                <button class="btn btn-view" onclick="editCustomer('${customer.KundenID}')">Edit</button>
-                <button class="btn btn-delete" onclick="deleteCustomer('${customer.KundenID}')">Delete</button>
-            </td>
-        </tr>`;
-    });
-    tableHTML += `</tbody></table>`;
-    container.innerHTML = tableHTML;
-}
-
-function editCustomer(kundenID) {
-    const customer = allCustomers.find(c => c.KundenID === kundenID);
-    if (!customer) return;
-
-    document.getElementById('customerFormTitle').textContent = `Kunden bearbeiten: ${customer['Billing Company']}`;
-    document.getElementById('customerInputID').value = customer.KundenID;
-    document.getElementById('customerInputCompany').value = customer['Billing Company'];
-    document.getElementById('customerInputAddress').value = customer['Billing Address'];
-    document.getElementById('customerInputTaxNumber').value = customer['Tax Number'];
-    document.getElementById('customerInputContactName').value = customer['Contact Name Invoicing'];
-    document.getElementById('customerInputEmail').value = customer['Contact E-Mail Invoicing'];
-    document.getElementById('customerInputNotes').value = customer['Bemerkungen'];
-
-    editingCustomerID = kundenID;
-}
-
-function clearCustomerForm() {
-    document.getElementById('customerFormTitle').textContent = 'Neuen Kunden anlegen';
-    document.getElementById('customerInputID').value = '';
-    document.getElementById('customerInputCompany').value = '';
-    document.getElementById('customerInputAddress').value = '';
-    document.getElementById('customerInputTaxNumber').value = '';
-    document.getElementById('customerInputContactName').value = '';
-    document.getElementById('customerInputEmail').value = '';
-    document.getElementById('customerInputNotes').value = '';
-    editingCustomerID = null;
-}
-
-function closeCustomerManagementModal() {
-    document.getElementById('customerManagementModal').style.display = 'none';
-}
-
-async function saveCustomer() {
-    const payload = {
-        mode: 'saveCustomer',
-        originalUsername: editingCustomerID, // ist `null` bei neuen Kunden
-        'Billing Company': document.getElementById('customerInputCompany').value.trim(),
-        'Billing Address': document.getElementById('customerInputAddress').value.trim(),
-        'Tax Number': document.getElementById('customerInputTaxNumber').value.trim(),
-        'Contact Name Invoicing': document.getElementById('customerInputContactName').value.trim(),
-        'Contact E-Mail Invoicing': document.getElementById('customerInputEmail').value.trim(),
-        'Bemerkungen': document.getElementById('customerInputNotes').value.trim(),
-        user: currentUser.name
-    };
-
-    if (!payload['Billing Company']) {
-        return showSaveFeedback('Der Firmenname darf nicht leer sein.', false);
-    }
-
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams(payload)
-        });
-        const result = await response.json();
-        if (result.status === 'success') {
-            showSaveFeedback(result.message, true);
-            await fetchCustomers(); // Kundendaten neu laden
-            renderCustomerList();   // Liste aktualisieren
-            clearCustomerForm();    // Formular zurücksetzen
-        } else {
-            throw new Error(result.message || 'Unbekannter Fehler beim Speichern des Kunden.');
-        }
-    } catch (error) {
-        showSaveFeedback(error.message, false);
-    }
-}
-
-async function deleteCustomer(kundenID) {
-    const customer = allCustomers.find(c => c.KundenID === kundenID);
-    if (!confirm(`Möchten Sie den Kunden "${customer['Billing Company']}" wirklich löschen?`)) {
-        return;
-    }
-
-    const payload = {
-        mode: 'deleteCustomer',
-        KundenID: kundenID,
-        user: currentUser.name
-    };
-
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams(payload)
-        });
-        const result = await response.json();
-        if (result.status === 'success') {
-            showSaveFeedback(result.message, true);
-            await fetchCustomers(); // Daten neu laden
-            renderCustomerList();   // Liste aktualisieren
         } else {
             throw new Error(result.message || 'Unbekannter Fehler beim Löschen.');
         }
@@ -2352,10 +2180,18 @@ function downloadInvoicePDF() {
       <meta charset="UTF-8">
       <title>Rechnung ${invoiceData.Rechnungsnummer || ''}</title>
       <style>
-        body { font-family: 'Inter', sans-serif; margin: 0; padding: 20mm; font-size: 10pt; }
+        @media print {
+          body {
+            font-family: 'Inter', sans-serif; 
+            margin: 0; 
+            padding: 20mm; 
+            font-size: 10pt;
+            -webkit-print-color-adjust: exact;
+          }
+        }
         .invoice-container { width: 100%; max-width: 210mm; margin: 0 auto; padding: 20mm; }
         .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
-        .logo { height: 60px; }
+        .logo { height: 60px; max-width: 150px; }
         .sender-info, .recipient-info { flex-basis: 45%; }
         .invoice-title { text-align: right; }
         h1 { font-size: 24pt; margin: 0; color: #333; }
@@ -2379,13 +2215,13 @@ function downloadInvoicePDF() {
       <div class="invoice-container">
         <div class="header">
           <div>
-            <img src="vgc-logo-center1.jpg" alt="VG Cargo Logo" class="logo">
+            <img src="vgc-logo-center1.jpg" alt="VG Cargo Logo" class="logo" onerror="this.onerror=null;this.src='https://placehold.co/150x50/003366/FFFFFF?text=VG+Cargo';">
           </div>
           <div class="invoice-title">
             <h1>Rechnung</h1>
-            <p>Rechnungsnummer: ${invoiceData.Rechnungsnummer || '-'}</p>
-            <p>Rechnungsdatum: ${invoiceData.Rechnungsdatum || '-'}</p>
-            <p>Leistungsdatum: ${invoiceData.Leistungsdatum || '-'}</p>
+            <p><strong>Rechnungsnummer:</strong> ${invoiceData.Rechnungsnummer || '-'}</p>
+            <p><strong>Rechnungsdatum:</strong> ${invoiceData.Rechnungsdatum || '-'}</p>
+            <p><strong>Leistungsdatum:</strong> ${invoiceData.Leistungsdatum || '-'}</p>
           </div>
         </div>
         
@@ -2394,14 +2230,13 @@ function downloadInvoicePDF() {
             <h2>VG Cargo GmbH</h2>
             <p>Gebäude 860</p>
             <p>55483 Hahn-Flughafen</p>
-            <p>UStIdNr.: DE220885043</p>
-            <p>Bearbeiter: ${currentUser.name}</p>
+            <p><strong>UStIdNr.:</strong> DE220885043</p>
           </div>
           <div class="recipient-info">
             <h2>${invoiceData['Billing Company'] || '-'}</h2>
             <p>${invoiceData['Billing Address'] || '-'}</p>
-            <p>Steuernummer: ${invoiceData['Tax Number'] || '-'}</p>
-            <p>Flugreferenz: ${invoiceData.Ref || '-'}</p>
+            <p><strong>Steuernummer:</strong> ${invoiceData['Tax Number'] || '-'}</p>
+            <p><strong>Flugreferenz:</strong> ${invoiceData.Ref || '-'} / ${invoiceData.Flugnummer || '-'} vom ${invoiceData['Flight Date'] || '-'}</p>
           </div>
         </div>
 
@@ -2414,17 +2249,14 @@ function downloadInvoicePDF() {
               </tr>
             </thead>
             <tbody>
-              ${Object.keys(invoiceData).filter(key => key.endsWith('_desc')).map(key => {
+              ${Object.keys(invoiceData).filter(key => key.endsWith('_desc') && (parseFloat(invoiceData[`${key.replace('_desc', '')}_price`]) > 0 || (invoiceData[key] && invoiceData[key].trim() !== ''))).map(key => {
                   const baseKey = key.replace('_desc', '');
                   const desc = invoiceData[key];
                   const price = parseFloat(invoiceData[`${baseKey}_price`] || 0);
-                  if (price > 0 || (desc && desc.trim() !== '' && baseKey === 'Zusatzkosten')) {
-                    return `<tr>
-                      <td>${desc}</td>
-                      <td style="text-align: right;">${price.toFixed(2).replace('.', ',')} €</td>
-                    </tr>`;
-                  }
-                  return '';
+                  return `<tr>
+                    <td>${desc}</td>
+                    <td style="text-align: right;">${price.toFixed(2).replace('.', ',')} €</td>
+                  </tr>`;
               }).join('')}
             </tbody>
           </table>
