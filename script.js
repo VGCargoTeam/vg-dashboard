@@ -1182,7 +1182,7 @@ function generateStatistics() {
     statisticsBody.querySelectorAll('h4, p, ul, table').forEach(el => el.remove());
 
     if (!statFromDateInput || !statToDateInput) {
-        statisticsBody.insertAdjacentHTML('beforeend', '<p style="text-align: center; color: red;">Bitte wählen Sie einen Start- und Enddatum für die Statistik.</p>');
+        statisticsBody.insertAdjacentHTML('beforeend', '<p style="text-align: center; color: red;">Bitte wählen Sie einen Start- und Enddatum für die Statistik aus.</p>');
         return;
     }
 
