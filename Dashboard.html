@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="UTF-8" />
   <title>Charter Dashboard</title>
@@ -509,51 +509,90 @@
         box-shadow: 0 6px 8px rgba(0,0,0,0.15);
     }
 
-    /* NEU: STILE FÜR RECHNUNGS-MODALS */
-    #invoiceListModal .modal-content, #invoiceCreationModal .modal-content {
+    /* === NEUE RECHNUNGS-MODAL STILE === */
+    #invoiceCreationModal .modal-content {
         max-width: 1000px; /* Breiter für Rechnungsdetails */
         flex-direction: column;
         align-items: flex-start;
     }
+    #invoiceCreationModal .invoice-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 15px;
+        margin-bottom: 15px;
+    }
+    #invoiceCreationModal .invoice-logo {
+        height: 60px;
+    }
+    #invoiceCreationModal .invoice-title {
+        text-align: right;
+    }
+    #invoiceCreationModal .invoice-title h3 {
+        margin: 0;
+        font-size: 1.8rem;
+        color: #333;
+    }
     #invoiceCreationModal .invoice-grid {
         display: grid;
-        grid-template-columns: 1fr; /* Standard: eine Spalte */
+        grid-template-columns: 1fr 1fr;
         gap: 20px;
         width: 100%;
-    }
-    /* KORREKTUR: Media Query für zwei Spalten auf größeren Bildschirmen */
-    @media (min-width: 768px) {
-      #invoiceCreationModal .invoice-grid {
-        grid-template-columns: repeat(2, 1fr); /* Zwei Spalten ab 768px Breite */
-      }
     }
     #invoiceCreationModal .invoice-section {
         background: #f9f9f9;
         padding: 15px;
         border-radius: 8px;
         border: 1px solid #eee;
+        font-size: 0.9rem;
     }
     #invoiceCreationModal .invoice-section h4 {
         margin-top: 0;
         border-bottom: 1px solid #ddd;
         padding-bottom: 5px;
+        font-size: 1rem;
+    }
+    #invoiceCostsTable {
+        margin-top: 20px;
     }
     #invoiceCostsTable th, #invoiceCostsTable td {
         text-align: left;
+        padding: 10px;
     }
     #invoiceCostsTable input {
         width: 100%;
+        border: 1px solid #ccc;
+        padding: 5px;
+    }
+    #invoiceCostsTable tfoot td {
+        font-weight: bold;
+        text-align: right;
+    }
+    #invoiceFooter {
+        width: 100%;
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 2px solid #eee;
+        font-size: 0.8rem;
+        text-align: center;
+    }
+    #invoiceFooterText {
+        margin-top: 10px;
+        font-style: italic;
     }
   </style>
 </head>
 <body class="font-inter flex flex-col xl:flex-row min-h-screen text-gray-800">
   <div class="main w-full xl:flex-1">
-    <div class="logo-container"> <!-- NEU: Logo-Container -->
-        <img src="VG_Cargo_Logo_small.png"> <!-- Dein Logo-Bild -->
+    <div class="logo-container">
+        <!-- Das Logo wird hier angezeigt. Stellen Sie sicher, dass der Dateiname korrekt ist. -->
+        <img src="vgc-logo-center1.jpg" alt="VG Cargo Logo" onerror="this.onerror=null;this.src='https://placehold.co/150x50/003366/FFFFFF?text=VG+Cargo';">
     </div>
 
     <div class="header-area" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h1 style="flex-grow: 1; text-align: center; margin-left: 70px; font-size: 2.5rem;">Charter Dashboard</h1> <!-- Überschrift vergrößert -->
+      <h1 style="flex-grow: 1; text-align: center; margin-left: 70px; font-size: 2.5rem;">Charter Dashboard</h1>
       <button onclick="openProfileModal()" style="padding: 8px 15px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer;">
         Profil
       </button>
@@ -566,7 +605,7 @@
         <button onclick="openStatisticsModal()" style="padding: 10px 16px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer;">
             Statistik anzeigen
         </button>
-        <!-- NEU: Admin-spezifische Buttons -->
+        <!-- Admin-spezifische Buttons -->
         <span class="admin-only" style="display: none;">
           <button onclick="openInvoiceListModal()" style="padding: 10px 16px; background-color: #ffc107; color: black; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
               Rechnung erstellen
@@ -588,10 +627,9 @@
       <label>Reference:</label> <input type="text" id="refSearch" onkeyup="filterTable()" />
       <label>Airline:</label> <input type="text" id="airlineSearch" onkeyup="filterTable()" />
       <label>Flugnummer:</label> <input type="text" id="flightNumberSearch" onkeyup="filterTable()" />
-      <label>Rechnungsnr:</label> <input type="text" id="invoiceNumberSearch" onkeyup="filterTable()" /> <!-- NEU -->
+      <label>Rechnungsnr:</label> <input type="text" id="invoiceNumberSearch" onkeyup="filterTable()" />
       <label>From:</label> <input type="date" id="fromDate" onchange="filterTable()" />
       <label>To:</label> <input type="date" id="toDate" onchange="filterTable()" />
-      <!-- Moderne Archiv-Checkbox -->
       <div class="inline-flex items-center ml-4">
           <label for="archiveCheckbox" class="font-medium text-gray-700 mr-2 cursor-pointer">Archiv anzeigen:</label>
           <input type="checkbox" id="archiveCheckbox" class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer border-gray-300 shadow-sm">
@@ -652,7 +690,7 @@
       </div>
     </div>
 
-    <!-- NEU: History Modal -->
+    <!-- History Modal -->
     <div class="modal" id="historyModal">
       <div class="modal-content">
         <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeHistoryModal()">✖</span>
@@ -663,7 +701,7 @@
       </div>
     </div>
 
-    <!-- NEU: Profil Modal -->
+    <!-- Profil Modal -->
     <div class="modal" id="profileModal">
       <div class="modal-content">
         <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeProfileModal()">✖</span>
@@ -685,13 +723,12 @@
       </div>
     </div>
 
-    <!-- NEU: Statistik Modal -->
+    <!-- Statistik Modal -->
     <div class="modal" id="statisticsModal">
       <div class="modal-content">
         <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeStatisticsModal()">✖</span>
         <h3>Statistik</h3>
         <div id="statisticsBody">
-          <!-- Datumsauswahl und Download-Button zuerst -->
           <div style="width:100%; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 15px;">
               <label for="statFromDate">Von:</label>
               <input type="date" id="statFromDate" onchange="generateStatistics()">
@@ -701,9 +738,6 @@
                   Statistik herunterladen
               </button>
           </div>
-          <!-- Diagramme und Tabellen werden hier dynamisch von generateStatistics() eingefügt -->
-          <!-- Siehe generateStatistics() in script.js für die genaue Reihenfolge -->
-
           <div class="chart-container">
               <h4>Tonnage pro Monat</h4>
               <canvas id="tonnagePerMonthChart"></canvas>
@@ -716,7 +750,7 @@
       </div>
     </div>
 
-    <!-- NEU: E-Mail Bestätigungsmodal -->
+    <!-- E-Mail Bestätigungsmodal -->
     <div class="modal" id="emailConfirmationModal">
         <div class="modal-content">
             <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeEmailConfirmationModal()">✖</span>
@@ -732,21 +766,20 @@
         </div>
     </div>
 
-    <!-- NEU: E-Mail Vorschau Modal -->
+    <!-- E-Mail Vorschau Modal -->
     <div class="modal" id="emailPreviewModal">
         <div class="modal-content">
             <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeEmailPreviewModal()">✖</span>
             <h3>E-Mail Vorschau für Referenz: <span id="previewRef"></span></h3>
-            <!-- Geändert von <pre> zu <div> um HTML zu rendern -->
             <div id="emailPreviewContent"></div> 
             <div class="modal-buttons">
-                <button class="btn-manual-sent" id="markAsSentBtn">Charter Confirmation manuell gesendet</button> <!-- GEÄNDERT: Button-Text -->
+                <button class="btn-manual-sent" id="markAsSentBtn">Charter Confirmation manuell gesendet</button>
                 <button class="btn-email-action cancel" onclick="closeEmailPreviewModal()">Schließen</button>
             </div>
         </div>
     </div>
 
-    <!-- NEU: Modal für Rechnungsliste -->
+    <!-- Modal für Rechnungsliste -->
     <div class="modal" id="invoiceListModal">
       <div class="modal-content">
         <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeInvoiceListModal()">✖</span>
@@ -757,24 +790,45 @@
       </div>
     </div>
 
-    <!-- NEU: Modal für Rechnungserstellung -->
+    <!-- === NEUES/ÜBERARBEITETES MODAL FÜR RECHNUNGSERSTELLUNG === -->
     <div class="modal" id="invoiceCreationModal">
       <div class="modal-content">
         <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeInvoiceCreationModal()">✖</span>
-        <!-- KORREKTUR: Überschrift entfernt -->
         <div id="invoiceCreationBody" style="width:100%;">
+          
+          <div class="invoice-header">
+            <img src="vgc-logo-center1.jpg" alt="Firmenlogo" class="invoice-logo" onerror="this.onerror=null;this.src='https://placehold.co/200x60/003366/FFFFFF?text=VG+Cargo+GmbH';">
+            <div class="invoice-title">
+              <h3>Rechnung</h3>
+              <p><strong>Rechnungsnummer:</strong> <input type="text" id="invoiceNumberInput" placeholder="Nummer eintragen" style="width: 150px; text-align: right;"></p>
+            </div>
+          </div>
+
           <div class="invoice-grid">
+            <div class="invoice-section" id="invoiceSender">
+              <h4>Rechnungsersteller</h4>
+              <p><strong>VG Cargo GmbH</strong><br>Gebäude 860<br>55483 Hahn-Flughafen</p>
+              <p><strong>Bearbeiter:</strong> <span id="invoiceEditorName"></span></p>
+            </div>
             <div class="invoice-section" id="invoiceRecipient">
               <h4>Rechnungsempfänger</h4>
               <!-- Empfängerdetails werden hier von script.js eingefügt -->
             </div>
-            <div class="invoice-section" id="invoiceSender">
-              <h4>Rechnungsersteller</h4>
-              <!-- Erstellerdetails werden hier von script.js eingefügt -->
-            </div>
           </div>
+
+          <div class="invoice-grid" style="margin-top: 15px;">
+             <div class="invoice-section">
+                <label><strong>Rechnungsdatum:</strong></label>
+                <input type="date" id="invoiceDateInput">
+             </div>
+             <div class="invoice-section">
+                <label><strong>Leistungsdatum:</strong></label>
+                <input type="date" id="invoiceServiceDateInput">
+             </div>
+          </div>
+
           <div class="invoice-section" style="margin-top: 20px;">
-            <h4>Kostenpositionen</h4>
+            <h4>Leistungspositionen</h4>
             <table id="invoiceCostsTable" class="w-full">
               <thead>
                 <tr>
@@ -785,28 +839,52 @@
               <tbody>
                 <!-- Kostenpositionen werden hier von script.js eingefügt -->
               </tbody>
+              <tfoot>
+                <tr>
+                  <td>Netto</td>
+                  <td id="invoiceSubtotal">0,00 €</td>
+                </tr>
+                <tr>
+                  <td>
+                    <select id="invoiceVatRate" onchange="updateInvoiceTotals()">
+                      <option value="19">MwSt. 19%</option>
+                      <option value="0">MwSt. 0%</option>
+                    </select>
+                  </td>
+                  <td id="invoiceVatAmount">0,00 €</td>
+                </tr>
+                <tr style="font-size: 1.2em; background-color: #f0f0f0;">
+                  <td><b>Gesamtbetrag</b></td>
+                  <td id="invoiceTotal"><b>0,00 €</b></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
-          <div class="invoice-section" style="margin-top: 20px;">
-            <label for="invoiceNumberInput"><b>Rechnungsnummer:</b></label>
-            <input type="text" id="invoiceNumberInput" placeholder="Rechnungsnummer manuell eintragen">
+          
+          <div id="invoiceFooter">
+            <p>
+              VG Cargo GmbH | Gebäude 860, 55483 Hahn-Flughafen<br>
+              <strong>Bankverbindung:</strong> Commerzbank AG | <strong>IBAN:</strong> DE... | <strong>BIC:</strong> ...
+            </p>
+            <div id="invoiceFooterText" style="display: none;">
+              <!-- Text für Steuerbefreiung wird hier von JS eingefügt -->
+            </div>
           </div>
-          <div id="invoiceButtonContainer" style="width:100%; text-align:center; margin-top: 20px;">
-            <button onclick="saveInvoice()" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
-              Rechnung erstellen und speichern
-            </button>
+
+          <div id="invoiceButtonContainer" style="width:100%; text-align:center; margin-top: 20px; display: flex; justify-content: center; gap: 15px;">
+            <!-- Buttons werden dynamisch von JS befüllt -->
           </div>
         </div>
       </div>
     </div>
 
-    <!-- NEU: Modal für Benutzerverwaltung -->
+
+    <!-- Modal für Benutzerverwaltung -->
     <div class="modal" id="userManagementModal">
       <div class="modal-content" style="max-width: 800px; flex-direction: column;">
         <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeUserManagementModal()">✖</span>
         <h3>Benutzerverwaltung</h3>
         
-        <!-- Formular zum Bearbeiten/Erstellen -->
         <div class="modal-section" style="background-color: #e9f5ff;">
           <h4 id="userFormTitle">Neuen Benutzer anlegen</h4>
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
@@ -827,24 +905,20 @@
           </div>
         </div>
 
-        <!-- Liste existierender Benutzer -->
         <h4>Existierende Benutzer</h4>
         <div id="userListContainer" style="width: 100%; max-height: 40vh; overflow-y: auto;"></div>
       </div>
     </div>
     
-    <!-- ======================================================= -->
-    <!-- NEU: MODAL FÜR KUNDENVERWALTUNG (CRM)                    -->
-    <!-- ======================================================= -->
+    <!-- MODAL FÜR KUNDENVERWALTUNG (CRM) -->
     <div class="modal" id="customerManagementModal">
       <div class="modal-content" style="max-width: 900px; flex-direction: column;">
         <span style="position:absolute; top:10px; right:20px; cursor:pointer;" onclick="closeCustomerManagementModal()">✖</span>
         <h3>Kundenverwaltung (CRM)</h3>
         
-        <!-- Formular zum Bearbeiten/Erstellen eines Kunden -->
         <div class="modal-section" style="background-color: #e9fff5;">
           <h4 id="customerFormTitle">Neuen Kunden anlegen</h4>
-          <input type="hidden" id="customerInputID"> <!-- Verstecktes Feld für die Kunden-ID beim Bearbeiten -->
+          <input type="hidden" id="customerInputID">
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
             <div><label>Firma (Billing Company):</label><input type="text" id="customerInputCompany"></div>
             <div><label>Kontaktperson (Rechnung):</label><input type="text" id="customerInputContactName"></div>
@@ -859,7 +933,6 @@
           </div>
         </div>
 
-        <!-- Liste existierender Kunden -->
         <h4>Existierende Kunden</h4>
         <div id="customerListContainer" style="width: 100%; max-height: 40vh; overflow-y: auto;">
           <!-- Die Kundenliste wird hier per JavaScript eingefügt -->
@@ -876,8 +949,7 @@
     </div>
     <div id="calendarArea" class="calendar-wrapper"></div>
   </div>
-  <!-- WICHTIGE KORREKTUR: script.js hierher verschoben und 'defer' entfernt -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js CDN hinzufügen -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="script.js" type="module"></script>
 </body>
 </html>
